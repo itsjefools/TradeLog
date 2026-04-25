@@ -17,6 +17,16 @@ import { supabase } from '@/lib/supabase';
 
 type Mode = 'signIn' | 'signUp';
 
+function validatePassword(password: string): string | null {
+  if (password.length < 8) {
+    return 'パスワードは8文字以上で入力してください。';
+  }
+  if (!/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password)) {
+    return 'パスワードには数字または記号を最低1つ含めてください。';
+  }
+  return null;
+}
+
 export default function LoginScreen() {
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
@@ -28,9 +38,12 @@ export default function LoginScreen() {
       Alert.alert('入力エラー', 'メールアドレスとパスワードを入力してください。');
       return;
     }
-    if (password.length < 6) {
-      Alert.alert('入力エラー', 'パスワードは6文字以上で入力してください。');
-      return;
+    if (mode === 'signUp') {
+      const passwordError = validatePassword(password);
+      if (passwordError) {
+        Alert.alert('入力エラー', passwordError);
+        return;
+      }
     }
 
     setLoading(true);
@@ -105,7 +118,7 @@ export default function LoginScreen() {
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="6文字以上"
+                placeholder={isSignIn ? 'パスワード' : '8文字以上、数字または記号を含む'}
                 placeholderTextColor="#9CA3AF"
                 secureTextEntry
                 autoCapitalize="none"

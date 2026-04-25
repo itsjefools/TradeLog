@@ -21,6 +21,7 @@ const MAPPING = {
   'plus.circle.fill': 'add-circle',
   'chart.bar.fill': 'bar-chart',
   'person.fill': 'person',
+  'graduationcap.fill': 'school',
 } as IconMapping;
 
 /**

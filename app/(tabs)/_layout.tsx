@@ -46,6 +46,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="school"
+        options={{
+          title: 'スクール',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="graduationcap.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'プロフィール',

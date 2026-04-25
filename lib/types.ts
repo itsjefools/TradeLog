@@ -40,3 +40,66 @@ export const COMMON_CURRENCY_PAIRS = [
   'GBP/USD',
   'AUD/JPY',
 ] as const;
+
+// 検索可能な全通貨ペアリスト
+// メジャー / マイナークロス / 主要エキゾチック / 円クロスを網羅
+export const ALL_CURRENCY_PAIRS = [
+  // Majors（メジャー通貨ペア）
+  'EUR/USD',
+  'USD/JPY',
+  'GBP/USD',
+  'USD/CHF',
+  'AUD/USD',
+  'USD/CAD',
+  'NZD/USD',
+
+  // 円クロス
+  'EUR/JPY',
+  'GBP/JPY',
+  'AUD/JPY',
+  'NZD/JPY',
+  'CAD/JPY',
+  'CHF/JPY',
+  'TRY/JPY',
+  'ZAR/JPY',
+  'MXN/JPY',
+  'SGD/JPY',
+  'HKD/JPY',
+  'CNH/JPY',
+
+  // EUR クロス
+  'EUR/GBP',
+  'EUR/CHF',
+  'EUR/AUD',
+  'EUR/CAD',
+  'EUR/NZD',
+
+  // GBP クロス
+  'GBP/CHF',
+  'GBP/AUD',
+  'GBP/CAD',
+  'GBP/NZD',
+
+  // AUD クロス
+  'AUD/NZD',
+  'AUD/CAD',
+  'AUD/CHF',
+
+  // その他クロス
+  'CAD/CHF',
+  'NZD/CAD',
+  'NZD/CHF',
+
+  // エキゾチック (USD ベース)
+  'USD/MXN',
+  'USD/ZAR',
+  'USD/SEK',
+  'USD/NOK',
+  'USD/SGD',
+  'USD/HKD',
+  'USD/TRY',
+  'USD/CNH',
+  'USD/RUB',
+  'USD/PLN',
+  'USD/THB',
+] as const;

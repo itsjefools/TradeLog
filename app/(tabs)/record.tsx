@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,10 +14,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useFavoritePairs } from '@/hooks/use-favorite-pairs';
 import { useTrades } from '@/hooks/use-trades';
 import { supabase } from '@/lib/supabase';
 import {
-  COMMON_CURRENCY_PAIRS,
+  ALL_CURRENCY_PAIRS,
   Trade,
   TradeDirection,
   TradeInsert,
@@ -33,6 +34,7 @@ const TEXT_PRIMARY = '#F1F5F9';
 const TEXT_SECONDARY = '#94A3B8';
 const WIN_COLOR = '#10B981';
 const LOSS_COLOR = '#EF4444';
+const STAR_COLOR = '#F59E0B';
 
 const initialState = {
   currencyPair: 'USD/JPY',
@@ -95,7 +97,21 @@ function recalcPips(form: FormState): FormState {
 export default function RecordScreen() {
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
+  const [pairSearch, setPairSearch] = useState('');
   const { addTrade } = useTrades();
+  const { favorites, isFavorite, toggleFavorite } = useFavoritePairs();
+
+  const isSearching = pairSearch.trim() !== '';
+
+  const visiblePairs = useMemo(() => {
+    const q = pairSearch.trim().toUpperCase();
+    if (q === '') {
+      // 検索が空のときは常にお気に入りだけを表示
+      // お気に入りから外せばリストから消える
+      return ALL_CURRENCY_PAIRS.filter((p) => favorites.includes(p));
+    }
+    return ALL_CURRENCY_PAIRS.filter((p) => p.includes(q));
+  }, [pairSearch, favorites]);
 
   const setField = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -111,6 +127,7 @@ export default function RecordScreen() {
 
   const updateCurrencyPair = (currencyPair: string) => {
     setForm((prev) => recalcPips({ ...prev, currencyPair }));
+    setPairSearch('');
   };
 
   const resetForm = () => setForm(initialState);
@@ -233,32 +250,65 @@ export default function RecordScreen() {
         >
           <View style={styles.section}>
             <Text style={styles.label}>通貨ペア</Text>
-            <View style={styles.chipsRow}>
-              {COMMON_CURRENCY_PAIRS.map((pair) => {
-                const selected = form.currencyPair === pair;
-                return (
-                  <Pressable
-                    key={pair}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                    onPress={() => updateCurrencyPair(pair)}
-                  >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                      {pair}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
             <TextInput
-              style={[styles.input, styles.inputMt]}
-              value={form.currencyPair}
-              onChangeText={(t) => updateCurrencyPair(t)}
-              placeholder="その他 (例: CHF/JPY)"
+              style={styles.input}
+              value={pairSearch}
+              onChangeText={setPairSearch}
+              placeholder="検索（例: USD, JPY, EUR）"
               placeholderTextColor={TEXT_SECONDARY}
               autoCapitalize="characters"
               autoCorrect={false}
               editable={!loading}
             />
+            {form.currencyPair && (
+              <Text style={styles.selectedPairText}>
+                選択中: <Text style={styles.selectedPairValue}>{form.currencyPair}</Text>
+              </Text>
+            )}
+            {!isSearching && favorites.length > 0 && (
+              <Text style={styles.favHeader}>★ お気に入り</Text>
+            )}
+            <View style={[styles.chipsRow, styles.chipsRowMt]}>
+              {visiblePairs.length === 0 ? (
+                <Text style={styles.noMatchText}>
+                  {isSearching
+                    ? '該当する通貨ペアがありません'
+                    : '検索欄に通貨を入力してください\n（★でお気に入り登録できます）'}
+                </Text>
+              ) : (
+                visiblePairs.map((pair) => {
+                  const selected = form.currencyPair === pair;
+                  const fav = isFavorite(pair);
+                  return (
+                    <Pressable
+                      key={pair}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => updateCurrencyPair(pair)}
+                    >
+                      <Text
+                        style={[styles.chipText, selected && styles.chipTextSelected]}
+                      >
+                        {pair}
+                      </Text>
+                      <Pressable
+                        onPress={() => toggleFavorite(pair)}
+                        hitSlop={6}
+                        style={styles.starWrap}
+                      >
+                        <Text
+                          style={[
+                            styles.starIcon,
+                            fav && styles.starIconActive,
+                          ]}
+                        >
+                          {fav ? '★' : '☆'}
+                        </Text>
+                      </Pressable>
+                    </Pressable>
+                  );
+                })
+              )}
+            </View>
           </View>
 
           <View style={styles.section}>
@@ -533,13 +583,49 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  chipsRowMt: {
+    marginTop: 12,
+  },
+  selectedPairText: {
+    marginTop: 10,
+    fontSize: 12,
+    color: TEXT_SECONDARY,
+  },
+  selectedPairValue: {
+    color: ACCENT,
+    fontWeight: '700',
+  },
+  noMatchText: {
+    fontSize: 13,
+    color: TEXT_SECONDARY,
+    paddingVertical: 8,
+  },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
     backgroundColor: SURFACE,
     borderWidth: 1,
     borderColor: BORDER,
+  },
+  favHeader: {
+    marginTop: 14,
+    fontSize: 12,
+    color: STAR_COLOR,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  starWrap: {
+    marginLeft: 6,
+  },
+  starIcon: {
+    fontSize: 14,
+    color: TEXT_SECONDARY,
+  },
+  starIconActive: {
+    color: STAR_COLOR,
   },
   chipSelected: {
     backgroundColor: ACCENT,

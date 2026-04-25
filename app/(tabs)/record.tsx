@@ -14,8 +14,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useTrades } from '@/hooks/use-trades';
 import { supabase } from '@/lib/supabase';
-import { COMMON_CURRENCY_PAIRS, TradeDirection, TradeInsert, TradeResult } from '@/lib/types';
+import {
+  COMMON_CURRENCY_PAIRS,
+  Trade,
+  TradeDirection,
+  TradeInsert,
+  TradeResult,
+} from '@/lib/types';
 
 const ACCENT = '#6366F1';
 const BACKGROUND = '#0F172A';
@@ -40,28 +47,82 @@ const initialState = {
   isShared: false,
 };
 
+function applySignToString(value: string, result: TradeResult): string {
+  if (value.trim() === '') return value;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n === 0) return value;
+  const desired = result === 'loss' ? -Math.abs(n) : Math.abs(n);
+  return String(desired);
+}
+
+function applySignToNum(
+  value: number | null,
+  result: TradeResult | null,
+): number | null {
+  if (value === null || result === null) return value;
+  return result === 'loss' ? -Math.abs(value) : Math.abs(value);
+}
+
+function parseNumOrNull(s: string): number | null {
+  if (s.trim() === '') return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function computePips(
+  pair: string,
+  direction: TradeDirection,
+  entry: number,
+  exit: number,
+): number {
+  const isJpyPair = pair.toUpperCase().endsWith('/JPY');
+  const multiplier = isJpyPair ? 100 : 10000;
+  const diff = direction === 'long' ? exit - entry : entry - exit;
+  return diff * multiplier;
+}
+
+type FormState = typeof initialState;
+
+function recalcPips(form: FormState): FormState {
+  const entry = parseNumOrNull(form.entryPrice);
+  const exit = parseNumOrNull(form.exitPrice);
+  if (entry === null || exit === null) return form;
+  const pips = computePips(form.currencyPair, form.direction, entry, exit);
+  const rounded = Math.round(pips * 10) / 10;
+  return { ...form, pnlPips: String(rounded) };
+}
+
 export default function RecordScreen() {
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
+  const { addTrade } = useTrades();
 
   const setField = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const updatePriceField = (key: 'entryPrice' | 'exitPrice', value: string) => {
+    setForm((prev) => recalcPips({ ...prev, [key]: value }));
+  };
+
+  const updateDirection = (direction: TradeDirection) => {
+    setForm((prev) => recalcPips({ ...prev, direction }));
+  };
+
+  const updateCurrencyPair = (currencyPair: string) => {
+    setForm((prev) => recalcPips({ ...prev, currencyPair }));
+  };
+
   const resetForm = () => setForm(initialState);
 
-  const parseNum = (s: string): number | null => {
-    if (s.trim() === '') return null;
-    const n = Number(s);
-    return Number.isFinite(n) ? n : null;
-  };
+  const parseNum = parseNumOrNull;
 
   const handleSubmit = async () => {
     const entryPrice = parseNum(form.entryPrice);
     const lotSize = parseNum(form.lotSize);
     const exitPrice = parseNum(form.exitPrice);
-    const pnl = parseNum(form.pnl);
-    const pnlPips = parseNum(form.pnlPips);
+    const pnl = applySignToNum(parseNum(form.pnl), form.result);
+    const pnlPips = applySignToNum(parseNum(form.pnlPips), form.result);
 
     if (!form.currencyPair.trim()) {
       Alert.alert('入力エラー', '通貨ペアを入力してください。');
@@ -102,7 +163,11 @@ export default function RecordScreen() {
         is_shared: form.isShared,
       };
 
-      const { error: insertError } = await supabase.from('trades').insert(payload);
+      const { data: insertedRow, error: insertError } = await supabase
+        .from('trades')
+        .insert(payload)
+        .select()
+        .single();
 
       if (insertError) {
         Alert.alert(
@@ -112,6 +177,10 @@ export default function RecordScreen() {
           }`,
         );
         return;
+      }
+
+      if (insertedRow) {
+        addTrade(insertedRow as Trade);
       }
 
       Alert.alert('保存しました', '取引を記録しました。', [
@@ -126,7 +195,23 @@ export default function RecordScreen() {
   };
 
   const toggleResult = (value: TradeResult) => {
-    setField('result', form.result === value ? null : value);
+    const newResult = form.result === value ? null : value;
+    setForm((prev) => {
+      if (newResult === null) {
+        return { ...prev, result: null };
+      }
+      const hasMathPips =
+        parseNumOrNull(prev.entryPrice) !== null &&
+        parseNumOrNull(prev.exitPrice) !== null;
+      return {
+        ...prev,
+        result: newResult,
+        pnl: applySignToString(prev.pnl, newResult),
+        pnlPips: hasMathPips
+          ? prev.pnlPips
+          : applySignToString(prev.pnlPips, newResult),
+      };
+    });
   };
 
   return (
@@ -155,7 +240,7 @@ export default function RecordScreen() {
                   <Pressable
                     key={pair}
                     style={[styles.chip, selected && styles.chipSelected]}
-                    onPress={() => setField('currencyPair', pair)}
+                    onPress={() => updateCurrencyPair(pair)}
                   >
                     <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
                       {pair}
@@ -167,7 +252,7 @@ export default function RecordScreen() {
             <TextInput
               style={[styles.input, styles.inputMt]}
               value={form.currencyPair}
-              onChangeText={(t) => setField('currencyPair', t)}
+              onChangeText={(t) => updateCurrencyPair(t)}
               placeholder="その他 (例: CHF/JPY)"
               placeholderTextColor={TEXT_SECONDARY}
               autoCapitalize="characters"
@@ -184,7 +269,7 @@ export default function RecordScreen() {
                   styles.segmentItem,
                   form.direction === 'long' && styles.segmentItemActive,
                 ]}
-                onPress={() => setField('direction', 'long')}
+                onPress={() => updateDirection('long')}
                 disabled={loading}
               >
                 <Text
@@ -201,7 +286,7 @@ export default function RecordScreen() {
                   styles.segmentItem,
                   form.direction === 'short' && styles.segmentItemActive,
                 ]}
-                onPress={() => setField('direction', 'short')}
+                onPress={() => updateDirection('short')}
                 disabled={loading}
               >
                 <Text
@@ -266,7 +351,7 @@ export default function RecordScreen() {
               <TextInput
                 style={styles.input}
                 value={form.entryPrice}
-                onChangeText={(t) => setField('entryPrice', t)}
+                onChangeText={(t) => updatePriceField('entryPrice', t)}
                 placeholder="例: 148.250"
                 placeholderTextColor={TEXT_SECONDARY}
                 keyboardType="decimal-pad"
@@ -278,7 +363,7 @@ export default function RecordScreen() {
               <TextInput
                 style={styles.input}
                 value={form.exitPrice}
-                onChangeText={(t) => setField('exitPrice', t)}
+                onChangeText={(t) => updatePriceField('exitPrice', t)}
                 placeholder="例: 148.800"
                 placeholderTextColor={TEXT_SECONDARY}
                 keyboardType="decimal-pad"

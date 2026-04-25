@@ -14,19 +14,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ThemeColors } from '@/constants/theme';
 import { useProfile } from '@/hooks/use-profile';
+import { useThemeColors } from '@/hooks/use-theme';
 import { COUNTRIES, flagEmoji } from '@/lib/countries';
 import { TRADE_STYLE_OPTIONS, TradeStyle } from '@/lib/types';
 
-const ACCENT = '#6366F1';
-const BACKGROUND = '#0F172A';
-const SURFACE = '#1E293B';
-const SURFACE_ALT = '#273449';
-const BORDER = '#334155';
-const TEXT_PRIMARY = '#F1F5F9';
-const TEXT_SECONDARY = '#94A3B8';
-
 export default function ProfileEditScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
 
@@ -100,7 +96,7 @@ export default function ProfileEditScreen() {
         <Text style={styles.headerTitle}>プロフィール編集</Text>
         <Pressable onPress={handleSave} disabled={saving}>
           {saving ? (
-            <ActivityIndicator color={ACCENT} />
+            <ActivityIndicator color={c.accent} />
           ) : (
             <Text style={[styles.headerLink, styles.saveLink]}>保存</Text>
           )}
@@ -124,7 +120,7 @@ export default function ProfileEditScreen() {
               value={displayName}
               onChangeText={setDisplayName}
               placeholder="例: ジェフ"
-              placeholderTextColor={TEXT_SECONDARY}
+              placeholderTextColor={c.textSecondary}
               editable={!saving}
             />
           </View>
@@ -136,7 +132,7 @@ export default function ProfileEditScreen() {
               value={username}
               onChangeText={setUsername}
               placeholder="例: jeff_trader"
-              placeholderTextColor={TEXT_SECONDARY}
+              placeholderTextColor={c.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
               editable={!saving}
@@ -151,7 +147,7 @@ export default function ProfileEditScreen() {
               value={bio}
               onChangeText={setBio}
               placeholder="トレード歴・得意な手法など"
-              placeholderTextColor={TEXT_SECONDARY}
+              placeholderTextColor={c.textSecondary}
               multiline
               numberOfLines={4}
               editable={!saving}
@@ -208,7 +204,7 @@ export default function ProfileEditScreen() {
               value={countrySearch}
               onChangeText={setCountrySearch}
               placeholder="検索（例: Japan, JP, 日本）"
-              placeholderTextColor={TEXT_SECONDARY}
+              placeholderTextColor={c.textSecondary}
               autoCorrect={false}
               editable={!saving}
             />
@@ -264,10 +260,11 @@ export default function ProfileEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BACKGROUND,
+    backgroundColor: c.background,
   },
   flex: {
     flex: 1,
@@ -279,19 +276,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: BORDER,
+    borderBottomColor: c.border,
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
   },
   headerLink: {
     fontSize: 15,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
   },
   saveLink: {
-    color: ACCENT,
+    color: c.accent,
     fontWeight: '700',
   },
   body: {
@@ -304,23 +301,23 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '500',
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
     marginBottom: 8,
   },
   helper: {
     fontSize: 11,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
     marginTop: 4,
   },
   input: {
-    backgroundColor: SURFACE,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: c.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
   },
   inputMt: {
     marginTop: 8,
@@ -342,17 +339,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: SURFACE,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: c.border,
   },
   chipSelected: {
-    backgroundColor: ACCENT,
-    borderColor: ACCENT,
+    backgroundColor: c.accent,
+    borderColor: c.accent,
   },
   chipText: {
     fontSize: 13,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     fontWeight: '500',
   },
   chipTextSelected: {
@@ -366,9 +363,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: SURFACE,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: c.border,
   },
   countryChipFlag: {
     fontSize: 16,
@@ -377,12 +374,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: SURFACE_ALT,
+    backgroundColor: c.surfaceAlt,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: ACCENT,
+    borderColor: c.accent,
   },
   selectedFlag: {
     fontSize: 22,
@@ -390,7 +387,7 @@ const styles = StyleSheet.create({
   selectedCountryName: {
     flex: 1,
     fontSize: 15,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     fontWeight: '600',
   },
   clearCountry: {
@@ -402,15 +399,15 @@ const styles = StyleSheet.create({
   },
   clearCountryText: {
     fontSize: 16,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
   },
   noMatchText: {
     fontSize: 13,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
     paddingVertical: 8,
   },
   verifiedNotice: {
-    backgroundColor: SURFACE,
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
@@ -422,4 +419,5 @@ const styles = StyleSheet.create({
     color: '#3B82F6',
     fontWeight: '600',
   },
-});
+  });
+}

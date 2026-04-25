@@ -3,23 +3,22 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-
-const ACCENT = '#6366F1';
-const BACKGROUND = '#0F172A';
-const INACTIVE = '#64748B';
-const BORDER = '#1E293B';
+import { useThemeColors } from '@/hooks/use-theme';
 
 export default function TabLayout() {
+  const c = useThemeColors();
+  const inactive = c.textSecondary;
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: ACCENT,
-        tabBarInactiveTintColor: INACTIVE,
+        tabBarActiveTintColor: c.accent,
+        tabBarInactiveTintColor: inactive,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
-          backgroundColor: BACKGROUND,
-          borderTopColor: BORDER,
+          backgroundColor: c.background,
+          borderTopColor: c.border,
         },
       }}>
       <Tabs.Screen

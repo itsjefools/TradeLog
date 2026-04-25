@@ -14,7 +14,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ThemeColors } from '@/constants/theme';
 import { useFavoritePairs } from '@/hooks/use-favorite-pairs';
+import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { supabase } from '@/lib/supabase';
 import {
@@ -24,17 +26,6 @@ import {
   TradeInsert,
   TradeResult,
 } from '@/lib/types';
-
-const ACCENT = '#6366F1';
-const BACKGROUND = '#0F172A';
-const SURFACE = '#1E293B';
-const SURFACE_ALT = '#273449';
-const BORDER = '#334155';
-const TEXT_PRIMARY = '#F1F5F9';
-const TEXT_SECONDARY = '#94A3B8';
-const WIN_COLOR = '#10B981';
-const LOSS_COLOR = '#EF4444';
-const STAR_COLOR = '#F59E0B';
 
 const initialState = {
   currencyPair: 'USD/JPY',
@@ -95,6 +86,8 @@ function recalcPips(form: FormState): FormState {
 }
 
 export default function RecordScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [pairSearch, setPairSearch] = useState('');
@@ -255,7 +248,7 @@ export default function RecordScreen() {
               value={pairSearch}
               onChangeText={setPairSearch}
               placeholder="検索（例: USD, JPY, EUR）"
-              placeholderTextColor={TEXT_SECONDARY}
+              placeholderTextColor={c.textSecondary}
               autoCapitalize="characters"
               autoCorrect={false}
               editable={!loading}
@@ -366,7 +359,7 @@ export default function RecordScreen() {
                 <Text
                   style={[
                     styles.resultButtonText,
-                    { color: WIN_COLOR },
+                    { color: c.win },
                     form.result === 'win' && styles.resultButtonTextSelected,
                   ]}
                 >
@@ -385,7 +378,7 @@ export default function RecordScreen() {
                 <Text
                   style={[
                     styles.resultButtonText,
-                    { color: LOSS_COLOR },
+                    { color: c.loss },
                     form.result === 'loss' && styles.resultButtonTextSelected,
                   ]}
                 >
@@ -403,7 +396,7 @@ export default function RecordScreen() {
                 value={form.entryPrice}
                 onChangeText={(t) => updatePriceField('entryPrice', t)}
                 placeholder="例: 148.250"
-                placeholderTextColor={TEXT_SECONDARY}
+                placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
                 editable={!loading}
               />
@@ -415,7 +408,7 @@ export default function RecordScreen() {
                 value={form.exitPrice}
                 onChangeText={(t) => updatePriceField('exitPrice', t)}
                 placeholder="例: 148.800"
-                placeholderTextColor={TEXT_SECONDARY}
+                placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
                 editable={!loading}
               />
@@ -429,7 +422,7 @@ export default function RecordScreen() {
               value={form.lotSize}
               onChangeText={(t) => setField('lotSize', t)}
               placeholder="例: 0.1"
-              placeholderTextColor={TEXT_SECONDARY}
+              placeholderTextColor={c.textSecondary}
               keyboardType="decimal-pad"
               editable={!loading}
             />
@@ -443,7 +436,7 @@ export default function RecordScreen() {
                 value={form.pnl}
                 onChangeText={(t) => setField('pnl', t)}
                 placeholder="例: 5500"
-                placeholderTextColor={TEXT_SECONDARY}
+                placeholderTextColor={c.textSecondary}
                 keyboardType="numbers-and-punctuation"
                 editable={!loading}
               />
@@ -455,7 +448,7 @@ export default function RecordScreen() {
                 value={form.pnlPips}
                 onChangeText={(t) => setField('pnlPips', t)}
                 placeholder="例: 55"
-                placeholderTextColor={TEXT_SECONDARY}
+                placeholderTextColor={c.textSecondary}
                 keyboardType="numbers-and-punctuation"
                 editable={!loading}
               />
@@ -469,7 +462,7 @@ export default function RecordScreen() {
               value={form.memo}
               onChangeText={(t) => setField('memo', t)}
               placeholder="例: ロンドン時間の押し目買い。移動平均線でサポート確認。"
-              placeholderTextColor={TEXT_SECONDARY}
+              placeholderTextColor={c.textSecondary}
               multiline
               numberOfLines={4}
               editable={!loading}
@@ -484,7 +477,7 @@ export default function RecordScreen() {
             <Switch
               value={form.isShared}
               onValueChange={(v) => setField('isShared', v)}
-              trackColor={{ false: BORDER, true: ACCENT }}
+              trackColor={{ false: c.border, true: c.accent }}
               thumbColor="#fff"
               disabled={loading}
             />
@@ -511,10 +504,11 @@ export default function RecordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BACKGROUND,
+    backgroundColor: c.background,
   },
   flex: {
     flex: 1,
@@ -524,17 +518,17 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: BORDER,
+    borderBottomColor: c.border,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 13,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
     marginTop: 4,
   },
   body: {
@@ -552,23 +546,23 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '500',
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
     marginBottom: 8,
   },
   helperText: {
     fontSize: 12,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
     marginTop: 2,
   },
   input: {
-    backgroundColor: SURFACE,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: c.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
   },
   inputMt: {
     marginTop: 8,
@@ -589,15 +583,15 @@ const styles = StyleSheet.create({
   selectedPairText: {
     marginTop: 10,
     fontSize: 12,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
   },
   selectedPairValue: {
-    color: ACCENT,
+    color: c.accent,
     fontWeight: '700',
   },
   noMatchText: {
     fontSize: 13,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
     paddingVertical: 8,
   },
   chip: {
@@ -606,14 +600,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: SURFACE,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: c.border,
   },
   favHeader: {
     marginTop: 14,
     fontSize: 12,
-    color: STAR_COLOR,
+    color: c.star,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
@@ -622,18 +616,18 @@ const styles = StyleSheet.create({
   },
   starIcon: {
     fontSize: 14,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
   },
   starIconActive: {
-    color: STAR_COLOR,
+    color: c.star,
   },
   chipSelected: {
-    backgroundColor: ACCENT,
-    borderColor: ACCENT,
+    backgroundColor: c.accent,
+    borderColor: c.accent,
   },
   chipText: {
     fontSize: 13,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     fontWeight: '500',
   },
   chipTextSelected: {
@@ -642,11 +636,11 @@ const styles = StyleSheet.create({
   },
   segment: {
     flexDirection: 'row',
-    backgroundColor: SURFACE,
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 4,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: c.border,
   },
   segmentItem: {
     flex: 1,
@@ -655,15 +649,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   segmentItemActive: {
-    backgroundColor: SURFACE_ALT,
+    backgroundColor: c.surfaceAlt,
   },
   segmentText: {
     fontSize: 14,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
     fontWeight: '500',
   },
   segmentTextActive: {
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     fontWeight: '600',
   },
   resultRow: {
@@ -676,22 +670,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: SURFACE,
+    backgroundColor: c.surface,
     borderWidth: 2,
   },
   resultButtonWin: {
-    borderColor: WIN_COLOR,
+    borderColor: c.win,
   },
   resultButtonWinSelected: {
-    backgroundColor: WIN_COLOR,
-    borderColor: WIN_COLOR,
+    backgroundColor: c.win,
+    borderColor: c.win,
   },
   resultButtonLoss: {
-    borderColor: LOSS_COLOR,
+    borderColor: c.loss,
   },
   resultButtonLossSelected: {
-    backgroundColor: LOSS_COLOR,
-    borderColor: LOSS_COLOR,
+    backgroundColor: c.loss,
+    borderColor: c.loss,
   },
   resultButtonText: {
     fontSize: 15,
@@ -703,15 +697,15 @@ const styles = StyleSheet.create({
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: SURFACE,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: c.border,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
   },
   submitButton: {
-    backgroundColor: ACCENT,
+    backgroundColor: c.accent,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -729,4 +723,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-});
+  });
+}

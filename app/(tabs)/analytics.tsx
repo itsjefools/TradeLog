@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,19 +13,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ThemeColors } from '@/constants/theme';
+import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { Trade } from '@/lib/types';
 
-const ACCENT = '#6366F1';
-const BACKGROUND = '#0F172A';
-const SURFACE = '#1E293B';
-const BORDER = '#334155';
-const TEXT_PRIMARY = '#F1F5F9';
-const TEXT_SECONDARY = '#94A3B8';
-const WIN_COLOR = '#10B981';
-const LOSS_COLOR = '#EF4444';
-
 export default function AnalyticsScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const { trades, loading, error, refresh, deleteTrade } = useTrades();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -64,7 +59,7 @@ export default function AnalyticsScreen() {
     );
   };
 
-  const stats = computeMonthlyStats(trades);
+  const stats = computeMonthlyStats(trades, c);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -75,7 +70,7 @@ export default function AnalyticsScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={ACCENT} size="large" />
+          <ActivityIndicator color={c.accent} size="large" />
         </View>
       ) : (
         <ScrollView
@@ -84,7 +79,7 @@ export default function AnalyticsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={ACCENT}
+              tintColor={c.accent}
             />
           }
         >
@@ -145,6 +140,8 @@ function KpiCard({
   value: string;
   valueStyle?: TextStyle;
 }) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={styles.kpiCard}>
       <Text style={styles.kpiLabel}>{label}</Text>
@@ -160,6 +157,8 @@ function TradeRow({
   trade: Trade;
   onDelete: (trade: Trade) => void;
 }) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const directionLabel = trade.direction === 'long' ? 'ロング' : 'ショート';
   const resultLabel =
     trade.result === 'win' ? '利確' : trade.result === 'loss' ? '損切り' : null;
@@ -196,11 +195,11 @@ function TradeRow({
         </Pressable>
       </View>
       <View style={styles.tradeRowMid}>
-        <Text style={[styles.tradePnl, pnlColor(trade.pnl)]}>
+        <Text style={[styles.tradePnl, pnlColor(trade.pnl, c)]}>
           {trade.pnl !== null ? formatPnl(trade.pnl) : '—'}
         </Text>
         {trade.pnl_pips !== null && (
-          <Text style={[styles.tradePips, pnlColor(trade.pnl_pips)]}>
+          <Text style={[styles.tradePips, pnlColor(trade.pnl_pips, c)]}>
             {formatPips(trade.pnl_pips)}
           </Text>
         )}
@@ -218,7 +217,7 @@ type MonthlyStats = {
   avgPipsStyle?: TextStyle;
 };
 
-function computeMonthlyStats(trades: Trade[]): MonthlyStats {
+function computeMonthlyStats(trades: Trade[], c: ThemeColors): MonthlyStats {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -243,10 +242,10 @@ function computeMonthlyStats(trades: Trade[]): MonthlyStats {
   return {
     tradeCount: monthly.length,
     pnlDisplay: withPnl.length === 0 ? '—' : formatPnl(totalPnl),
-    pnlStyle: withPnl.length === 0 ? undefined : pnlColor(totalPnl),
+    pnlStyle: withPnl.length === 0 ? undefined : pnlColor(totalPnl, c),
     winRateDisplay: winRate === null ? '—' : `${winRate}%`,
     avgPipsDisplay: avgPips === null ? '—' : formatPips(avgPips),
-    avgPipsStyle: avgPips === null ? undefined : pnlColor(avgPips),
+    avgPipsStyle: avgPips === null ? undefined : pnlColor(avgPips, c),
   };
 }
 
@@ -260,177 +259,179 @@ function formatPips(n: number): string {
   return `${sign}${n.toFixed(1)} pips`;
 }
 
-function pnlColor(n: number | null): TextStyle | undefined {
+function pnlColor(n: number | null, c: ThemeColors): TextStyle | undefined {
   if (n === null || n === 0) return undefined;
-  return { color: n > 0 ? WIN_COLOR : LOSS_COLOR };
+  return { color: n > 0 ? c.win : c.loss };
 }
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BACKGROUND,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: BORDER,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: TEXT_SECONDARY,
-    marginTop: 4,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  body: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  sectionLabel: {
-    fontSize: 13,
-    color: TEXT_SECONDARY,
-    fontWeight: '600',
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  sectionLabelMt: {
-    marginTop: 28,
-  },
-  kpiRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  kpiCard: {
-    flex: 1,
-    backgroundColor: SURFACE,
-    borderRadius: 12,
-    padding: 16,
-  },
-  kpiLabel: {
-    fontSize: 12,
-    color: TEXT_SECONDARY,
-    marginBottom: 6,
-  },
-  kpiValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-  },
-  errorBox: {
-    backgroundColor: '#7F1D1D',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  errorText: {
-    color: '#FECACA',
-    fontSize: 13,
-  },
-  emptyBox: {
-    backgroundColor: SURFACE,
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderStyle: 'dashed',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: TEXT_SECONDARY,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  tradeRow: {
-    backgroundColor: SURFACE,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-  },
-  tradeRowTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  tradePair: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-  },
-  tradeDirection: {
-    fontSize: 13,
-    color: TEXT_SECONDARY,
-  },
-  resultBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  resultBadgeWin: {
-    backgroundColor: WIN_COLOR,
-  },
-  resultBadgeLoss: {
-    backgroundColor: LOSS_COLOR,
-  },
-  resultBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  tradeDate: {
-    marginLeft: 'auto',
-    fontSize: 11,
-    color: TEXT_SECONDARY,
-  },
-  deleteButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 4,
-  },
-  deleteButtonPressed: {
-    backgroundColor: BORDER,
-  },
-  deleteButtonText: {
-    fontSize: 18,
-    color: TEXT_SECONDARY,
-    fontWeight: '500',
-    lineHeight: 18,
-  },
-  tradeRowMid: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 12,
-  },
-  tradePnl: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-  },
-  tradePips: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: TEXT_SECONDARY,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: c.textPrimary,
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: c.textSecondary,
+      marginTop: 4,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    body: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 40,
+    },
+    sectionLabel: {
+      fontSize: 13,
+      color: c.textSecondary,
+      fontWeight: '600',
+      marginBottom: 10,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    sectionLabelMt: {
+      marginTop: 28,
+    },
+    kpiRow: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 12,
+    },
+    kpiCard: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 16,
+    },
+    kpiLabel: {
+      fontSize: 12,
+      color: c.textSecondary,
+      marginBottom: 6,
+    },
+    kpiValue: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: c.textPrimary,
+    },
+    errorBox: {
+      backgroundColor: '#7F1D1D',
+      padding: 12,
+      borderRadius: 8,
+      marginBottom: 12,
+    },
+    errorText: {
+      color: '#FECACA',
+      fontSize: 13,
+    },
+    emptyBox: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 24,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: c.border,
+      borderStyle: 'dashed',
+    },
+    emptyText: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    tradeRow: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 8,
+    },
+    tradeRowTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 6,
+    },
+    tradePair: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.textPrimary,
+    },
+    tradeDirection: {
+      fontSize: 13,
+      color: c.textSecondary,
+    },
+    resultBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    resultBadgeWin: {
+      backgroundColor: c.win,
+    },
+    resultBadgeLoss: {
+      backgroundColor: c.loss,
+    },
+    resultBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    tradeDate: {
+      marginLeft: 'auto',
+      fontSize: 11,
+      color: c.textSecondary,
+    },
+    deleteButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: 4,
+    },
+    deleteButtonPressed: {
+      backgroundColor: c.border,
+    },
+    deleteButtonText: {
+      fontSize: 18,
+      color: c.textSecondary,
+      fontWeight: '500',
+      lineHeight: 18,
+    },
+    tradeRowMid: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 12,
+    },
+    tradePnl: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.textPrimary,
+    },
+    tradePips: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: c.textSecondary,
+    },
+  });
+}

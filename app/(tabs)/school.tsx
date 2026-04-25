@@ -1,7 +1,14 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ThemeColors } from '@/constants/theme';
+import { useThemeColors } from '@/hooks/use-theme';
+
 export default function SchoolScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -25,68 +32,63 @@ export default function SchoolScreen() {
   );
 }
 
-const ACCENT = '#6366F1';
-const BACKGROUND = '#0F172A';
-const SURFACE = '#1E293B';
-const BORDER = '#334155';
-const TEXT_PRIMARY = '#F1F5F9';
-const TEXT_SECONDARY = '#94A3B8';
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BACKGROUND,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: BORDER,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: TEXT_SECONDARY,
-    marginTop: 4,
-  },
-  body: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 32,
-  },
-  placeholder: {
-    backgroundColor: SURFACE,
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-  },
-  placeholderIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  placeholderTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: TEXT_PRIMARY,
-    marginBottom: 12,
-  },
-  placeholderText: {
-    fontSize: 14,
-    color: TEXT_SECONDARY,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  comingSoon: {
-    fontSize: 12,
-    color: ACCENT,
-    marginTop: 20,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: c.textPrimary,
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: c.textSecondary,
+      marginTop: 4,
+    },
+    body: {
+      flex: 1,
+      paddingHorizontal: 20,
+      paddingTop: 32,
+    },
+    placeholder: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 32,
+      alignItems: 'center',
+    },
+    placeholderIcon: {
+      fontSize: 48,
+      marginBottom: 16,
+    },
+    placeholderTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: c.textPrimary,
+      marginBottom: 12,
+    },
+    placeholderText: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    comingSoon: {
+      fontSize: 12,
+      color: c.accent,
+      marginTop: 20,
+      fontWeight: '600',
+      letterSpacing: 1,
+    },
+  });
+}

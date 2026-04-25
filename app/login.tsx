@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
+import { ThemeColors } from '@/constants/theme';
+import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { TRADE_STYLE_OPTIONS, TradeStyle } from '@/lib/types';
 
@@ -30,6 +32,9 @@ function validatePassword(password: string): string | null {
 }
 
 export default function LoginScreen() {
+  const c = useThemeColors();
+  const { resolved } = useTheme();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -98,7 +103,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar style="dark" />
+      <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -124,7 +129,7 @@ export default function LoginScreen() {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="you@example.com"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={c.textSecondary}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
@@ -139,7 +144,7 @@ export default function LoginScreen() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder={isSignIn ? 'パスワード' : '8文字以上、数字または記号を含む'}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={c.textSecondary}
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -208,17 +213,13 @@ export default function LoginScreen() {
   );
 }
 
-const ACCENT = '#10B981';
-const BACKGROUND = '#FFFFFF';
-const SURFACE = '#FFFFFF';
-const BORDER = '#E5E7EB';
-const TEXT_PRIMARY = '#111827';
-const TEXT_SECONDARY = '#6B7280';
+const LOGIN_ACCENT = '#10B981';
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BACKGROUND,
+    backgroundColor: c.background,
   },
   flex: {
     flex: 1,
@@ -236,13 +237,13 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 36,
     fontWeight: '700',
-    color: ACCENT,
+    color: LOGIN_ACCENT,
     letterSpacing: -0.5,
     marginBottom: 8,
   },
   tagline: {
     fontSize: 16,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
   },
   form: {
     gap: 16,
@@ -252,21 +253,21 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
     fontWeight: '500',
   },
   input: {
-    backgroundColor: SURFACE,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: c.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
   },
   primaryButton: {
-    backgroundColor: ACCENT,
+    backgroundColor: LOGIN_ACCENT,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -291,10 +292,10 @@ const styles = StyleSheet.create({
   },
   switchText: {
     fontSize: 14,
-    color: TEXT_SECONDARY,
+    color: c.textSecondary,
   },
   switchTextAccent: {
-    color: ACCENT,
+    color: LOGIN_ACCENT,
     fontWeight: '600',
   },
   chipsRow: {
@@ -308,19 +309,20 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: c.border,
   },
   chipSelected: {
-    backgroundColor: ACCENT,
-    borderColor: ACCENT,
+    backgroundColor: LOGIN_ACCENT,
+    borderColor: LOGIN_ACCENT,
   },
   chipText: {
     fontSize: 13,
-    color: TEXT_PRIMARY,
+    color: c.textPrimary,
     fontWeight: '500',
   },
   chipTextSelected: {
     color: '#fff',
     fontWeight: '600',
   },
-});
+  });
+}

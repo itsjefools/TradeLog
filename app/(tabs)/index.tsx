@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -11,25 +11,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ThemeColors } from '@/constants/theme';
+import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
 import { Profile, Trade, tradeStyleLabel } from '@/lib/types';
-
-const ACCENT = '#6366F1';
-const BACKGROUND = '#0F172A';
-const SURFACE = '#1E293B';
-const BORDER = '#334155';
-const TEXT_PRIMARY = '#F1F5F9';
-const TEXT_SECONDARY = '#94A3B8';
-const WIN_COLOR = '#10B981';
-const LOSS_COLOR = '#EF4444';
-const VERIFIED_COLOR = '#3B82F6';
 
 type FeedItem = Trade & {
   profile: Profile | null;
 };
 
 export default function FeedScreen() {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -95,7 +89,7 @@ export default function FeedScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={ACCENT} size="large" />
+          <ActivityIndicator color={c.accent} size="large" />
         </View>
       ) : (
         <ScrollView
@@ -104,7 +98,7 @@ export default function FeedScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={ACCENT}
+              tintColor={c.accent}
             />
           }
         >
@@ -132,6 +126,8 @@ export default function FeedScreen() {
 }
 
 function FeedCard({ item }: { item: FeedItem }) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const profile = item.profile;
   const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
   const displayName =
@@ -206,11 +202,11 @@ function FeedCard({ item }: { item: FeedItem }) {
           )}
         </View>
         <View style={styles.tradeNumbers}>
-          <Text style={[styles.tradePnl, pnlColor(item.pnl)]}>
+          <Text style={[styles.tradePnl, pnlColor(item.pnl, c)]}>
             {item.pnl !== null ? formatPnl(item.pnl) : '—'}
           </Text>
           {item.pnl_pips !== null && (
-            <Text style={[styles.tradePips, pnlColor(item.pnl_pips)]}>
+            <Text style={[styles.tradePips, pnlColor(item.pnl_pips, c)]}>
               {formatPips(item.pnl_pips)}
             </Text>
           )}
@@ -236,208 +232,210 @@ function formatPips(n: number): string {
   return `${sign}${n.toFixed(1)} pips`;
 }
 
-function pnlColor(n: number | null): TextStyle | undefined {
+function pnlColor(n: number | null, c: ThemeColors): TextStyle | undefined {
   if (n === null || n === 0) return undefined;
-  return { color: n > 0 ? WIN_COLOR : LOSS_COLOR };
+  return { color: n > 0 ? c.win : c.loss };
 }
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BACKGROUND,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: BORDER,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: TEXT_SECONDARY,
-    marginTop: 4,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  body: {
-    padding: 16,
-    paddingBottom: 40,
-    gap: 12,
-  },
-  errorBox: {
-    backgroundColor: '#7F1D1D',
-    padding: 12,
-    borderRadius: 8,
-  },
-  errorText: {
-    color: '#FECACA',
-    fontSize: 13,
-  },
-  emptyBox: {
-    backgroundColor: SURFACE,
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: TEXT_PRIMARY,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 13,
-    color: TEXT_SECONDARY,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  card: {
-    backgroundColor: SURFACE,
-    borderRadius: 14,
-    padding: 14,
-  },
-  userRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: ACCENT,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  displayName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-  },
-  verifiedBadge: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: VERIFIED_COLOR,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verifiedBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  userMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flexWrap: 'wrap',
-  },
-  username: {
-    fontSize: 12,
-    color: TEXT_SECONDARY,
-  },
-  metaSep: {
-    fontSize: 12,
-    color: TEXT_SECONDARY,
-  },
-  flag: {
-    fontSize: 13,
-  },
-  metaText: {
-    fontSize: 12,
-    color: TEXT_SECONDARY,
-  },
-  tradeBlock: {
-    backgroundColor: BACKGROUND,
-    borderRadius: 10,
-    padding: 12,
-    gap: 6,
-  },
-  tradeHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  tradePair: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-  },
-  tradeDirection: {
-    fontSize: 13,
-    color: TEXT_SECONDARY,
-  },
-  resultBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  resultBadgeWin: {
-    backgroundColor: WIN_COLOR,
-  },
-  resultBadgeLoss: {
-    backgroundColor: LOSS_COLOR,
-  },
-  resultBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  tradeNumbers: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 12,
-  },
-  tradePnl: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: TEXT_PRIMARY,
-  },
-  tradePips: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: TEXT_SECONDARY,
-  },
-  memo: {
-    fontSize: 13,
-    color: TEXT_PRIMARY,
-    marginTop: 10,
-    lineHeight: 19,
-  },
-  date: {
-    fontSize: 11,
-    color: TEXT_SECONDARY,
-    marginTop: 8,
-    textAlign: 'right',
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: c.textPrimary,
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: c.textSecondary,
+      marginTop: 4,
+    },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    body: {
+      padding: 16,
+      paddingBottom: 40,
+      gap: 12,
+    },
+    errorBox: {
+      backgroundColor: '#7F1D1D',
+      padding: 12,
+      borderRadius: 8,
+    },
+    errorText: {
+      color: '#FECACA',
+      fontSize: 13,
+    },
+    emptyBox: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 32,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    emptyTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.textPrimary,
+      marginBottom: 8,
+    },
+    emptyText: {
+      fontSize: 13,
+      color: c.textSecondary,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 14,
+    },
+    userRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 12,
+    },
+    avatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: c.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    userInfo: {
+      flex: 1,
+    },
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    displayName: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: c.textPrimary,
+    },
+    verifiedBadge: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: c.verified,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    verifiedBadgeText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    userMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      flexWrap: 'wrap',
+    },
+    username: {
+      fontSize: 12,
+      color: c.textSecondary,
+    },
+    metaSep: {
+      fontSize: 12,
+      color: c.textSecondary,
+    },
+    flag: {
+      fontSize: 13,
+    },
+    metaText: {
+      fontSize: 12,
+      color: c.textSecondary,
+    },
+    tradeBlock: {
+      backgroundColor: c.background,
+      borderRadius: 10,
+      padding: 12,
+      gap: 6,
+    },
+    tradeHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    tradePair: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.textPrimary,
+    },
+    tradeDirection: {
+      fontSize: 13,
+      color: c.textSecondary,
+    },
+    resultBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    resultBadgeWin: {
+      backgroundColor: c.win,
+    },
+    resultBadgeLoss: {
+      backgroundColor: c.loss,
+    },
+    resultBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    tradeNumbers: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 12,
+    },
+    tradePnl: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.textPrimary,
+    },
+    tradePips: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: c.textSecondary,
+    },
+    memo: {
+      fontSize: 13,
+      color: c.textPrimary,
+      marginTop: 10,
+      lineHeight: 19,
+    },
+    date: {
+      fontSize: 11,
+      color: c.textSecondary,
+      marginTop: 8,
+      textAlign: 'right',
+    },
+  });
+}

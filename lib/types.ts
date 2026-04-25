@@ -1,6 +1,39 @@
 export type TradeDirection = 'long' | 'short';
 export type TradeResult = 'win' | 'loss';
 
+export type TradeStyle =
+  | 'scalping'
+  | 'day_trading'
+  | 'swing'
+  | 'position';
+
+export const TRADE_STYLE_OPTIONS: { value: TradeStyle; label: string }[] = [
+  { value: 'scalping', label: 'スキャルピング' },
+  { value: 'day_trading', label: 'デイトレード' },
+  { value: 'swing', label: 'スイング' },
+  { value: 'position', label: 'ポジショントレード' },
+];
+
+export function tradeStyleLabel(style: string | null | undefined): string {
+  const found = TRADE_STYLE_OPTIONS.find((o) => o.value === style);
+  return found ? found.label : '未設定';
+}
+
+export type Profile = {
+  id: string;
+  email: string | null;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  trade_style: string | null;
+  language: string | null;
+  is_premium: boolean | null;
+  nationality: string | null;
+  is_verified: boolean | null;
+  created_at: string | null;
+};
+
 export type Trade = {
   id: string;
   user_id: string;

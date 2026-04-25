@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ProfileProvider } from '@/hooks/use-profile';
 import { TradesProvider } from '@/hooks/use-trades';
 
 export const unstable_settings = {
@@ -46,13 +47,19 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <TradesProvider>
-        <Stack>
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
-      </TradesProvider>
+      <ProfileProvider>
+        <TradesProvider>
+          <Stack>
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="profile-edit"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          </Stack>
+        </TradesProvider>
+      </ProfileProvider>
       <StatusBar style="light" />
     </ThemeProvider>
   );

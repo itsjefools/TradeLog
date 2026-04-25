@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { supabase } from '@/lib/supabase';
+import { TRADE_STYLE_OPTIONS, TradeStyle } from '@/lib/types';
 
 type Mode = 'signIn' | 'signUp';
 
@@ -31,6 +33,7 @@ export default function LoginScreen() {
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [tradeStyle, setTradeStyle] = useState<TradeStyle | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -42,6 +45,10 @@ export default function LoginScreen() {
       const passwordError = validatePassword(password);
       if (passwordError) {
         Alert.alert('入力エラー', passwordError);
+        return;
+      }
+      if (!tradeStyle) {
+        Alert.alert('入力エラー', 'トレードスタイルを選択してください。');
         return;
       }
     }
@@ -60,6 +67,9 @@ export default function LoginScreen() {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
+          options: {
+            data: { trade_style: tradeStyle },
+          },
         });
         if (error) {
           Alert.alert('登録失敗', error.message);
@@ -77,6 +87,11 @@ export default function LoginScreen() {
 
   const toggleMode = () => {
     setMode((prev) => (prev === 'signIn' ? 'signUp' : 'signIn'));
+    setTradeStyle(null);
+  };
+
+  const toggleTradeStyle = (value: TradeStyle) => {
+    setTradeStyle((prev) => (prev === value ? null : value));
   };
 
   const isSignIn = mode === 'signIn';
@@ -88,7 +103,12 @@ export default function LoginScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.header}>
             <Text style={styles.logo}>TradeLog</Text>
             <Text style={styles.tagline}>
@@ -127,6 +147,34 @@ export default function LoginScreen() {
               />
             </View>
 
+            {!isSignIn && (
+              <View style={styles.field}>
+                <Text style={styles.label}>トレードスタイル</Text>
+                <View style={styles.chipsRow}>
+                  {TRADE_STYLE_OPTIONS.map((opt) => {
+                    const selected = tradeStyle === opt.value;
+                    return (
+                      <Pressable
+                        key={opt.value}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => toggleTradeStyle(opt.value)}
+                        disabled={loading}
+                      >
+                        <Text
+                          style={[
+                            styles.chipText,
+                            selected && styles.chipTextSelected,
+                          ]}
+                        >
+                          {opt.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
             <Pressable
               style={({ pressed }) => [
                 styles.primaryButton,
@@ -154,7 +202,7 @@ export default function LoginScreen() {
               </Text>
             </Pressable>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -176,8 +224,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 24,
+    paddingVertical: 24,
     justifyContent: 'center',
   },
   header: {
@@ -246,6 +295,32 @@ const styles = StyleSheet.create({
   },
   switchTextAccent: {
     color: ACCENT,
+    fontWeight: '600',
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  chipSelected: {
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
+  },
+  chipText: {
+    fontSize: 13,
+    color: TEXT_PRIMARY,
+    fontWeight: '500',
+  },
+  chipTextSelected: {
+    color: '#fff',
     fontWeight: '600',
   },
 });

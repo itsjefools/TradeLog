@@ -1,7 +1,8 @@
-import { useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
@@ -83,8 +85,34 @@ export default function FeedScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>フィード</Text>
-        <Text style={styles.subtitle}>共有された取引のタイムライン</Text>
+        <View style={styles.headerTop}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>フィード</Text>
+            <Text style={styles.subtitle}>共有された取引のタイムライン</Text>
+          </View>
+          <View style={styles.headerActions}>
+            <Link href="/search" asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <Text style={styles.headerButtonIcon}>🔍</Text>
+              </Pressable>
+            </Link>
+            <Link href="/ranking" asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <Text style={styles.headerButtonIcon}>🏆</Text>
+              </Pressable>
+            </Link>
+          </View>
+        </View>
       </View>
 
       {loading ? (
@@ -128,6 +156,7 @@ export default function FeedScreen() {
 function FeedCard({ item }: { item: FeedItem }) {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
+  const router = useRouter();
   const profile = item.profile;
   const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
   const displayName =
@@ -135,7 +164,6 @@ function FeedCard({ item }: { item: FeedItem }) {
     profile?.username?.trim() ||
     fallbackName;
   const username = profile?.username?.trim() || fallbackName;
-  const initial = (displayName.charAt(0) || '?').toUpperCase();
   const flag = profile?.nationality ? flagEmoji(profile.nationality) : '';
   const country = findCountry(profile?.nationality ?? null);
   const styleText = profile?.trade_style ? tradeStyleLabel(profile.trade_style) : '';
@@ -146,12 +174,19 @@ function FeedCard({ item }: { item: FeedItem }) {
   const date = new Date(item.traded_at);
   const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
+  const userId = profile?.id ?? item.user_id;
+
   return (
     <View style={styles.card}>
-      <View style={styles.userRow}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initial}</Text>
-        </View>
+      <Pressable
+        style={({ pressed }) => [styles.userRow, pressed && styles.userRowPressed]}
+        onPress={() => router.push(`/user/${userId}`)}
+      >
+        <Avatar
+          uri={profile?.avatar_url}
+          displayName={displayName}
+          size={40}
+        />
         <View style={styles.userInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.displayName} numberOfLines={1}>
@@ -182,7 +217,7 @@ function FeedCard({ item }: { item: FeedItem }) {
             )}
           </View>
         </View>
-      </View>
+      </Pressable>
 
       <View style={styles.tradeBlock}>
         <View style={styles.tradeHead}>
@@ -254,6 +289,32 @@ function makeStyles(c: ThemeColors) {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
     },
+    headerTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    headerLeft: {
+      flex: 1,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      gap: 16,
+    },
+    headerButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerButtonPressed: {
+      opacity: 0.7,
+    },
+    headerButtonIcon: {
+      fontSize: 16,
+    },
     title: {
       fontSize: 28,
       fontWeight: '700',
@@ -314,18 +375,8 @@ function makeStyles(c: ThemeColors) {
       gap: 10,
       marginBottom: 12,
     },
-    avatar: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: c.accent,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatarText: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: '#fff',
+    userRowPressed: {
+      opacity: 0.7,
     },
     userInfo: {
       flex: 1,

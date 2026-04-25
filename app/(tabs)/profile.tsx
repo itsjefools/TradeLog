@@ -1,7 +1,8 @@
-import { Link } from 'expo-router';
-import { useMemo } from 'react';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Avatar } from '@/components/avatar';
 import { ThemeColors, ThemeMode } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -24,6 +26,44 @@ export default function ProfileScreen() {
   const { session } = useAuth();
   const { profile, loading, refresh } = useProfile();
   const { mode, setMode } = useTheme();
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [tradeCount, setTradeCount] = useState(0);
+
+  const userId = session?.user.id;
+
+  const loadCounts = useCallback(async () => {
+    if (!userId) {
+      setFollowerCount(0);
+      setFollowingCount(0);
+      setTradeCount(0);
+      return;
+    }
+    const [followerRes, followingRes, tradesRes] = await Promise.all([
+      supabase
+        .from('follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', userId),
+      supabase
+        .from('follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', userId),
+      supabase
+        .from('trades')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_shared', true),
+    ]);
+    setFollowerCount(followerRes.count ?? 0);
+    setFollowingCount(followingRes.count ?? 0);
+    setTradeCount(tradesRes.count ?? 0);
+  }, [userId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCounts();
+    }, [loadCounts]),
+  );
 
   const handleLogout = async () => {
     Alert.alert('ログアウト', 'ログアウトしますか？', [
@@ -48,7 +88,6 @@ export default function ProfileScreen() {
     email.split('@')[0] ||
     'ユーザー';
   const username = profile?.username?.trim() || email.split('@')[0] || 'user';
-  const initial = (displayName.charAt(0) || '?').toUpperCase();
 
   const country = findCountry(profile?.nationality ?? null);
   const flag = profile?.nationality ? flagEmoji(profile.nationality) : '';
@@ -63,7 +102,20 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>プロフィール</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.title}>プロフィール</Text>
+        </View>
+        <Link href="/profile-edit" asChild>
+          <Pressable
+            style={({ pressed }) => [
+              styles.settingsButton,
+              pressed && styles.settingsButtonPressed,
+            ]}
+            hitSlop={8}
+          >
+            <Text style={styles.settingsIcon}>⚙️</Text>
+          </Pressable>
+        </Link>
       </View>
 
       <ScrollView
@@ -71,8 +123,12 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initial}</Text>
+          <View style={styles.avatarWrap}>
+            <Avatar
+              uri={profile?.avatar_url}
+              displayName={displayName}
+              size={80}
+            />
           </View>
           <View style={styles.nameRow}>
             <Text style={styles.displayName}>{displayName}</Text>
@@ -104,32 +160,21 @@ export default function ProfileScreen() {
           {profile?.bio && profile.bio.trim() !== '' && (
             <Text style={styles.bio}>{profile.bio}</Text>
           )}
-
-          <Link href="/profile-edit" asChild>
-            <Pressable
-              style={({ pressed }) => [
-                styles.editButton,
-                pressed && styles.editButtonPressed,
-              ]}
-            >
-              <Text style={styles.editButtonText}>プロフィールを編集</Text>
-            </Pressable>
-          </Link>
         </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>投稿</Text>
+            <Text style={styles.statValue}>{tradeCount}</Text>
+            <Text style={styles.statLabel}>共有取引</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statValue}>{followerCount}</Text>
             <Text style={styles.statLabel}>フォロワー</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statValue}>{followingCount}</Text>
             <Text style={styles.statLabel}>フォロー中</Text>
           </View>
         </View>
@@ -183,11 +228,31 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: c.background,
     },
     header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: 20,
       paddingTop: 12,
       paddingBottom: 16,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
+    },
+    headerLeft: {
+      flex: 1,
+    },
+    settingsButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    settingsButtonPressed: {
+      opacity: 0.7,
+    },
+    settingsIcon: {
+      fontSize: Platform.OS === 'ios' ? 18 : 20,
     },
     title: {
       fontSize: 28,
@@ -207,19 +272,8 @@ function makeStyles(c: ThemeColors) {
       padding: 24,
       alignItems: 'center',
     },
-    avatar: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: c.accent,
-      justifyContent: 'center',
-      alignItems: 'center',
+    avatarWrap: {
       marginBottom: 12,
-    },
-    avatarText: {
-      fontSize: 32,
-      fontWeight: '700',
-      color: '#fff',
     },
     nameRow: {
       flexDirection: 'row',
@@ -277,21 +331,6 @@ function makeStyles(c: ThemeColors) {
       marginTop: 12,
       textAlign: 'center',
       lineHeight: 20,
-    },
-    editButton: {
-      marginTop: 16,
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 10,
-      backgroundColor: c.accent,
-    },
-    editButtonPressed: {
-      opacity: 0.85,
-    },
-    editButtonText: {
-      color: '#fff',
-      fontSize: 14,
-      fontWeight: '600',
     },
     statsRow: {
       flexDirection: 'row',

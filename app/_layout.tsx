@@ -79,6 +79,18 @@ function ThemedRoot() {
               options={{ presentation: 'modal', headerShown: false }}
             />
             <Stack.Screen
+              name="search"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="ranking"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="user/[id]"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
               name="modal"
               options={{ presentation: 'modal', title: 'Modal' }}
             />

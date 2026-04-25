@@ -1,3 +1,4 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
@@ -14,10 +15,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { COUNTRIES, flagEmoji } from '@/lib/countries';
+import { supabase } from '@/lib/supabase';
 import { TRADE_STYLE_OPTIONS, TradeStyle } from '@/lib/types';
 
 export default function ProfileEditScreen() {
@@ -37,6 +40,84 @@ export default function ProfileEditScreen() {
   );
   const [countrySearch, setCountrySearch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const fallbackName =
+    displayName.trim() || username.trim() || profile?.email?.split('@')[0] || 'U';
+
+  const pickAvatar = async () => {
+    if (avatarUploading || saving) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('許可が必要', '画像を選ぶには写真へのアクセス許可が必要です。');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled) return;
+
+    setAvatarUploading(true);
+    try {
+      const asset = result.assets[0];
+      const uri = asset.uri;
+
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) throw new Error('ログインが必要です');
+
+      const response = await fetch(uri);
+      const arrayBuffer = await response.arrayBuffer();
+
+      const mime = asset.mimeType ?? 'image/jpeg';
+      const ext = (mime.split('/')[1] ?? 'jpg').replace('jpeg', 'jpg');
+      const fileName = `${userId}/avatar-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, arrayBuffer, {
+          contentType: mime,
+          upsert: true,
+        });
+      if (uploadError) throw new Error(uploadError.message);
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(fileName);
+
+      await updateProfile({ avatar_url: publicUrl });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      Alert.alert('画像のアップロード失敗', msg);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const removeAvatar = async () => {
+    if (avatarUploading || saving) return;
+    if (!profile?.avatar_url) return;
+    Alert.alert('プロフィール画像を削除', '画像を削除しますか？', [
+      { text: 'キャンセル', style: 'cancel' },
+      {
+        text: '削除',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await updateProfile({ avatar_url: null });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            Alert.alert('削除失敗', msg);
+          }
+        },
+      },
+    ]);
+  };
 
   const filteredCountries = useMemo(() => {
     const q = countrySearch.trim().toLowerCase();
@@ -113,6 +194,36 @@ export default function ProfileEditScreen() {
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={styles.avatarSection}>
+            <Pressable
+              onPress={pickAvatar}
+              onLongPress={removeAvatar}
+              disabled={avatarUploading || saving}
+              style={({ pressed }) => [
+                styles.avatarPressable,
+                pressed && styles.avatarPressed,
+              ]}
+            >
+              <Avatar
+                uri={profile?.avatar_url}
+                displayName={fallbackName}
+                size={96}
+              />
+              {avatarUploading && (
+                <View style={styles.avatarOverlay}>
+                  <ActivityIndicator color="#fff" size="small" />
+                </View>
+              )}
+            </Pressable>
+            <Text style={styles.avatarHint}>
+              {avatarUploading
+                ? 'アップロード中...'
+                : profile?.avatar_url
+                  ? 'タップで変更 / 長押しで削除'
+                  : 'タップして画像を選択'}
+            </Text>
+          </View>
+
           <View style={styles.section}>
             <Text style={styles.label}>表示名</Text>
             <TextInput
@@ -294,6 +405,28 @@ function makeStyles(c: ThemeColors) {
   body: {
     padding: 20,
     paddingBottom: 40,
+  },
+  avatarSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  avatarPressable: {
+    position: 'relative',
+  },
+  avatarPressed: {
+    opacity: 0.85,
+  },
+  avatarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarHint: {
+    marginTop: 12,
+    fontSize: 12,
+    color: c.textSecondary,
   },
   section: {
     marginBottom: 20,

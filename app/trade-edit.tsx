@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -148,7 +149,7 @@ export default function TradeEditScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
-            <Text style={styles.headerLink}>閉じる</Text>
+            <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>取引編集</Text>
           <View style={styles.headerSpacer} />
@@ -245,7 +246,7 @@ export default function TradeEditScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} disabled={saving} hitSlop={8}>
-          <Text style={styles.headerLink}>キャンセル</Text>
+          <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>取引編集</Text>
         <Pressable onPress={handleSave} disabled={saving} hitSlop={8}>

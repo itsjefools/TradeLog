@@ -51,7 +51,7 @@ export default function RiskCalculatorScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Text style={styles.headerLink}>閉じる</Text>
+          <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>リスク計算機</Text>
         <View style={styles.headerSpacer} />

@@ -326,7 +326,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
   },
   chipText: {
     fontSize: 13,
-    color: c.textPrimary,
+    color: '#1E293B',
     fontWeight: '500',
   },
   chipTextSelected: {

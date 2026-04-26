@@ -82,59 +82,59 @@ function ThemedRoot() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="profile-edit"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="settings"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="comments"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="notifications"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="trade-history"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="trade-edit"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="premium"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="glossary"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="messages"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="bookmarks"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="risk-calculator"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="economic-calendar"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="goal-edit"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="language-edit"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="dm/[id]"
@@ -142,11 +142,11 @@ function ThemedRoot() {
             />
             <Stack.Screen
               name="search"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="ranking"
-              options={{ presentation: 'modal', headerShown: false }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="user/[id]"
@@ -154,7 +154,7 @@ function ThemedRoot() {
             />
             <Stack.Screen
               name="modal"
-              options={{ presentation: 'modal', title: 'Modal' }}
+              options={{ title: 'Modal' }}
             />
           </Stack>
         </RevenueCatProvider>

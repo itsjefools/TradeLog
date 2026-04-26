@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -172,7 +173,7 @@ export default function ProfileEditScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} disabled={saving}>
-          <Text style={styles.headerLink}>キャンセル</Text>
+          <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>プロフィール編集</Text>
         <Pressable onPress={handleSave} disabled={saving}>

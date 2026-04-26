@@ -36,7 +36,7 @@ export default function LanguageEditScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text style={styles.headerLink}>閉じる</Text>
+          <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>言語</Text>
         <View style={styles.headerSpacer} />

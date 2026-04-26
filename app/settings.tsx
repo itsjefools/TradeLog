@@ -61,7 +61,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text style={styles.headerLink}>閉じる</Text>
+          <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>設定</Text>
         <View style={styles.headerSpacer} />
@@ -112,11 +112,6 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={18}
-              color={c.textSecondary}
-            />
           </Pressable>
         </Link>
 
@@ -243,18 +238,11 @@ function NavRow({
           </View>
           <Text style={styles.rowLabel}>{label}</Text>
         </View>
-        <View style={styles.rowRight}>
-          {value && (
-            <Text style={styles.rowValue} numberOfLines={1}>
-              {value}
-            </Text>
-          )}
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={c.textSecondary}
-          />
-        </View>
+        {value && (
+          <Text style={styles.rowValue} numberOfLines={1}>
+            {value}
+          </Text>
+        )}
       </Pressable>
     </Link>
   );
@@ -323,12 +311,6 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       gap: 12,
       flex: 1,
-    },
-    rowRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      maxWidth: '55%',
     },
     iconBubble: {
       width: 30,

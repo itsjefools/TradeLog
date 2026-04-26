@@ -1,8 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -106,7 +106,11 @@ export default function ProfileScreen() {
             ]}
             hitSlop={8}
           >
-            <Text style={styles.settingsIcon}>⚙️</Text>
+            <Ionicons
+              name="settings-outline"
+              size={20}
+              color={c.textPrimary}
+            />
           </Pressable>
         </Link>
       </View>
@@ -144,7 +148,11 @@ export default function ProfileScreen() {
             )}
             {profile?.trade_style && (
               <View style={styles.metaItem}>
-                <Text style={styles.metaLabel}>📊</Text>
+                <Ionicons
+                  name="stats-chart-outline"
+                  size={14}
+                  color={c.textSecondary}
+                />
                 <Text style={styles.metaText}>{styleText}</Text>
               </View>
             )}
@@ -219,9 +227,6 @@ function makeStyles(c: ThemeColors) {
     settingsButtonPressed: {
       opacity: 0.7,
     },
-    settingsIcon: {
-      fontSize: Platform.OS === 'ios' ? 18 : 20,
-    },
     title: {
       fontSize: 28,
       fontWeight: '700',
@@ -285,9 +290,6 @@ function makeStyles(c: ThemeColors) {
     },
     flag: {
       fontSize: 18,
-    },
-    metaLabel: {
-      fontSize: 14,
     },
     metaText: {
       fontSize: 13,

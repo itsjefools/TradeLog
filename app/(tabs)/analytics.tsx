@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -142,7 +143,11 @@ export default function AnalyticsScreen() {
               onPress={() => setMonthOffset((n) => n - 1)}
               style={styles.monthArrow}
             >
-              <Text style={styles.monthArrowText}>‹</Text>
+              <Ionicons
+                name="chevron-back"
+                size={20}
+                color={c.textPrimary}
+              />
             </Pressable>
             <Text style={styles.monthLabel}>{monthInfo.label}</Text>
             <Pressable
@@ -154,7 +159,11 @@ export default function AnalyticsScreen() {
                 monthOffset >= 0 && styles.monthArrowDisabled,
               ]}
             >
-              <Text style={styles.monthArrowText}>›</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={c.textPrimary}
+              />
             </Pressable>
           </View>
 
@@ -172,7 +181,17 @@ export default function AnalyticsScreen() {
           {monthlyTrades.length > 0 ? (
             <>
               <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                日別P&L推移（直近30日）
+                カレンダー
+              </Text>
+              <View style={styles.chartCard}>
+                <CalendarView
+                  trades={monthlyTrades}
+                  monthInfo={monthInfo}
+                />
+              </View>
+
+              <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                日別P&L推移
               </Text>
               <View style={styles.chartCard}>
                 <BarChart
@@ -257,6 +276,121 @@ export default function AnalyticsScreen() {
   );
 }
 
+function CalendarView({
+  trades,
+  monthInfo,
+}: {
+  trades: Trade[];
+  monthInfo: MonthRange;
+}) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
+  // 日別 PnL 集計
+  const dayPnl = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const t of trades) {
+      if (t.pnl === null) continue;
+      const d = new Date(t.traded_at);
+      const day = d.getDate();
+      m.set(day, (m.get(day) ?? 0) + t.pnl);
+    }
+    return m;
+  }, [trades]);
+
+  const lastDay = new Date(
+    monthInfo.end.getTime() - 24 * 60 * 60 * 1000,
+  ).getDate();
+  const firstDay = monthInfo.start.getDay(); // 0=日曜
+
+  // セルを縦並びの行に分割（7列）
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= lastDay; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const rows: (number | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+
+  const weekLabels = ['日', '月', '火', '水', '木', '金', '土'];
+
+  return (
+    <View style={styles.calendarWrap}>
+      <View style={styles.calendarWeek}>
+        {weekLabels.map((w, i) => (
+          <View key={w} style={styles.calendarHeadCell}>
+            <Text
+              style={[
+                styles.calendarHead,
+                i === 0 && { color: c.loss },
+                i === 6 && { color: c.verified },
+              ]}
+            >
+              {w}
+            </Text>
+          </View>
+        ))}
+      </View>
+      {rows.map((row, ri) => (
+        <View key={ri} style={styles.calendarRow}>
+          {row.map((day, ci) => {
+            if (day === null) {
+              return <View key={ci} style={styles.calendarCell} />;
+            }
+            const pnl = dayPnl.get(day);
+            const hasPnl = pnl !== undefined;
+            const positive = hasPnl && pnl > 0;
+            const negative = hasPnl && pnl < 0;
+            return (
+              <View
+                key={ci}
+                style={[
+                  styles.calendarCell,
+                  positive && styles.calendarCellWin,
+                  negative && styles.calendarCellLoss,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.calendarDayNum,
+                    (positive || negative) && { color: '#fff' },
+                  ]}
+                >
+                  {day}
+                </Text>
+                {hasPnl && (
+                  <Text
+                    style={[
+                      styles.calendarDayPnl,
+                      (positive || negative) && { color: '#fff' },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {formatCompactPnl(pnl)}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function formatCompactPnl(n: number): string {
+  const abs = Math.abs(n);
+  let str: string;
+  if (abs >= 10000) {
+    str = `${(n / 10000).toFixed(1)}万`;
+  } else if (abs >= 1000) {
+    str = `${(n / 1000).toFixed(1)}k`;
+  } else {
+    str = String(Math.round(n));
+  }
+  return n > 0 ? `+${str}` : str;
+}
+
 function KpiCard({
   label,
   value,
@@ -317,7 +451,7 @@ function TradeRow({
             pressed && styles.deleteButtonPressed,
           ]}
         >
-          <Text style={styles.deleteButtonText}>×</Text>
+          <Ionicons name="close" size={18} color={c.textSecondary} />
         </Pressable>
       </View>
       <View style={styles.tradeRowMid}>
@@ -592,6 +726,37 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
     },
     chart: { borderRadius: 8 },
+    calendarWrap: { width: '100%' },
+    calendarWeek: { flexDirection: 'row', marginBottom: 4 },
+    calendarHeadCell: { flex: 1, alignItems: 'center', paddingVertical: 4 },
+    calendarHead: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    calendarRow: { flexDirection: 'row', gap: 2, marginBottom: 2 },
+    calendarCell: {
+      flex: 1,
+      aspectRatio: 1,
+      backgroundColor: c.surfaceAlt,
+      borderRadius: 6,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 2,
+    },
+    calendarCellWin: { backgroundColor: c.win },
+    calendarCellLoss: { backgroundColor: c.loss },
+    calendarDayNum: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: c.textPrimary,
+    },
+    calendarDayPnl: {
+      fontSize: 9,
+      fontWeight: '700',
+      color: c.textPrimary,
+      marginTop: 1,
+    },
     errorBox: {
       backgroundColor: '#7F1D1D',
       padding: 12,

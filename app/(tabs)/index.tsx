@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -25,7 +26,10 @@ type FeedItem = Post & {
   trade: Trade | null;
   profile: Profile | null;
   is_liked: boolean;
+  liked_by?: Profile | null; // フォロー中のユーザーがいいねした投稿の場合、その人
 };
+
+type FeedTab = 'all' | 'following';
 
 export default function FeedScreen() {
   const c = useThemeColors();
@@ -37,6 +41,7 @@ export default function FeedScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<FeedTab>('all');
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -53,57 +58,140 @@ export default function FeedScreen() {
     setUnreadCount(count ?? 0);
   }, [myId]);
 
-  const loadFeed = useCallback(async () => {
-    setError(null);
+  const profileSelect = `
+    id, email, username, display_name, avatar_url, bio,
+    trade_style, language, is_premium, nationality, is_verified, created_at
+  `;
 
-    const { data: posts, error: fetchError } = await supabase
+  const loadAllFeed = useCallback(async () => {
+    const { data, error: fetchError } = await supabase
       .from('posts')
       .select(
         `*,
         trade:trades!posts_trade_id_fkey (*),
-        profile:profiles!posts_user_id_fkey (
-          id,
-          email,
-          username,
-          display_name,
-          avatar_url,
-          bio,
-          trade_style,
-          language,
-          is_premium,
-          nationality,
-          is_verified,
-          created_at
-        )`,
+        profile:profiles!posts_user_id_fkey (${profileSelect})`,
       )
       .eq('post_type', 'trade_result')
       .order('created_at', { ascending: false })
       .limit(50);
+    if (fetchError) throw new Error(fetchError.message);
+    return (data ?? []) as (Post & {
+      trade: Trade | null;
+      profile: Profile | null;
+    })[];
+  }, [profileSelect]);
 
-    if (fetchError) {
-      setError(fetchError.message);
-      return;
-    }
+  const loadFollowingFeed = useCallback(async () => {
+    if (!myId) return [];
 
-    const postIds = (posts ?? []).map((p: { id: string }) => p.id);
-    let likedSet = new Set<string>();
-    if (myId && postIds.length > 0) {
-      const { data: likes } = await supabase
-        .from('likes')
-        .select('post_id')
-        .eq('user_id', myId)
-        .in('post_id', postIds);
-      likedSet = new Set((likes ?? []).map((l: { post_id: string }) => l.post_id));
-    }
+    // 自分がフォロー中のユーザーID
+    const { data: follows } = await supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', myId);
+    const followingIds = (follows ?? []).map(
+      (f: { following_id: string }) => f.following_id,
+    );
+    if (followingIds.length === 0) return [];
 
-    const merged = (posts ?? []).map(
-      (p: Post & { trade: Trade | null; profile: Profile | null }) => ({
+    // (a) フォロー中ユーザーの投稿
+    const { data: ownPosts, error: ownError } = await supabase
+      .from('posts')
+      .select(
+        `*,
+        trade:trades!posts_trade_id_fkey (*),
+        profile:profiles!posts_user_id_fkey (${profileSelect})`,
+      )
+      .eq('post_type', 'trade_result')
+      .in('user_id', followingIds)
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (ownError) throw new Error(ownError.message);
+
+    // (b) フォロー中ユーザーがいいねした投稿
+    const { data: likedRows, error: likeError } = await supabase
+      .from('likes')
+      .select(
+        `post_id, user_id, created_at,
+        liker:profiles!likes_user_id_fkey (${profileSelect}),
+        post:posts!likes_post_id_fkey (
+          *,
+          trade:trades!posts_trade_id_fkey (*),
+          profile:profiles!posts_user_id_fkey (${profileSelect})
+        )`,
+      )
+      .in('user_id', followingIds)
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (likeError) throw new Error(likeError.message);
+
+    type RawLike = {
+      post_id: string;
+      user_id: string;
+      created_at: string;
+      liker: Profile | null;
+      post: (Post & { trade: Trade | null; profile: Profile | null }) | null;
+    };
+
+    const likedItems = ((likedRows as unknown) as RawLike[] | null ?? [])
+      .filter((l) => l.post && l.post.user_id !== myId)
+      .map((l) => ({
+        ...(l.post as Post & {
+          trade: Trade | null;
+          profile: Profile | null;
+        }),
+        liked_by: l.liker,
+      }));
+
+    // 2リストをマージし重複除去（投稿自体が優先）
+    const ownIds = new Set(
+      (ownPosts ?? []).map((p: { id: string }) => p.id),
+    );
+    const merged = [
+      ...(ownPosts ?? []),
+      ...likedItems.filter((i) => !ownIds.has(i.id)),
+    ] as (Post & {
+      trade: Trade | null;
+      profile: Profile | null;
+      liked_by?: Profile | null;
+    })[];
+
+    merged.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+    return merged.slice(0, 50);
+  }, [myId, profileSelect]);
+
+  const loadFeed = useCallback(async () => {
+    setError(null);
+    try {
+      const posts =
+        tab === 'all' ? await loadAllFeed() : await loadFollowingFeed();
+
+      const postIds = posts.map((p) => p.id);
+      let likedSet = new Set<string>();
+      if (myId && postIds.length > 0) {
+        const { data: likes } = await supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', myId)
+          .in('post_id', postIds);
+        likedSet = new Set(
+          (likes ?? []).map((l: { post_id: string }) => l.post_id),
+        );
+      }
+
+      const merged = posts.map((p) => ({
         ...p,
         is_liked: likedSet.has(p.id),
-      }),
-    ) as FeedItem[];
-    setItems(merged);
-  }, [myId]);
+      })) as FeedItem[];
+      setItems(merged);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+    }
+  }, [tab, myId, loadAllFeed, loadFollowingFeed]);
 
   useFocusEffect(
     useCallback(() => {
@@ -180,7 +268,6 @@ export default function FeedScreen() {
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
             <Text style={styles.title}>フィード</Text>
-            <Text style={styles.subtitle}>共有された取引のタイムライン</Text>
           </View>
           <View style={styles.headerActions}>
             <Link href="/search" asChild>
@@ -190,7 +277,7 @@ export default function FeedScreen() {
                   pressed && styles.headerButtonPressed,
                 ]}
               >
-                <Text style={styles.headerButtonIcon}>🔍</Text>
+                <Ionicons name="search-outline" size={20} color={c.textPrimary} />
               </Pressable>
             </Link>
             <Link href="/ranking" asChild>
@@ -200,7 +287,7 @@ export default function FeedScreen() {
                   pressed && styles.headerButtonPressed,
                 ]}
               >
-                <Text style={styles.headerButtonIcon}>🏆</Text>
+                <Ionicons name="trophy-outline" size={20} color={c.textPrimary} />
               </Pressable>
             </Link>
             <Link href="/notifications" asChild>
@@ -210,11 +297,44 @@ export default function FeedScreen() {
                   pressed && styles.headerButtonPressed,
                 ]}
               >
-                <Text style={styles.headerButtonIcon}>🔔</Text>
+                <Ionicons
+                  name="notifications-outline"
+                  size={20}
+                  color={c.textPrimary}
+                />
                 {unreadCount > 0 && <View style={styles.unreadBadge} />}
               </Pressable>
             </Link>
           </View>
+        </View>
+
+        <View style={styles.tabRow}>
+          <Pressable
+            style={[styles.tab, tab === 'all' && styles.tabActive]}
+            onPress={() => setTab('all')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                tab === 'all' && styles.tabTextActive,
+              ]}
+            >
+              全体
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.tab, tab === 'following' && styles.tabActive]}
+            onPress={() => setTab('following')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                tab === 'following' && styles.tabTextActive,
+              ]}
+            >
+              フォロー中
+            </Text>
+          </Pressable>
         </View>
       </View>
 
@@ -241,10 +361,15 @@ export default function FeedScreen() {
 
           {items.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyTitle}>まだ投稿がありません</Text>
+              <Text style={styles.emptyTitle}>
+                {tab === 'all'
+                  ? 'まだ投稿がありません'
+                  : 'フォロー中の投稿はまだありません'}
+              </Text>
               <Text style={styles.emptyText}>
-                記録タブで「フィードに共有」をオンにして{'\n'}
-                取引を保存すると、ここに表示されます。
+                {tab === 'all'
+                  ? '記録タブで「フィードに共有」をオンにして\n取引を保存すると、ここに表示されます。'
+                  : '気になるトレーダーをフォローすると\nその人の投稿といいねがここに流れます。'}
               </Text>
             </View>
           ) : (
@@ -299,6 +424,17 @@ function FeedCard({
 
   return (
     <View style={styles.card}>
+      {item.liked_by && (
+        <View style={styles.likedByRow}>
+          <Ionicons name="heart" size={12} color={c.loss} />
+          <Text style={styles.likedByText}>
+            {item.liked_by.display_name?.trim() ||
+              item.liked_by.username?.trim() ||
+              'ユーザー'}{' '}
+            さんがいいねしました
+          </Text>
+        </View>
+      )}
       <Pressable
         style={({ pressed }) => [styles.userRow, pressed && styles.userRowPressed]}
         onPress={() => router.push(`/user/${userId}`)}
@@ -384,14 +520,11 @@ function FeedCard({
           onPress={() => onToggleLike(item)}
           hitSlop={6}
         >
-          <Text
-            style={[
-              styles.actionIcon,
-              item.is_liked && { color: c.loss },
-            ]}
-          >
-            {item.is_liked ? '♥' : '♡'}
-          </Text>
+          <Ionicons
+            name={item.is_liked ? 'heart' : 'heart-outline'}
+            size={20}
+            color={item.is_liked ? c.loss : c.textSecondary}
+          />
           <Text style={styles.actionCount}>{item.likes_count}</Text>
         </Pressable>
 
@@ -403,7 +536,11 @@ function FeedCard({
           onPress={() => router.push(`/comments?postId=${item.id}`)}
           hitSlop={6}
         >
-          <Text style={styles.actionIcon}>💬</Text>
+          <Ionicons
+            name="chatbubble-outline"
+            size={18}
+            color={c.textSecondary}
+          />
           <Text style={styles.actionCount}>{item.comments_count}</Text>
         </Pressable>
 
@@ -493,6 +630,42 @@ function makeStyles(c: ThemeColors) {
       fontSize: 13,
       color: c.textSecondary,
       marginTop: 4,
+    },
+    tabRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 12,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    tabActive: {
+      backgroundColor: c.accent,
+      borderColor: c.accent,
+    },
+    tabText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.textPrimary,
+    },
+    tabTextActive: {
+      color: '#fff',
+    },
+    likedByRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginBottom: 8,
+    },
+    likedByText: {
+      fontSize: 11,
+      color: c.textSecondary,
     },
     center: {
       flex: 1,

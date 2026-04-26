@@ -95,10 +95,10 @@ export const COMMON_CURRENCY_PAIRS = [
   'AUD/JPY',
 ] as const;
 
-// 検索可能な全通貨ペアリスト
-// メジャー / マイナークロス / 主要エキゾチック / 円クロスを網羅
+// 検索可能な全銘柄リスト
+// FXメジャー/マイナー/エキゾチック + 仮想通貨 + 貴金属 + 商品 + 株価指数
 export const ALL_CURRENCY_PAIRS = [
-  // Majors（メジャー通貨ペア）
+  // FX Majors（メジャー通貨ペア）
   'EUR/USD',
   'USD/JPY',
   'GBP/USD',
@@ -156,4 +156,58 @@ export const ALL_CURRENCY_PAIRS = [
   'USD/RUB',
   'USD/PLN',
   'USD/THB',
+
+  // 仮想通貨
+  'BTC/USD',
+  'ETH/USD',
+  'XRP/USD',
+  'ADA/USD',
+  'SOL/USD',
+  'DOGE/USD',
+  'BNB/USD',
+  'MATIC/USD',
+  'AVAX/USD',
+  'DOT/USD',
+  'LINK/USD',
+  'LTC/USD',
+  'BTC/JPY',
+  'ETH/JPY',
+
+  // 貴金属
+  'XAU/USD',
+  'XAG/USD',
+  'XPT/USD',
+  'XPD/USD',
+
+  // エネルギー・商品
+  'WTI/USD',
+  'BRENT/USD',
+  'NATGAS/USD',
+  'COPPER/USD',
+
+  // 株価指数 CFD
+  'US30',
+  'NAS100',
+  'SPX500',
+  'JP225',
+  'GER40',
+  'UK100',
+  'FRA40',
+  'AUS200',
+  'HK50',
 ] as const;
+
+// FX として扱える通貨コード（pips自動計算用）
+const FX_CURRENCIES = new Set([
+  'USD', 'EUR', 'GBP', 'JPY', 'CHF', 'AUD', 'NZD', 'CAD',
+  'SGD', 'HKD', 'NOK', 'SEK', 'DKK', 'TRY', 'ZAR', 'MXN',
+  'CNH', 'PLN', 'THB', 'RUB',
+]);
+
+// FX通貨ペアかどうか判定（pips自動計算の対象判別用）
+export function isFxPair(symbol: string): boolean {
+  const upper = symbol.toUpperCase();
+  if (!/^[A-Z]{3}\/[A-Z]{3}$/.test(upper)) return false;
+  const [base, quote] = upper.split('/');
+  return FX_CURRENCIES.has(base) && FX_CURRENCIES.has(quote);
+}

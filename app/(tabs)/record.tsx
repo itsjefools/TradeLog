@@ -21,6 +21,7 @@ import { useTrades } from '@/hooks/use-trades';
 import { supabase } from '@/lib/supabase';
 import {
   ALL_CURRENCY_PAIRS,
+  isFxPair,
   Trade,
   TradeDirection,
   TradeInsert,
@@ -67,7 +68,9 @@ function computePips(
   direction: TradeDirection,
   entry: number,
   exit: number,
-): number {
+): number | null {
+  // FX以外（仮想通貨・商品・指数）はpipsの定義が銘柄ごとに違うので自動計算しない
+  if (!isFxPair(pair)) return null;
   const isJpyPair = pair.toUpperCase().endsWith('/JPY');
   const multiplier = isJpyPair ? 100 : 10000;
   const diff = direction === 'long' ? exit - entry : entry - exit;
@@ -81,6 +84,7 @@ function recalcPips(form: FormState): FormState {
   const exit = parseNumOrNull(form.exitPrice);
   if (entry === null || exit === null) return form;
   const pips = computePips(form.currencyPair, form.direction, entry, exit);
+  if (pips === null) return form;
   const rounded = Math.round(pips * 10) / 10;
   return { ...form, pnlPips: String(rounded) };
 }

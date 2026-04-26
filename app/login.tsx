@@ -115,7 +115,10 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.logo}>TradeLog</Text>
+            <Text style={styles.logo}>
+              <Text style={styles.logoTrade}>Trade</Text>
+              <Text style={styles.logoLog}>Log</Text>
+            </Text>
             <Text style={styles.tagline}>
               {isSignIn ? 'おかえりなさい' : 'アカウントを作成しましょう'}
             </Text>
@@ -235,11 +238,16 @@ function makeStyles(c: ThemeColors) {
     marginBottom: 48,
   },
   logo: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: LOGIN_ACCENT,
-    letterSpacing: -0.5,
+    fontSize: 40,
+    fontWeight: '800',
+    letterSpacing: -1,
     marginBottom: 8,
+  },
+  logoTrade: {
+    color: LOGIN_ACCENT,
+  },
+  logoLog: {
+    color: c.accent,
   },
   tagline: {
     fontSize: 16,

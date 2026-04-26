@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import {
@@ -75,7 +76,11 @@ export default function SettingsScreen() {
               ]}
             >
               <Text style={styles.rowLabel}>プロフィールを編集</Text>
-              <Text style={styles.chevron}>›</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={c.textSecondary}
+              />
             </Pressable>
           </Link>
           <View style={styles.divider} />
@@ -87,7 +92,11 @@ export default function SettingsScreen() {
               ]}
             >
               <Text style={styles.rowLabel}>取引履歴</Text>
-              <Text style={styles.chevron}>›</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={c.textSecondary}
+              />
             </Pressable>
           </Link>
         </View>
@@ -197,10 +206,6 @@ function makeStyles(c: ThemeColors) {
       flex: 1,
       textAlign: 'right',
       marginLeft: 12,
-    },
-    chevron: {
-      fontSize: 20,
-      color: c.textSecondary,
     },
     divider: {
       height: StyleSheet.hairlineWidth,

@@ -17,6 +17,7 @@ import { BarChart, PieChart } from 'react-native-chart-kit';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { Trade } from '@/lib/types';
@@ -27,6 +28,7 @@ export default function AnalyticsScreen() {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const { trades, loading, error, refresh, deleteTrade } = useTrades();
+  const { profile } = useProfile();
   const [refreshing, setRefreshing] = useState(false);
 
   // 月選択 (offset=0 が今月、-1 で先月)
@@ -167,6 +169,15 @@ export default function AnalyticsScreen() {
             </Pressable>
           </View>
 
+          {monthOffset === 0 && profile?.monthly_pnl_goal != null && (
+            <GoalProgress
+              goal={profile.monthly_pnl_goal}
+              actual={
+                monthlyTrades.reduce((s, t) => s + (t.pnl ?? 0), 0)
+              }
+            />
+          )}
+
           <Text style={styles.sectionLabel}>KPI</Text>
 
           <View style={styles.kpiGrid}>
@@ -287,6 +298,48 @@ export default function AnalyticsScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+  );
+}
+
+function GoalProgress({
+  goal,
+  actual,
+}: {
+  goal: number;
+  actual: number;
+}) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const pct = goal > 0 ? Math.max(0, Math.min(100, (actual / goal) * 100)) : 0;
+  const achieved = actual >= goal;
+  const positive = actual >= 0;
+
+  return (
+    <View style={styles.goalCard}>
+      <View style={styles.goalHead}>
+        <Text style={styles.goalTitle}>月間目標</Text>
+        <Text style={styles.goalPct}>{pct.toFixed(0)}%</Text>
+      </View>
+      <View style={styles.goalBarBg}>
+        <View
+          style={[
+            styles.goalBar,
+            {
+              width: `${Math.max(2, pct)}%`,
+              backgroundColor: achieved ? c.win : positive ? c.accent : c.loss,
+            },
+          ]}
+        />
+      </View>
+      <View style={styles.goalRow}>
+        <Text style={styles.goalSub}>
+          現在: {Math.round(actual).toLocaleString('ja-JP')}円
+        </Text>
+        <Text style={styles.goalSub}>
+          目標: {Math.round(goal).toLocaleString('ja-JP')}円
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -823,6 +876,36 @@ function makeStyles(c: ThemeColors) {
     monthArrowDisabled: { opacity: 0.4 },
     monthArrowText: { fontSize: 18, color: c.textPrimary, fontWeight: '700' },
     monthLabel: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
+    goalCard: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 16,
+    },
+    goalHead: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    goalTitle: { fontSize: 13, fontWeight: '700', color: c.textPrimary },
+    goalPct: { fontSize: 18, fontWeight: '800', color: c.accent },
+    goalBarBg: {
+      height: 8,
+      backgroundColor: c.surfaceAlt,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    goalBar: {
+      height: '100%',
+      borderRadius: 4,
+    },
+    goalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 8,
+    },
+    goalSub: { fontSize: 11, color: c.textSecondary },
     kpiGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',

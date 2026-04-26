@@ -119,6 +119,18 @@ function ThemedRoot() {
               options={{ presentation: 'modal', headerShown: false }}
             />
             <Stack.Screen
+              name="risk-calculator"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="economic-calendar"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="goal-edit"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
               name="dm/[id]"
               options={{ headerShown: false }}
             />

@@ -31,6 +31,7 @@ export type Profile = {
   is_premium: boolean | null;
   nationality: string | null;
   is_verified: boolean | null;
+  monthly_pnl_goal: number | null;
   created_at: string | null;
 };
 
@@ -68,6 +69,8 @@ export type Trade = {
   pnl: number | null;
   pnl_pips: number | null;
   memo: string | null;
+  post_memo: string | null;
+  review_memo: string | null;
   traded_at: string;
   is_shared: boolean;
   image_urls: string[] | null;
@@ -84,6 +87,8 @@ export type TradeInsert = {
   pnl?: number | null;
   pnl_pips?: number | null;
   memo?: string | null;
+  post_memo?: string | null;
+  review_memo?: string | null;
   traded_at?: string;
   is_shared?: boolean;
   image_urls?: string[];

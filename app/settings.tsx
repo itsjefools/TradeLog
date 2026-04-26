@@ -152,6 +152,57 @@ export default function SettingsScreen() {
           </Link>
         </View>
 
+        <Text style={styles.sectionLabel}>ツール</Text>
+        <View style={styles.card}>
+          <Link href="/goal-edit" asChild>
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                pressed && styles.rowPressed,
+              ]}
+            >
+              <Text style={styles.rowLabel}>月間目標</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={c.textSecondary}
+              />
+            </Pressable>
+          </Link>
+          <View style={styles.divider} />
+          <Link href="/risk-calculator" asChild>
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                pressed && styles.rowPressed,
+              ]}
+            >
+              <Text style={styles.rowLabel}>リスク計算機</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={c.textSecondary}
+              />
+            </Pressable>
+          </Link>
+          <View style={styles.divider} />
+          <Link href="/economic-calendar" asChild>
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                pressed && styles.rowPressed,
+              ]}
+            >
+              <Text style={styles.rowLabel}>経済指標カレンダー</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={c.textSecondary}
+              />
+            </Pressable>
+          </Link>
+        </View>
+
         <Text style={styles.sectionLabel}>テーマ</Text>
         <View style={styles.card}>
           <View style={styles.themeRow}>

@@ -44,6 +44,8 @@ const initialState = {
   pnl: '',
   pnlPips: '',
   memo: '',
+  postMemo: '',
+  reviewMemo: '',
   isShared: false,
   imageUrls: [] as string[],
 };
@@ -229,6 +231,8 @@ export default function RecordScreen() {
         pnl,
         pnl_pips: pnlPips,
         memo: form.memo.trim() || null,
+        post_memo: form.postMemo.trim() || null,
+        review_memo: form.reviewMemo.trim() || null,
         is_shared: form.isShared,
         image_urls: form.imageUrls,
       };
@@ -516,15 +520,43 @@ export default function RecordScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>メモ（取引の根拠など）</Text>
+            <Text style={styles.label}>📝 エントリー前メモ（取引の根拠）</Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
               value={form.memo}
               onChangeText={(t) => setField('memo', t)}
-              placeholder="例: ロンドン時間の押し目買い。移動平均線でサポート確認。"
+              placeholder="例: ロンドン時間の押し目買い。移動平均線でサポート確認。 #USDJPY"
               placeholderTextColor={c.textSecondary}
               multiline
-              numberOfLines={4}
+              numberOfLines={3}
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>🎯 エグジット後メモ（実際の値動きへの感想・任意）</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline]}
+              value={form.postMemo}
+              onChangeText={(t) => setField('postMemo', t)}
+              placeholder="例: 想定通り上昇したが、利確が早すぎた。"
+              placeholderTextColor={c.textSecondary}
+              multiline
+              numberOfLines={3}
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>🔍 振り返り（次回への教訓・任意）</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline]}
+              value={form.reviewMemo}
+              onChangeText={(t) => setField('reviewMemo', t)}
+              placeholder="例: 次回は利確目標まで保有する。トレール戦略を試す。"
+              placeholderTextColor={c.textSecondary}
+              multiline
+              numberOfLines={3}
               editable={!loading}
             />
           </View>

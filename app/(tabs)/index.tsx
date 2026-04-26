@@ -511,6 +511,20 @@ function FeedCard({
         <Text style={styles.memo}>{item.content}</Text>
       )}
 
+      {item.hashtags && item.hashtags.length > 0 && (
+        <View style={styles.tagChips}>
+          {item.hashtags.slice(0, 6).map((tag) => (
+            <Pressable
+              key={tag}
+              onPress={() => router.push(`/search?tag=${tag}`)}
+              style={styles.tagChip}
+            >
+              <Text style={styles.tagChipText}>#{tag}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
       <View style={styles.footer}>
         <Pressable
           style={({ pressed }) => [
@@ -822,6 +836,23 @@ function makeStyles(c: ThemeColors) {
       color: c.textPrimary,
       marginTop: 10,
       lineHeight: 19,
+    },
+    tagChips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginTop: 8,
+    },
+    tagChip: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 999,
+      backgroundColor: c.surfaceAlt,
+    },
+    tagChipText: {
+      fontSize: 11,
+      color: c.accent,
+      fontWeight: '600',
     },
     footer: {
       flexDirection: 'row',

@@ -16,8 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
 import { useFavoritePairs } from '@/hooks/use-favorite-pairs';
+import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
+import { FREE_LIMITS, getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
 import {
   ALL_CURRENCY_PAIRS,
@@ -95,8 +97,20 @@ export default function RecordScreen() {
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [pairSearch, setPairSearch] = useState('');
-  const { addTrade } = useTrades();
+  const { addTrade, trades } = useTrades();
   const { favorites, isFavorite, toggleFavorite } = useFavoritePairs();
+  const { profile } = useProfile();
+  const plan = getPlan(profile?.is_premium);
+
+  // 今月の取引数（Free プラン制限用）
+  const monthlyTradeCount = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return trades.filter((t) => new Date(t.traded_at) >= monthStart).length;
+  }, [trades]);
+
+  const isOverFreeLimit =
+    plan === 'free' && monthlyTradeCount >= FREE_LIMITS.monthlyTrades;
 
   const isSearching = pairSearch.trim() !== '';
 
@@ -144,6 +158,13 @@ export default function RecordScreen() {
     }
     if (lotSize === null || lotSize <= 0) {
       Alert.alert('入力エラー', 'ロットサイズを正しく入力してください。');
+      return;
+    }
+    if (isOverFreeLimit) {
+      Alert.alert(
+        'Free プランの上限',
+        `Free プランでは月${FREE_LIMITS.monthlyTrades}件まで記録できます。\nPremium にアップグレードすると無制限になります。`,
+      );
       return;
     }
 

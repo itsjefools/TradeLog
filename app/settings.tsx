@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors, ThemeMode } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { LocaleCode, SUPPORTED_LOCALES, useI18n } from '@/hooks/use-i18n';
+import { useProfile } from '@/hooks/use-profile';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
@@ -22,7 +24,19 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const { mode, setMode } = useTheme();
+  const { locale, setLocale } = useI18n();
+  const { updateProfile } = useProfile();
   const email = session?.user.email ?? '—';
+
+  const handleLocaleChange = async (next: LocaleCode) => {
+    await setLocale(next);
+    // profile.language も同期更新（失敗しても無視）
+    try {
+      await updateProfile({ language: next });
+    } catch {
+      // ignore
+    }
+  };
 
   const themeOptions: { value: ThemeMode; label: string }[] = [
     { value: 'system', label: 'システム連動' },
@@ -99,6 +113,27 @@ export default function SettingsScreen() {
               />
             </Pressable>
           </Link>
+          <View style={styles.divider} />
+          <Link href="/premium" asChild>
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                pressed && styles.rowPressed,
+              ]}
+            >
+              <View style={styles.premiumLabelRow}>
+                <Ionicons name="diamond-outline" size={16} color={c.accent} />
+                <Text style={[styles.rowLabel, { color: c.accent }]}>
+                  Premium
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={c.textSecondary}
+              />
+            </Pressable>
+          </Link>
         </View>
 
         <Text style={styles.sectionLabel}>テーマ</Text>
@@ -124,6 +159,35 @@ export default function SettingsScreen() {
               );
             })}
           </View>
+        </View>
+
+        <Text style={styles.sectionLabel}>言語</Text>
+        <View style={styles.card}>
+          {SUPPORTED_LOCALES.map((opt, i) => {
+            const selected = locale === opt.code;
+            return (
+              <Pressable
+                key={opt.code}
+                onPress={() => handleLocaleChange(opt.code)}
+                style={({ pressed }) => [
+                  styles.row,
+                  pressed && styles.rowPressed,
+                ]}
+              >
+                <Text style={styles.rowLabel}>{opt.label}</Text>
+                {selected && (
+                  <Ionicons
+                    name="checkmark"
+                    size={18}
+                    color={c.accent}
+                  />
+                )}
+                {i < SUPPORTED_LOCALES.length - 1 && (
+                  <View style={styles.dividerInline} />
+                )}
+              </Pressable>
+            );
+          })}
         </View>
 
         <Pressable
@@ -211,6 +275,19 @@ function makeStyles(c: ThemeColors) {
       height: StyleSheet.hairlineWidth,
       backgroundColor: c.border,
       marginLeft: 16,
+    },
+    dividerInline: {
+      position: 'absolute',
+      left: 16,
+      right: 0,
+      bottom: 0,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+    },
+    premiumLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
     },
     themeRow: {
       flexDirection: 'row',

@@ -10,7 +10,9 @@ import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { useAuth } from '@/hooks/use-auth';
+import { I18nProvider } from '@/hooks/use-i18n';
 import { ProfileProvider } from '@/hooks/use-profile';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { ThemeProvider, useTheme } from '@/hooks/use-theme';
 import { TradesProvider } from '@/hooks/use-trades';
 
@@ -51,6 +53,7 @@ function ThemedRoot() {
   const { session, loading } = useAuth();
 
   useProtectedRoute(session, loading);
+  usePushNotifications();
 
   if (loading) {
     return (
@@ -70,6 +73,7 @@ function ThemedRoot() {
   return (
     <RNThemeProvider value={resolved === 'dark' ? DarkTheme : DefaultTheme}>
       <ProfileProvider>
+        <I18nProvider>
         <TradesProvider>
           <Stack>
             <Stack.Screen name="login" options={{ headerShown: false }} />
@@ -99,6 +103,10 @@ function ThemedRoot() {
               options={{ presentation: 'modal', headerShown: false }}
             />
             <Stack.Screen
+              name="premium"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
               name="search"
               options={{ presentation: 'modal', headerShown: false }}
             />
@@ -116,6 +124,7 @@ function ThemedRoot() {
             />
           </Stack>
         </TradesProvider>
+        </I18nProvider>
       </ProfileProvider>
       <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} />
     </RNThemeProvider>

@@ -2,6 +2,7 @@ import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,30 +15,53 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
+import { useAuth } from '@/hooks/use-auth';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
-import { Profile, Trade, tradeStyleLabel } from '@/lib/types';
+import { Post, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
-type FeedItem = Trade & {
+type FeedItem = Post & {
+  trade: Trade | null;
   profile: Profile | null;
+  is_liked: boolean;
 };
 
 export default function FeedScreen() {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
+  const { session } = useAuth();
+  const myId = session?.user.id ?? null;
+
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadUnread = useCallback(async () => {
+    if (!myId) {
+      setUnreadCount(0);
+      return;
+    }
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', myId)
+      .eq('is_read', false);
+    setUnreadCount(count ?? 0);
+  }, [myId]);
+
   const loadFeed = useCallback(async () => {
     setError(null);
-    const { data, error: fetchError } = await supabase
-      .from('trades')
+
+    const { data: posts, error: fetchError } = await supabase
+      .from('posts')
       .select(
         `*,
-        profile:profiles (
+        trade:trades!posts_trade_id_fkey (*),
+        profile:profiles!posts_user_id_fkey (
           id,
           email,
           username,
@@ -52,34 +76,102 @@ export default function FeedScreen() {
           created_at
         )`,
       )
-      .eq('is_shared', true)
-      .order('traded_at', { ascending: false })
+      .eq('post_type', 'trade_result')
+      .order('created_at', { ascending: false })
       .limit(50);
 
     if (fetchError) {
       setError(fetchError.message);
       return;
     }
-    setItems((data ?? []) as FeedItem[]);
-  }, []);
+
+    const postIds = (posts ?? []).map((p: { id: string }) => p.id);
+    let likedSet = new Set<string>();
+    if (myId && postIds.length > 0) {
+      const { data: likes } = await supabase
+        .from('likes')
+        .select('post_id')
+        .eq('user_id', myId)
+        .in('post_id', postIds);
+      likedSet = new Set((likes ?? []).map((l: { post_id: string }) => l.post_id));
+    }
+
+    const merged = (posts ?? []).map(
+      (p: Post & { trade: Trade | null; profile: Profile | null }) => ({
+        ...p,
+        is_liked: likedSet.has(p.id),
+      }),
+    ) as FeedItem[];
+    setItems(merged);
+  }, [myId]);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       (async () => {
-        await loadFeed();
+        await Promise.all([loadFeed(), loadUnread()]);
         if (active) setLoading(false);
       })();
       return () => {
         active = false;
       };
-    }, [loadFeed]),
+    }, [loadFeed, loadUnread]),
   );
 
   const onRefresh = async () => {
     setRefreshing(true);
     await loadFeed();
     setRefreshing(false);
+  };
+
+  const toggleLike = async (item: FeedItem) => {
+    if (!myId) {
+      Alert.alert('ログインが必要です');
+      return;
+    }
+    const wasLiked = item.is_liked;
+    setItems((prev) =>
+      prev.map((p) =>
+        p.id === item.id
+          ? {
+              ...p,
+              is_liked: !wasLiked,
+              likes_count: Math.max(0, p.likes_count + (wasLiked ? -1 : 1)),
+            }
+          : p,
+      ),
+    );
+
+    try {
+      if (wasLiked) {
+        const { error: deleteError } = await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', myId)
+          .eq('post_id', item.id);
+        if (deleteError) throw new Error(deleteError.message);
+      } else {
+        const { error: insertError } = await supabase
+          .from('likes')
+          .insert({ user_id: myId, post_id: item.id });
+        if (insertError) throw new Error(insertError.message);
+      }
+    } catch (e) {
+      // revert
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === item.id
+            ? {
+                ...p,
+                is_liked: wasLiked,
+                likes_count: Math.max(0, p.likes_count + (wasLiked ? 1 : -1)),
+              }
+            : p,
+        ),
+      );
+      const msg = e instanceof Error ? e.message : String(e);
+      Alert.alert('いいね失敗', msg);
+    }
   };
 
   return (
@@ -109,6 +201,17 @@ export default function FeedScreen() {
                 ]}
               >
                 <Text style={styles.headerButtonIcon}>🏆</Text>
+              </Pressable>
+            </Link>
+            <Link href="/notifications" asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <Text style={styles.headerButtonIcon}>🔔</Text>
+                {unreadCount > 0 && <View style={styles.unreadBadge} />}
               </Pressable>
             </Link>
           </View>
@@ -145,7 +248,9 @@ export default function FeedScreen() {
               </Text>
             </View>
           ) : (
-            items.map((item) => <FeedCard key={item.id} item={item} />)
+            items.map((item) => (
+              <FeedCard key={item.id} item={item} onToggleLike={toggleLike} />
+            ))
           )}
         </ScrollView>
       )}
@@ -153,11 +258,18 @@ export default function FeedScreen() {
   );
 }
 
-function FeedCard({ item }: { item: FeedItem }) {
+function FeedCard({
+  item,
+  onToggleLike,
+}: {
+  item: FeedItem;
+  onToggleLike: (item: FeedItem) => void;
+}) {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const profile = item.profile;
+  const trade = item.trade;
   const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
   const displayName =
     profile?.display_name?.trim() ||
@@ -168,10 +280,19 @@ function FeedCard({ item }: { item: FeedItem }) {
   const country = findCountry(profile?.nationality ?? null);
   const styleText = profile?.trade_style ? tradeStyleLabel(profile.trade_style) : '';
 
-  const directionLabel = item.direction === 'long' ? 'ロング' : 'ショート';
-  const resultLabel =
-    item.result === 'win' ? '利確' : item.result === 'loss' ? '損切り' : null;
-  const date = new Date(item.traded_at);
+  const directionLabel = trade
+    ? trade.direction === 'long'
+      ? 'ロング'
+      : 'ショート'
+    : '';
+  const resultLabel = trade
+    ? trade.result === 'win'
+      ? '利確'
+      : trade.result === 'loss'
+        ? '損切り'
+        : null
+    : null;
+  const date = new Date(trade?.traded_at ?? item.created_at);
   const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
   const userId = profile?.id ?? item.user_id;
@@ -219,40 +340,75 @@ function FeedCard({ item }: { item: FeedItem }) {
         </View>
       </Pressable>
 
-      <View style={styles.tradeBlock}>
-        <View style={styles.tradeHead}>
-          <Text style={styles.tradePair}>{item.currency_pair}</Text>
-          <Text style={styles.tradeDirection}>{directionLabel}</Text>
-          {resultLabel && (
-            <View
-              style={[
-                styles.resultBadge,
-                item.result === 'win'
-                  ? styles.resultBadgeWin
-                  : styles.resultBadgeLoss,
-              ]}
-            >
-              <Text style={styles.resultBadgeText}>{resultLabel}</Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.tradeNumbers}>
-          <Text style={[styles.tradePnl, pnlColor(item.pnl, c)]}>
-            {item.pnl !== null ? formatPnl(item.pnl) : '—'}
-          </Text>
-          {item.pnl_pips !== null && (
-            <Text style={[styles.tradePips, pnlColor(item.pnl_pips, c)]}>
-              {formatPips(item.pnl_pips)}
+      {trade && (
+        <View style={styles.tradeBlock}>
+          <View style={styles.tradeHead}>
+            <Text style={styles.tradePair}>{trade.currency_pair}</Text>
+            <Text style={styles.tradeDirection}>{directionLabel}</Text>
+            {resultLabel && (
+              <View
+                style={[
+                  styles.resultBadge,
+                  trade.result === 'win'
+                    ? styles.resultBadgeWin
+                    : styles.resultBadgeLoss,
+                ]}
+              >
+                <Text style={styles.resultBadgeText}>{resultLabel}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.tradeNumbers}>
+            <Text style={[styles.tradePnl, pnlColor(trade.pnl, c)]}>
+              {trade.pnl !== null ? formatPnl(trade.pnl) : '—'}
             </Text>
-          )}
+            {trade.pnl_pips !== null && (
+              <Text style={[styles.tradePips, pnlColor(trade.pnl_pips, c)]}>
+                {formatPips(trade.pnl_pips)}
+              </Text>
+            )}
+          </View>
         </View>
-      </View>
-
-      {item.memo && item.memo.trim() !== '' && (
-        <Text style={styles.memo}>{item.memo}</Text>
       )}
 
-      <Text style={styles.date}>{dateStr}</Text>
+      {item.content && item.content.trim() !== '' && (
+        <Text style={styles.memo}>{item.content}</Text>
+      )}
+
+      <View style={styles.footer}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.actionButton,
+            pressed && styles.actionButtonPressed,
+          ]}
+          onPress={() => onToggleLike(item)}
+          hitSlop={6}
+        >
+          <Text
+            style={[
+              styles.actionIcon,
+              item.is_liked && { color: c.loss },
+            ]}
+          >
+            {item.is_liked ? '♥' : '♡'}
+          </Text>
+          <Text style={styles.actionCount}>{item.likes_count}</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.actionButton,
+            pressed && styles.actionButtonPressed,
+          ]}
+          onPress={() => router.push(`/comments?postId=${item.id}`)}
+          hitSlop={6}
+        >
+          <Text style={styles.actionIcon}>💬</Text>
+          <Text style={styles.actionCount}>{item.comments_count}</Text>
+        </Pressable>
+
+        <Text style={styles.date}>{dateStr}</Text>
+      </View>
     </View>
   );
 }
@@ -308,6 +464,18 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: c.surface,
       alignItems: 'center',
       justifyContent: 'center',
+      position: 'relative',
+    },
+    unreadBadge: {
+      position: 'absolute',
+      top: 6,
+      right: 6,
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: c.loss,
+      borderWidth: 2,
+      borderColor: c.background,
     },
     headerButtonPressed: {
       opacity: 0.7,
@@ -482,11 +650,37 @@ function makeStyles(c: ThemeColors) {
       marginTop: 10,
       lineHeight: 19,
     },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+      marginTop: 12,
+      paddingTop: 10,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    actionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    actionButtonPressed: {
+      opacity: 0.6,
+    },
+    actionIcon: {
+      fontSize: 18,
+      color: c.textSecondary,
+    },
+    actionCount: {
+      fontSize: 13,
+      color: c.textSecondary,
+      fontWeight: '500',
+      minWidth: 18,
+    },
     date: {
       fontSize: 11,
       color: c.textSecondary,
-      marginTop: 8,
-      textAlign: 'right',
+      marginLeft: 'auto',
     },
   });
 }

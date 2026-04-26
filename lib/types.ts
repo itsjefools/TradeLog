@@ -34,6 +34,27 @@ export type Profile = {
   created_at: string | null;
 };
 
+export type Post = {
+  id: string;
+  user_id: string;
+  trade_id: string | null;
+  post_type: string;
+  content: string | null;
+  image_urls: string[] | null;
+  hashtags: string[] | null;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+};
+
+export type Comment = {
+  id: string;
+  user_id: string;
+  post_id: string;
+  content: string;
+  created_at: string;
+};
+
 export type Trade = {
   id: string;
   user_id: string;

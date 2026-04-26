@@ -79,6 +79,26 @@ function ThemedRoot() {
               options={{ presentation: 'modal', headerShown: false }}
             />
             <Stack.Screen
+              name="settings"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="comments"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="notifications"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="trade-history"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="trade-edit"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
               name="search"
               options={{ presentation: 'modal', headerShown: false }}
             />

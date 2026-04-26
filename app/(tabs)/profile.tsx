@@ -12,10 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
-import { ThemeColors, ThemeMode } from '@/constants/theme';
+import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { useTheme, useThemeColors } from '@/hooks/use-theme';
+import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
 import { tradeStyleLabel } from '@/lib/types';
@@ -25,7 +25,6 @@ export default function ProfileScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const { session } = useAuth();
   const { profile, loading, refresh } = useProfile();
-  const { mode, setMode } = useTheme();
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [tradeCount, setTradeCount] = useState(0);
@@ -93,19 +92,13 @@ export default function ProfileScreen() {
   const flag = profile?.nationality ? flagEmoji(profile.nationality) : '';
   const styleText = tradeStyleLabel(profile?.trade_style);
 
-  const themeOptions: { value: ThemeMode; label: string }[] = [
-    { value: 'system', label: 'システム連動' },
-    { value: 'light', label: 'ライト' },
-    { value: 'dark', label: 'ダーク' },
-  ];
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.title}>プロフィール</Text>
         </View>
-        <Link href="/profile-edit" asChild>
+        <Link href="/settings" asChild>
           <Pressable
             style={({ pressed }) => [
               styles.settingsButton,
@@ -176,31 +169,6 @@ export default function ProfileScreen() {
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{followingCount}</Text>
             <Text style={styles.statLabel}>フォロー中</Text>
-          </View>
-        </View>
-
-        <View style={styles.settingsCard}>
-          <Text style={styles.settingsLabel}>テーマ</Text>
-          <View style={styles.themeRow}>
-            {themeOptions.map((opt) => {
-              const selected = mode === opt.value;
-              return (
-                <Pressable
-                  key={opt.value}
-                  style={[styles.themeChip, selected && styles.themeChipSelected]}
-                  onPress={() => setMode(opt.value)}
-                >
-                  <Text
-                    style={[
-                      styles.themeChipText,
-                      selected && styles.themeChipTextSelected,
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
           </View>
         </View>
 
@@ -355,45 +323,6 @@ function makeStyles(c: ThemeColors) {
     statDivider: {
       width: StyleSheet.hairlineWidth,
       backgroundColor: c.border,
-    },
-    settingsCard: {
-      backgroundColor: c.surface,
-      borderRadius: 16,
-      padding: 16,
-    },
-    settingsLabel: {
-      fontSize: 13,
-      color: c.textSecondary,
-      fontWeight: '600',
-      marginBottom: 10,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-    },
-    themeRow: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    themeChip: {
-      flex: 1,
-      paddingVertical: 10,
-      borderRadius: 10,
-      alignItems: 'center',
-      backgroundColor: c.surfaceAlt,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    themeChipSelected: {
-      backgroundColor: c.accent,
-      borderColor: c.accent,
-    },
-    themeChipText: {
-      fontSize: 13,
-      color: c.textPrimary,
-      fontWeight: '500',
-    },
-    themeChipTextSelected: {
-      color: '#fff',
-      fontWeight: '700',
     },
     retryButton: {
       paddingVertical: 12,

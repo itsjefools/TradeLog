@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -11,6 +12,7 @@ import {
   TextStyle,
   View,
 } from 'react-native';
+import { BarChart, PieChart } from 'react-native-chart-kit';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
@@ -18,11 +20,16 @@ import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { Trade } from '@/lib/types';
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
 export default function AnalyticsScreen() {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const { trades, loading, error, refresh, deleteTrade } = useTrades();
   const [refreshing, setRefreshing] = useState(false);
+
+  // 月選択 (offset=0 が今月、-1 で先月)
+  const [monthOffset, setMonthOffset] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -59,7 +66,47 @@ export default function AnalyticsScreen() {
     );
   };
 
-  const stats = computeMonthlyStats(trades, c);
+  const monthInfo = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
+  const monthlyTrades = useMemo(
+    () =>
+      trades.filter((t) => {
+        const d = new Date(t.traded_at);
+        return d >= monthInfo.start && d < monthInfo.end;
+      }),
+    [trades, monthInfo],
+  );
+
+  const stats = useMemo(
+    () => computeStats(monthlyTrades, c),
+    [monthlyTrades, c],
+  );
+
+  const dailyData = useMemo(
+    () => buildDailyPnl(monthlyTrades, monthInfo),
+    [monthlyTrades, monthInfo],
+  );
+
+  const pairData = useMemo(() => buildPairPnl(monthlyTrades), [monthlyTrades]);
+
+  const winLossData = useMemo(
+    () => buildWinLossDistribution(monthlyTrades, c),
+    [monthlyTrades, c],
+  );
+
+  const chartConfig = useMemo(
+    () => ({
+      backgroundColor: c.surface,
+      backgroundGradientFrom: c.surface,
+      backgroundGradientTo: c.surface,
+      decimalPlaces: 0,
+      color: (opacity = 1) => withOpacity(c.accent, opacity),
+      labelColor: (opacity = 1) => withOpacity(c.textSecondary, opacity),
+      propsForBackgroundLines: { stroke: c.border },
+      propsForLabels: { fontSize: 10 },
+      barPercentage: 0.7,
+    }),
+    [c],
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -89,39 +136,118 @@ export default function AnalyticsScreen() {
             </View>
           )}
 
-          <Text style={styles.sectionLabel}>今月の成績</Text>
+          <View style={styles.monthRow}>
+            <Pressable
+              hitSlop={8}
+              onPress={() => setMonthOffset((n) => n - 1)}
+              style={styles.monthArrow}
+            >
+              <Text style={styles.monthArrowText}>‹</Text>
+            </Pressable>
+            <Text style={styles.monthLabel}>{monthInfo.label}</Text>
+            <Pressable
+              hitSlop={8}
+              onPress={() => setMonthOffset((n) => Math.min(0, n + 1))}
+              disabled={monthOffset >= 0}
+              style={[
+                styles.monthArrow,
+                monthOffset >= 0 && styles.monthArrowDisabled,
+              ]}
+            >
+              <Text style={styles.monthArrowText}>›</Text>
+            </Pressable>
+          </View>
 
-          <View style={styles.kpiRow}>
-            <KpiCard
-              label="月間P&L"
-              value={stats.pnlDisplay}
-              valueStyle={stats.pnlStyle}
-            />
+          <Text style={styles.sectionLabel}>KPI</Text>
+
+          <View style={styles.kpiGrid}>
+            <KpiCard label="月間P&L" value={stats.pnlDisplay} valueStyle={stats.pnlStyle} />
             <KpiCard label="勝率" value={stats.winRateDisplay} />
+            <KpiCard label="取引回数" value={`${stats.tradeCount}回`} />
+            <KpiCard label="平均P&L" value={stats.avgPnlDisplay} valueStyle={stats.avgPnlStyle} />
+            <KpiCard label="RR比" value={stats.rrDisplay} />
+            <KpiCard label="平均pips" value={stats.avgPipsDisplay} valueStyle={stats.avgPipsStyle} />
           </View>
 
-          <View style={styles.kpiRow}>
-            <KpiCard label="取引回数" value={`${stats.tradeCount}回`} />
-            <KpiCard
-              label="平均pips"
-              value={stats.avgPipsDisplay}
-              valueStyle={stats.avgPipsStyle}
-            />
-          </View>
+          {monthlyTrades.length > 0 ? (
+            <>
+              <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                日別P&L推移（直近30日）
+              </Text>
+              <View style={styles.chartCard}>
+                <BarChart
+                  data={dailyData}
+                  width={SCREEN_WIDTH - 64}
+                  height={200}
+                  chartConfig={chartConfig}
+                  fromZero
+                  showValuesOnTopOfBars={false}
+                  yAxisLabel=""
+                  yAxisSuffix=""
+                  withInnerLines
+                  style={styles.chart}
+                />
+              </View>
+
+              {pairData.labels.length > 0 && (
+                <>
+                  <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                    通貨ペア別損益
+                  </Text>
+                  <View style={styles.chartCard}>
+                    <BarChart
+                      data={pairData}
+                      width={SCREEN_WIDTH - 64}
+                      height={Math.max(200, pairData.labels.length * 36)}
+                      chartConfig={chartConfig}
+                      fromZero
+                      yAxisLabel=""
+                      yAxisSuffix=""
+                      verticalLabelRotation={30}
+                      style={styles.chart}
+                    />
+                  </View>
+                </>
+              )}
+
+              {winLossData.length > 0 && (
+                <>
+                  <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                    勝敗比率
+                  </Text>
+                  <View style={styles.chartCard}>
+                    <PieChart
+                      data={winLossData}
+                      width={SCREEN_WIDTH - 64}
+                      height={180}
+                      chartConfig={chartConfig}
+                      accessor="population"
+                      backgroundColor="transparent"
+                      paddingLeft="0"
+                      hasLegend
+                    />
+                  </View>
+                </>
+              )}
+            </>
+          ) : (
+            <View style={[styles.emptyBox, styles.sectionLabelMt]}>
+              <Text style={styles.emptyText}>
+                この月の取引はまだありません。
+              </Text>
+            </View>
+          )}
 
           <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
             直近の取引
           </Text>
 
-          {trades.length === 0 ? (
+          {monthlyTrades.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyText}>
-                まだ取引がありません。{'\n'}
-                記録タブから取引を追加してください。
-              </Text>
+              <Text style={styles.emptyText}>取引がありません</Text>
             </View>
           ) : (
-            trades.slice(0, 20).map((trade) => (
+            monthlyTrades.slice(0, 20).map((trade) => (
               <TradeRow key={trade.id} trade={trade} onDelete={handleDelete} />
             ))
           )}
@@ -208,23 +334,22 @@ function TradeRow({
   );
 }
 
-type MonthlyStats = {
+type Stats = {
   tradeCount: number;
   pnlDisplay: string;
   pnlStyle?: TextStyle;
+  avgPnlDisplay: string;
+  avgPnlStyle?: TextStyle;
   winRateDisplay: string;
+  rrDisplay: string;
   avgPipsDisplay: string;
   avgPipsStyle?: TextStyle;
 };
 
-function computeMonthlyStats(trades: Trade[], c: ThemeColors): MonthlyStats {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const monthly = trades.filter((t) => new Date(t.traded_at) >= monthStart);
-
+function computeStats(monthly: Trade[], c: ThemeColors): Stats {
   const withPnl = monthly.filter((t) => t.pnl !== null);
   const totalPnl = withPnl.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
+  const avgPnl = withPnl.length > 0 ? totalPnl / withPnl.length : null;
 
   const withResult = monthly.filter((t) => t.result !== null);
   const winCount = withResult.filter((t) => t.result === 'win').length;
@@ -232,6 +357,18 @@ function computeMonthlyStats(trades: Trade[], c: ThemeColors): MonthlyStats {
     withResult.length > 0
       ? Math.round((winCount / withResult.length) * 100)
       : null;
+
+  const wins = withPnl.filter((t) => (t.pnl ?? 0) > 0);
+  const losses = withPnl.filter((t) => (t.pnl ?? 0) < 0);
+  const avgWin =
+    wins.length > 0
+      ? wins.reduce((s, t) => s + (t.pnl ?? 0), 0) / wins.length
+      : 0;
+  const avgLoss =
+    losses.length > 0
+      ? losses.reduce((s, t) => s + (t.pnl ?? 0), 0) / losses.length
+      : 0;
+  const rr = avgLoss !== 0 ? Math.abs(avgWin / avgLoss) : null;
 
   const withPips = monthly.filter((t) => t.pnl_pips !== null);
   const avgPips =
@@ -243,10 +380,115 @@ function computeMonthlyStats(trades: Trade[], c: ThemeColors): MonthlyStats {
     tradeCount: monthly.length,
     pnlDisplay: withPnl.length === 0 ? '—' : formatPnl(totalPnl),
     pnlStyle: withPnl.length === 0 ? undefined : pnlColor(totalPnl, c),
+    avgPnlDisplay: avgPnl === null ? '—' : formatPnl(avgPnl),
+    avgPnlStyle: avgPnl === null ? undefined : pnlColor(avgPnl, c),
     winRateDisplay: winRate === null ? '—' : `${winRate}%`,
+    rrDisplay: rr === null ? '—' : rr.toFixed(2),
     avgPipsDisplay: avgPips === null ? '—' : formatPips(avgPips),
     avgPipsStyle: avgPips === null ? undefined : pnlColor(avgPips, c),
   };
+}
+
+type MonthRange = {
+  start: Date;
+  end: Date;
+  label: string;
+};
+
+function getMonthRange(offset: number): MonthRange {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 1);
+  const label = `${start.getFullYear()}年${start.getMonth() + 1}月`;
+  return { start, end, label };
+}
+
+function buildDailyPnl(monthly: Trade[], range: MonthRange) {
+  // 日別 PnL 合計（最大30日）
+  const dayPnl = new Map<number, number>();
+  for (const t of monthly) {
+    if (t.pnl === null) continue;
+    const d = new Date(t.traded_at);
+    const day = d.getDate();
+    dayPnl.set(day, (dayPnl.get(day) ?? 0) + t.pnl);
+  }
+
+  const lastDay = new Date(
+    range.end.getTime() - 24 * 60 * 60 * 1000,
+  ).getDate();
+  const days = Array.from({ length: lastDay }, (_, i) => i + 1);
+
+  const labels = days.map((d) => (d % 5 === 0 || d === 1 ? String(d) : ''));
+  const data = days.map((d) => dayPnl.get(d) ?? 0);
+
+  return {
+    labels,
+    datasets: [{ data: data.length === 0 ? [0] : data }],
+  };
+}
+
+function buildPairPnl(monthly: Trade[]) {
+  const pairPnl = new Map<string, number>();
+  for (const t of monthly) {
+    if (t.pnl === null) continue;
+    pairPnl.set(t.currency_pair, (pairPnl.get(t.currency_pair) ?? 0) + t.pnl);
+  }
+  const sorted = Array.from(pairPnl.entries()).sort(
+    (a, b) => Math.abs(b[1]) - Math.abs(a[1]),
+  );
+  const top = sorted.slice(0, 8);
+  return {
+    labels: top.map(([pair]) => pair),
+    datasets: [{ data: top.length === 0 ? [0] : top.map(([, v]) => v) }],
+  };
+}
+
+function buildWinLossDistribution(monthly: Trade[], c: ThemeColors) {
+  let wins = 0;
+  let losses = 0;
+  let neutral = 0;
+  for (const t of monthly) {
+    if (t.result === 'win') wins++;
+    else if (t.result === 'loss') losses++;
+    else neutral++;
+  }
+  const total = wins + losses + neutral;
+  if (total === 0) return [];
+  const result: {
+    name: string;
+    population: number;
+    color: string;
+    legendFontColor: string;
+    legendFontSize: number;
+  }[] = [];
+  if (wins > 0) {
+    result.push({
+      name: '勝ち',
+      population: wins,
+      color: c.win,
+      legendFontColor: c.textPrimary,
+      legendFontSize: 12,
+    });
+  }
+  if (losses > 0) {
+    result.push({
+      name: '負け',
+      population: losses,
+      color: c.loss,
+      legendFontColor: c.textPrimary,
+      legendFontSize: 12,
+    });
+  }
+  if (neutral > 0) {
+    result.push({
+      name: '未設定',
+      population: neutral,
+      color: c.textSecondary,
+      legendFontColor: c.textPrimary,
+      legendFontSize: 12,
+    });
+  }
+  return result;
 }
 
 function formatPnl(n: number): string {
@@ -268,12 +510,17 @@ function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
+function withOpacity(hex: string, opacity: number): string {
+  // hex のような #RRGGBB を rgba にする
+  const r = parseInt(hex.substring(1, 3), 16);
+  const g = parseInt(hex.substring(3, 5), 16);
+  const b = parseInt(hex.substring(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
 function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: c.background,
-    },
+    container: { flex: 1, backgroundColor: c.background },
     header: {
       paddingHorizontal: 20,
       paddingTop: 12,
@@ -287,19 +534,11 @@ function makeStyles(c: ThemeColors) {
       color: c.textPrimary,
       letterSpacing: -0.5,
     },
-    subtitle: {
-      fontSize: 13,
-      color: c.textSecondary,
-      marginTop: 4,
-    },
-    center: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
+    subtitle: { fontSize: 13, color: c.textSecondary, marginTop: 4 },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     body: {
       paddingHorizontal: 20,
-      paddingTop: 20,
+      paddingTop: 16,
       paddingBottom: 40,
     },
     sectionLabel: {
@@ -310,40 +549,56 @@ function makeStyles(c: ThemeColors) {
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
-    sectionLabelMt: {
-      marginTop: 28,
-    },
-    kpiRow: {
+    sectionLabelMt: { marginTop: 28 },
+    monthRow: {
       flexDirection: 'row',
-      gap: 12,
-      marginBottom: 12,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: c.surface,
+      borderRadius: 10,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      marginBottom: 16,
+    },
+    monthArrow: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surfaceAlt,
+    },
+    monthArrowDisabled: { opacity: 0.4 },
+    monthArrowText: { fontSize: 18, color: c.textPrimary, fontWeight: '700' },
+    monthLabel: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
+    kpiGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
     },
     kpiCard: {
-      flex: 1,
+      width: '32%',
+      flexGrow: 1,
       backgroundColor: c.surface,
       borderRadius: 12,
-      padding: 16,
+      padding: 12,
     },
-    kpiLabel: {
-      fontSize: 12,
-      color: c.textSecondary,
-      marginBottom: 6,
+    kpiLabel: { fontSize: 11, color: c.textSecondary, marginBottom: 4 },
+    kpiValue: { fontSize: 17, fontWeight: '700', color: c.textPrimary },
+    chartCard: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 12,
+      alignItems: 'center',
     },
-    kpiValue: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: c.textPrimary,
-    },
+    chart: { borderRadius: 8 },
     errorBox: {
       backgroundColor: '#7F1D1D',
       padding: 12,
       borderRadius: 8,
       marginBottom: 12,
     },
-    errorText: {
-      color: '#FECACA',
-      fontSize: 13,
-    },
+    errorText: { color: '#FECACA', fontSize: 13 },
     emptyBox: {
       backgroundColor: c.surface,
       borderRadius: 12,
@@ -371,31 +626,12 @@ function makeStyles(c: ThemeColors) {
       gap: 8,
       marginBottom: 6,
     },
-    tradePair: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: c.textPrimary,
-    },
-    tradeDirection: {
-      fontSize: 13,
-      color: c.textSecondary,
-    },
-    resultBadge: {
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 6,
-    },
-    resultBadgeWin: {
-      backgroundColor: c.win,
-    },
-    resultBadgeLoss: {
-      backgroundColor: c.loss,
-    },
-    resultBadgeText: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: '#fff',
-    },
+    tradePair: { fontSize: 15, fontWeight: '700', color: c.textPrimary },
+    tradeDirection: { fontSize: 13, color: c.textSecondary },
+    resultBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+    resultBadgeWin: { backgroundColor: c.win },
+    resultBadgeLoss: { backgroundColor: c.loss },
+    resultBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
     tradeDate: {
       marginLeft: 'auto',
       fontSize: 11,
@@ -409,29 +645,15 @@ function makeStyles(c: ThemeColors) {
       justifyContent: 'center',
       marginLeft: 4,
     },
-    deleteButtonPressed: {
-      backgroundColor: c.border,
-    },
+    deleteButtonPressed: { backgroundColor: c.border },
     deleteButtonText: {
       fontSize: 18,
       color: c.textSecondary,
       fontWeight: '500',
       lineHeight: 18,
     },
-    tradeRowMid: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-      gap: 12,
-    },
-    tradePnl: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: c.textPrimary,
-    },
-    tradePips: {
-      fontSize: 13,
-      fontWeight: '500',
-      color: c.textSecondary,
-    },
+    tradeRowMid: { flexDirection: 'row', alignItems: 'baseline', gap: 12 },
+    tradePnl: { fontSize: 18, fontWeight: '700', color: c.textPrimary },
+    tradePips: { fontSize: 13, fontWeight: '500', color: c.textSecondary },
   });
 }

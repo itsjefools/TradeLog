@@ -152,7 +152,11 @@ function NotificationRow({ item }: { item: NotificationItem }) {
         ? 'があなたの投稿にコメントしました'
         : item.type === 'follow'
           ? 'があなたをフォローしました'
-          : 'からの通知';
+          : item.type === 'mention'
+            ? 'があなたをメンションしました'
+            : item.type === 'repost'
+              ? 'があなたの投稿をリポストしました'
+              : 'からの通知';
 
   const handlePress = () => {
     if (item.type === 'follow') {

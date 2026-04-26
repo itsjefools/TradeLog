@@ -114,6 +114,22 @@ export default function SettingsScreen() {
             </Pressable>
           </Link>
           <View style={styles.divider} />
+          <Link href="/bookmarks" asChild>
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                pressed && styles.rowPressed,
+              ]}
+            >
+              <Text style={styles.rowLabel}>ブックマーク</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={c.textSecondary}
+              />
+            </Pressable>
+          </Link>
+          <View style={styles.divider} />
           <Link href="/premium" asChild>
             <Pressable
               style={({ pressed }) => [

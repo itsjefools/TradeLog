@@ -27,6 +27,8 @@ type FeedItem = Post & {
   trade: Trade | null;
   profile: Profile | null;
   is_liked: boolean;
+  is_bookmarked: boolean;
+  is_reposted: boolean;
   liked_by?: Profile | null; // フォロー中のユーザーがいいねした投稿の場合、その人
 };
 
@@ -172,20 +174,42 @@ export default function FeedScreen() {
 
       const postIds = posts.map((p) => p.id);
       let likedSet = new Set<string>();
+      let bookmarkedSet = new Set<string>();
+      let repostedSet = new Set<string>();
       if (myId && postIds.length > 0) {
-        const { data: likes } = await supabase
-          .from('likes')
-          .select('post_id')
-          .eq('user_id', myId)
-          .in('post_id', postIds);
+        const [likesRes, bmRes, rpRes] = await Promise.all([
+          supabase
+            .from('likes')
+            .select('post_id')
+            .eq('user_id', myId)
+            .in('post_id', postIds),
+          supabase
+            .from('bookmarks')
+            .select('post_id')
+            .eq('user_id', myId)
+            .in('post_id', postIds),
+          supabase
+            .from('reposts')
+            .select('post_id')
+            .eq('user_id', myId)
+            .in('post_id', postIds),
+        ]);
         likedSet = new Set(
-          (likes ?? []).map((l: { post_id: string }) => l.post_id),
+          (likesRes.data ?? []).map((l: { post_id: string }) => l.post_id),
+        );
+        bookmarkedSet = new Set(
+          (bmRes.data ?? []).map((l: { post_id: string }) => l.post_id),
+        );
+        repostedSet = new Set(
+          (rpRes.data ?? []).map((l: { post_id: string }) => l.post_id),
         );
       }
 
       const merged = posts.map((p) => ({
         ...p,
         is_liked: likedSet.has(p.id),
+        is_bookmarked: bookmarkedSet.has(p.id),
+        is_reposted: repostedSet.has(p.id),
       })) as FeedItem[];
       setItems(merged);
     } catch (e) {
@@ -211,6 +235,96 @@ export default function FeedScreen() {
     setRefreshing(true);
     await loadFeed();
     setRefreshing(false);
+  };
+
+  const toggleBookmark = async (item: FeedItem) => {
+    if (!myId) {
+      Alert.alert('ログインが必要です');
+      return;
+    }
+    const was = item.is_bookmarked;
+    setItems((prev) =>
+      prev.map((p) =>
+        p.id === item.id ? { ...p, is_bookmarked: !was } : p,
+      ),
+    );
+    try {
+      if (was) {
+        const { error } = await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('user_id', myId)
+          .eq('post_id', item.id);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase
+          .from('bookmarks')
+          .insert({ user_id: myId, post_id: item.id });
+        if (error) throw new Error(error.message);
+      }
+    } catch (e) {
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === item.id ? { ...p, is_bookmarked: was } : p,
+        ),
+      );
+      Alert.alert(
+        'エラー',
+        e instanceof Error ? e.message : String(e),
+      );
+    }
+  };
+
+  const toggleRepost = async (item: FeedItem) => {
+    if (!myId) {
+      Alert.alert('ログインが必要です');
+      return;
+    }
+    const was = item.is_reposted;
+    if (!was) {
+      // confirm before reposting
+      const ok = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          'リポストしますか？',
+          'フォロワーのフィードに表示されます。',
+          [
+            { text: 'キャンセル', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'リポスト', onPress: () => resolve(true) },
+          ],
+        );
+      });
+      if (!ok) return;
+    }
+    setItems((prev) =>
+      prev.map((p) =>
+        p.id === item.id ? { ...p, is_reposted: !was } : p,
+      ),
+    );
+    try {
+      if (was) {
+        const { error } = await supabase
+          .from('reposts')
+          .delete()
+          .eq('user_id', myId)
+          .eq('post_id', item.id);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase
+          .from('reposts')
+          .insert({ user_id: myId, post_id: item.id });
+        if (error) throw new Error(error.message);
+      }
+    } catch (e) {
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === item.id ? { ...p, is_reposted: was } : p,
+        ),
+      );
+      Alert.alert(
+        'エラー',
+        e instanceof Error ? e.message : String(e),
+      );
+    }
   };
 
   const toggleLike = async (item: FeedItem) => {
@@ -389,7 +503,13 @@ export default function FeedScreen() {
             </View>
           ) : (
             items.map((item) => (
-              <FeedCard key={item.id} item={item} onToggleLike={toggleLike} />
+              <FeedCard
+                key={item.id}
+                item={item}
+                onToggleLike={toggleLike}
+                onToggleBookmark={toggleBookmark}
+                onToggleRepost={toggleRepost}
+              />
             ))
           )}
         </ScrollView>
@@ -401,9 +521,13 @@ export default function FeedScreen() {
 function FeedCard({
   item,
   onToggleLike,
+  onToggleBookmark,
+  onToggleRepost,
 }: {
   item: FeedItem;
   onToggleLike: (item: FeedItem) => void;
+  onToggleBookmark: (item: FeedItem) => void;
+  onToggleRepost: (item: FeedItem) => void;
 }) {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
@@ -589,6 +713,36 @@ function FeedCard({
             color={c.textSecondary}
           />
           <Text style={styles.actionCount}>{item.comments_count}</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.actionButton,
+            pressed && styles.actionButtonPressed,
+          ]}
+          onPress={() => onToggleRepost(item)}
+          hitSlop={6}
+        >
+          <Ionicons
+            name="repeat"
+            size={20}
+            color={item.is_reposted ? c.win : c.textSecondary}
+          />
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.actionButton,
+            pressed && styles.actionButtonPressed,
+          ]}
+          onPress={() => onToggleBookmark(item)}
+          hitSlop={6}
+        >
+          <Ionicons
+            name={item.is_bookmarked ? 'bookmark' : 'bookmark-outline'}
+            size={18}
+            color={item.is_bookmarked ? c.accent : c.textSecondary}
+          />
         </Pressable>
 
         <Text style={styles.date}>{dateStr}</Text>

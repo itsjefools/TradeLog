@@ -13,10 +13,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors, ThemeMode } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
-import { LocaleCode, SUPPORTED_LOCALES, useI18n } from '@/hooks/use-i18n';
-import { useProfile } from '@/hooks/use-profile';
+import { SUPPORTED_LOCALES, useI18n } from '@/hooks/use-i18n';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
+
+const PREMIUM_GREEN = '#10B981';
+
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 export default function SettingsScreen() {
   const c = useThemeColors();
@@ -24,28 +27,20 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const { mode, setMode } = useTheme();
-  const { locale, setLocale } = useI18n();
-  const { updateProfile } = useProfile();
+  const { locale } = useI18n();
   const email = session?.user.email ?? '—';
 
-  const handleLocaleChange = async (next: LocaleCode) => {
-    await setLocale(next);
-    // profile.language も同期更新（失敗しても無視）
-    try {
-      await updateProfile({ language: next });
-    } catch {
-      // ignore
-    }
-  };
-
   const themeOptions: { value: ThemeMode; label: string }[] = [
-    { value: 'system', label: 'システム連動' },
+    { value: 'system', label: 'システム' },
     { value: 'light', label: 'ライト' },
     { value: 'dark', label: 'ダーク' },
   ];
 
+  const currentLocaleLabel =
+    SUPPORTED_LOCALES.find((l) => l.code === locale)?.label ?? '日本語';
+
   const handleLogout = () => {
-    Alert.alert('ログアウト', 'ログアウトしますか？', [
+    Alert.alert('ログアウト', '本当にログアウトしますか？', [
       { text: 'キャンセル', style: 'cancel' },
       {
         text: 'ログアウト',
@@ -65,209 +60,203 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
           <Text style={styles.headerLink}>閉じる</Text>
         </Pressable>
         <Text style={styles.headerTitle}>設定</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* アカウント */}
         <Text style={styles.sectionLabel}>アカウント</Text>
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>メールアドレス</Text>
+            <View style={styles.rowLeft}>
+              <View style={[styles.iconBubble, { backgroundColor: c.surfaceAlt }]}>
+                <Ionicons name="mail-outline" size={18} color={c.textPrimary} />
+              </View>
+              <Text style={styles.rowLabel}>メール</Text>
+            </View>
             <Text style={styles.rowValue} numberOfLines={1}>
               {email}
             </Text>
           </View>
-          <View style={styles.divider} />
-          <Link href="/profile-edit" asChild>
-            <Pressable
-              style={({ pressed }) => [
-                styles.row,
-                pressed && styles.rowPressed,
-              ]}
-            >
-              <Text style={styles.rowLabel}>プロフィールを編集</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={c.textSecondary}
-              />
-            </Pressable>
-          </Link>
-          <View style={styles.divider} />
-          <Link href="/trade-history" asChild>
-            <Pressable
-              style={({ pressed }) => [
-                styles.row,
-                pressed && styles.rowPressed,
-              ]}
-            >
-              <Text style={styles.rowLabel}>取引履歴</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={c.textSecondary}
-              />
-            </Pressable>
-          </Link>
-          <View style={styles.divider} />
-          <Link href="/bookmarks" asChild>
-            <Pressable
-              style={({ pressed }) => [
-                styles.row,
-                pressed && styles.rowPressed,
-              ]}
-            >
-              <Text style={styles.rowLabel}>ブックマーク</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={c.textSecondary}
-              />
-            </Pressable>
-          </Link>
-          <View style={styles.divider} />
-          <Link href="/premium" asChild>
-            <Pressable
-              style={({ pressed }) => [
-                styles.row,
-                pressed && styles.rowPressed,
-              ]}
-            >
-              <View style={styles.premiumLabelRow}>
-                <Ionicons name="diamond-outline" size={16} color={c.accent} />
-                <Text style={[styles.rowLabel, { color: c.accent }]}>
-                  Premium
+          <Divider c={c} />
+          <NavRow href="/profile-edit" icon="person-outline" label="プロフィールを編集" c={c} styles={styles} />
+          <Divider c={c} />
+          <NavRow href="/trade-history" icon="document-text-outline" label="取引履歴" c={c} styles={styles} />
+          <Divider c={c} />
+          <NavRow href="/bookmarks" icon="bookmark-outline" label="ブックマーク" c={c} styles={styles} />
+        </View>
+
+        {/* Premium */}
+        <Link href="/premium" asChild>
+          <Pressable
+            style={({ pressed }) => [
+              styles.premiumCard,
+              pressed && styles.rowPressed,
+            ]}
+          >
+            <View style={styles.premiumLeft}>
+              <View style={styles.premiumIcon}>
+                <Ionicons name="diamond" size={18} color="#fff" />
+              </View>
+              <View style={styles.premiumTextWrap}>
+                <Text style={styles.premiumTitle}>Premium</Text>
+                <Text style={styles.premiumSub}>
+                  無制限記録・高度分析・広告なし
                 </Text>
               </View>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={c.textSecondary}
-              />
-            </Pressable>
-          </Link>
-        </View>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={c.textSecondary}
+            />
+          </Pressable>
+        </Link>
 
+        {/* ツール */}
         <Text style={styles.sectionLabel}>ツール</Text>
         <View style={styles.card}>
-          <Link href="/goal-edit" asChild>
-            <Pressable
-              style={({ pressed }) => [
-                styles.row,
-                pressed && styles.rowPressed,
-              ]}
-            >
-              <Text style={styles.rowLabel}>月間目標</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={c.textSecondary}
-              />
-            </Pressable>
-          </Link>
-          <View style={styles.divider} />
-          <Link href="/risk-calculator" asChild>
-            <Pressable
-              style={({ pressed }) => [
-                styles.row,
-                pressed && styles.rowPressed,
-              ]}
-            >
-              <Text style={styles.rowLabel}>リスク計算機</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={c.textSecondary}
-              />
-            </Pressable>
-          </Link>
-          <View style={styles.divider} />
-          <Link href="/economic-calendar" asChild>
-            <Pressable
-              style={({ pressed }) => [
-                styles.row,
-                pressed && styles.rowPressed,
-              ]}
-            >
-              <Text style={styles.rowLabel}>経済指標カレンダー</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={c.textSecondary}
-              />
-            </Pressable>
-          </Link>
+          <NavRow href="/goal-edit" icon="flag-outline" label="月間目標" c={c} styles={styles} />
+          <Divider c={c} />
+          <NavRow href="/risk-calculator" icon="calculator-outline" label="リスク計算機" c={c} styles={styles} />
+          <Divider c={c} />
+          <NavRow
+            href="/economic-calendar"
+            icon="calendar-outline"
+            label="経済指標カレンダー"
+            c={c}
+            styles={styles}
+          />
         </View>
 
-        <Text style={styles.sectionLabel}>テーマ</Text>
+        {/* 表示 */}
+        <Text style={styles.sectionLabel}>表示</Text>
         <View style={styles.card}>
-          <View style={styles.themeRow}>
-            {themeOptions.map((opt) => {
-              const selected = mode === opt.value;
-              return (
-                <Pressable
-                  key={opt.value}
-                  style={[styles.themeChip, selected && styles.themeChipSelected]}
-                  onPress={() => setMode(opt.value)}
-                >
-                  <Text
+          <View style={styles.themeRowOuter}>
+            <View style={styles.rowLeft}>
+              <View style={[styles.iconBubble, { backgroundColor: c.surfaceAlt }]}>
+                <Ionicons
+                  name="contrast-outline"
+                  size={18}
+                  color={c.textPrimary}
+                />
+              </View>
+              <Text style={styles.rowLabel}>テーマ</Text>
+            </View>
+            <View style={styles.segment}>
+              {themeOptions.map((opt) => {
+                const selected = mode === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    onPress={() => setMode(opt.value)}
                     style={[
-                      styles.themeChipText,
-                      selected && styles.themeChipTextSelected,
+                      styles.segmentChip,
+                      selected && styles.segmentChipSelected,
                     ]}
+                    hitSlop={4}
                   >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        selected && styles.segmentTextSelected,
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
+          <Divider c={c} />
+          <NavRow
+            href="/language-edit"
+            icon="language-outline"
+            label="言語"
+            value={currentLocaleLabel}
+            c={c}
+            styles={styles}
+          />
         </View>
 
-        <Text style={styles.sectionLabel}>言語</Text>
-        <View style={styles.card}>
-          {SUPPORTED_LOCALES.map((opt, i) => {
-            const selected = locale === opt.code;
-            return (
-              <Pressable
-                key={opt.code}
-                onPress={() => handleLocaleChange(opt.code)}
-                style={({ pressed }) => [
-                  styles.row,
-                  pressed && styles.rowPressed,
-                ]}
-              >
-                <Text style={styles.rowLabel}>{opt.label}</Text>
-                {selected && (
-                  <Ionicons
-                    name="checkmark"
-                    size={18}
-                    color={c.accent}
-                  />
-                )}
-                {i < SUPPORTED_LOCALES.length - 1 && (
-                  <View style={styles.dividerInline} />
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-
+        {/* ログアウト */}
         <Pressable
           style={({ pressed }) => [
             styles.logoutButton,
             pressed && styles.logoutButtonPressed,
           ]}
           onPress={handleLogout}
+          hitSlop={4}
         >
           <Text style={styles.logoutText}>ログアウト</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function Divider({ c }: { c: ThemeColors }) {
+  return (
+    <View
+      style={{
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: c.border,
+        marginLeft: 56,
+      }}
+    />
+  );
+}
+
+function NavRow({
+  href,
+  icon,
+  label,
+  value,
+  c,
+  styles,
+}: {
+  href: string;
+  icon: IoniconName;
+  label: string;
+  value?: string;
+  c: ThemeColors;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  return (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    <Link href={href as any} asChild>
+      <Pressable
+        style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+        hitSlop={4}
+      >
+        <View style={styles.rowLeft}>
+          <View style={[styles.iconBubble, { backgroundColor: c.surfaceAlt }]}>
+            <Ionicons name={icon} size={18} color={c.textPrimary} />
+          </View>
+          <Text style={styles.rowLabel}>{label}</Text>
+        </View>
+        <View style={styles.rowRight}>
+          {value && (
+            <Text style={styles.rowValue} numberOfLines={1}>
+              {value}
+            </Text>
+          )}
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={c.textSecondary}
+          />
+        </View>
+      </Pressable>
+    </Link>
   );
 }
 
@@ -289,111 +278,156 @@ function makeStyles(c: ThemeColors) {
     headerLink: {
       fontSize: 15,
       color: c.textSecondary,
+      minWidth: 56,
     },
     headerTitle: {
-      fontSize: 16,
+      fontSize: 17,
       fontWeight: '700',
       color: c.textPrimary,
     },
     headerSpacer: {
-      width: 40,
+      width: 56,
     },
     body: {
       padding: 20,
-      paddingBottom: 40,
+      paddingBottom: 60,
     },
     sectionLabel: {
       fontSize: 12,
       color: c.textSecondary,
       fontWeight: '600',
       textTransform: 'uppercase',
-      letterSpacing: 0.5,
+      letterSpacing: 0.6,
       marginBottom: 8,
-      marginTop: 16,
+      marginTop: 24,
+      marginLeft: 4,
     },
     card: {
       backgroundColor: c.surface,
-      borderRadius: 12,
+      borderRadius: 14,
       overflow: 'hidden',
     },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      minHeight: 56,
     },
     rowPressed: {
       backgroundColor: c.surfaceAlt,
     },
+    rowLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      flex: 1,
+    },
+    rowRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      maxWidth: '55%',
+    },
+    iconBubble: {
+      width: 30,
+      height: 30,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     rowLabel: {
-      fontSize: 14,
+      fontSize: 15,
       color: c.textPrimary,
       fontWeight: '500',
+      flexShrink: 1,
     },
     rowValue: {
       fontSize: 14,
       color: c.textSecondary,
-      flex: 1,
-      textAlign: 'right',
-      marginLeft: 12,
+      flexShrink: 1,
     },
-    divider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: c.border,
-      marginLeft: 16,
-    },
-    dividerInline: {
-      position: 'absolute',
-      left: 16,
-      right: 0,
-      bottom: 0,
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: c.border,
-    },
-    premiumLabelRow: {
+    premiumCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      justifyContent: 'space-between',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: PREMIUM_GREEN,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      marginTop: 12,
     },
-    themeRow: {
+    premiumLeft: {
       flexDirection: 'row',
-      gap: 8,
-      padding: 12,
-    },
-    themeChip: {
+      alignItems: 'center',
+      gap: 12,
       flex: 1,
-      paddingVertical: 10,
+    },
+    premiumIcon: {
+      width: 36,
+      height: 36,
       borderRadius: 10,
+      backgroundColor: PREMIUM_GREEN,
       alignItems: 'center',
+      justifyContent: 'center',
+    },
+    premiumTextWrap: {
+      flex: 1,
+    },
+    premiumTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: PREMIUM_GREEN,
+    },
+    premiumSub: {
+      fontSize: 12,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    themeRowOuter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      gap: 8,
+      minHeight: 56,
+    },
+    segment: {
+      flexDirection: 'row',
       backgroundColor: c.surfaceAlt,
-      borderWidth: 1,
-      borderColor: c.border,
+      borderRadius: 9,
+      padding: 2,
     },
-    themeChipSelected: {
-      backgroundColor: c.accent,
-      borderColor: c.accent,
+    segmentChip: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 7,
+      minWidth: 52,
+      alignItems: 'center',
     },
-    themeChipText: {
-      fontSize: 13,
+    segmentChipSelected: {
+      backgroundColor: PREMIUM_GREEN,
+    },
+    segmentText: {
+      fontSize: 12,
       color: c.textPrimary,
-      fontWeight: '500',
+      fontWeight: '600',
     },
-    themeChipTextSelected: {
+    segmentTextSelected: {
       color: '#fff',
       fontWeight: '700',
     },
     logoutButton: {
-      backgroundColor: c.surface,
-      borderRadius: 12,
-      paddingVertical: 14,
+      paddingVertical: 16,
       alignItems: 'center',
-      marginTop: 32,
-      borderWidth: 1,
-      borderColor: c.border,
+      marginTop: 36,
     },
     logoutButtonPressed: {
-      opacity: 0.7,
+      opacity: 0.5,
     },
     logoutText: {
       fontSize: 15,

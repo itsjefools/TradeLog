@@ -131,6 +131,10 @@ function ThemedRoot() {
               options={{ presentation: 'modal', headerShown: false }}
             />
             <Stack.Screen
+              name="language-edit"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
               name="dm/[id]"
               options={{ headerShown: false }}
             />

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -12,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { FeedCard, FeedCardItem } from '@/components/feed-card';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -20,7 +22,21 @@ import { useTrades } from '@/hooks/use-trades';
 import { computeBadges, tierColor } from '@/lib/badges';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
-import { tradeStyleLabel } from '@/lib/types';
+import { Post, Profile, Trade, tradeStyleLabel } from '@/lib/types';
+
+const TAB_ACCENT = '#10B981';
+
+type TabKey = 'posts' | 'likes' | 'reposts';
+
+const PROFILE_SELECT = `
+  id, email, username, display_name, avatar_url, bio,
+  trade_style, language, is_premium, nationality, is_verified, created_at
+`;
+
+type RawPost = Post & {
+  trade: Trade | null;
+  profile: Profile | null;
+};
 
 export default function ProfileScreen() {
   const c = useThemeColors();
@@ -33,10 +49,14 @@ export default function ProfileScreen() {
   const [followingCount, setFollowingCount] = useState(0);
   const [tradeCount, setTradeCount] = useState(0);
 
-  const userId = session?.user.id;
+  const [tab, setTab] = useState<TabKey>('posts');
+  const [items, setItems] = useState<FeedCardItem[]>([]);
+  const [tabLoading, setTabLoading] = useState(false);
+
+  const myId = session?.user.id ?? null;
 
   const loadCounts = useCallback(async () => {
-    if (!userId) {
+    if (!myId) {
       setFollowerCount(0);
       setFollowingCount(0);
       setTradeCount(0);
@@ -46,42 +66,267 @@ export default function ProfileScreen() {
       supabase
         .from('follows')
         .select('*', { count: 'exact', head: true })
-        .eq('following_id', userId),
+        .eq('following_id', myId),
       supabase
         .from('follows')
         .select('*', { count: 'exact', head: true })
-        .eq('follower_id', userId),
+        .eq('follower_id', myId),
       supabase
         .from('trades')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
+        .eq('user_id', myId)
         .eq('is_shared', true),
     ]);
     setFollowerCount(followerRes.count ?? 0);
     setFollowingCount(followingRes.count ?? 0);
     setTradeCount(tradesRes.count ?? 0);
-  }, [userId]);
+  }, [myId]);
+
+  const decorateItems = useCallback(
+    async (rawPosts: RawPost[]): Promise<FeedCardItem[]> => {
+      if (!myId || rawPosts.length === 0) {
+        return rawPosts.map((p) => ({
+          ...p,
+          is_liked: false,
+          is_bookmarked: false,
+          is_reposted: false,
+        }));
+      }
+      const postIds = rawPosts.map((p) => p.id);
+      const [likesRes, bmRes, rpRes] = await Promise.all([
+        supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', myId)
+          .in('post_id', postIds),
+        supabase
+          .from('bookmarks')
+          .select('post_id')
+          .eq('user_id', myId)
+          .in('post_id', postIds),
+        supabase
+          .from('reposts')
+          .select('post_id')
+          .eq('user_id', myId)
+          .in('post_id', postIds),
+      ]);
+      const likedSet = new Set(
+        (likesRes.data ?? []).map((l: { post_id: string }) => l.post_id),
+      );
+      const bookmarkedSet = new Set(
+        (bmRes.data ?? []).map((l: { post_id: string }) => l.post_id),
+      );
+      const repostedSet = new Set(
+        (rpRes.data ?? []).map((l: { post_id: string }) => l.post_id),
+      );
+      return rawPosts.map((p) => ({
+        ...p,
+        is_liked: likedSet.has(p.id),
+        is_bookmarked: bookmarkedSet.has(p.id),
+        is_reposted: repostedSet.has(p.id),
+      }));
+    },
+    [myId],
+  );
+
+  const loadTab = useCallback(
+    async (which: TabKey) => {
+      if (!myId) {
+        setItems([]);
+        return;
+      }
+      setTabLoading(true);
+      try {
+        if (which === 'posts') {
+          const { data } = await supabase
+            .from('posts')
+            .select(
+              `*,
+              trade:trades!posts_trade_id_fkey (*),
+              profile:profiles!posts_user_id_fkey (${PROFILE_SELECT})`,
+            )
+            .eq('user_id', myId)
+            .eq('post_type', 'trade_result')
+            .order('created_at', { ascending: false })
+            .limit(50);
+          const decorated = await decorateItems((data ?? []) as RawPost[]);
+          setItems(decorated);
+        } else if (which === 'likes') {
+          const { data } = await supabase
+            .from('likes')
+            .select(
+              `created_at,
+              post:posts!likes_post_id_fkey (
+                *,
+                trade:trades!posts_trade_id_fkey (*),
+                profile:profiles!posts_user_id_fkey (${PROFILE_SELECT})
+              )`,
+            )
+            .eq('user_id', myId)
+            .order('created_at', { ascending: false })
+            .limit(50);
+          type Row = { post: RawPost | null };
+          const posts = ((data ?? []) as unknown as Row[])
+            .map((r) => r.post)
+            .filter((p): p is RawPost => p !== null);
+          const decorated = await decorateItems(posts);
+          setItems(decorated);
+        } else {
+          const { data } = await supabase
+            .from('reposts')
+            .select(
+              `created_at,
+              post:posts!reposts_post_id_fkey (
+                *,
+                trade:trades!posts_trade_id_fkey (*),
+                profile:profiles!posts_user_id_fkey (${PROFILE_SELECT})
+              )`,
+            )
+            .eq('user_id', myId)
+            .order('created_at', { ascending: false })
+            .limit(50);
+          type Row = { post: RawPost | null };
+          const posts = ((data ?? []) as unknown as Row[])
+            .map((r) => r.post)
+            .filter((p): p is RawPost => p !== null);
+          const decorated = await decorateItems(posts);
+          setItems(decorated);
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        Alert.alert('読み込み失敗', msg);
+      } finally {
+        setTabLoading(false);
+      }
+    },
+    [myId, decorateItems],
+  );
 
   useFocusEffect(
     useCallback(() => {
       loadCounts();
-    }, [loadCounts]),
+      loadTab(tab);
+    }, [loadCounts, loadTab, tab]),
   );
 
-  const handleLogout = async () => {
-    Alert.alert('ログアウト', 'ログアウトしますか？', [
-      { text: 'キャンセル', style: 'cancel' },
-      {
-        text: 'ログアウト',
-        style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase.auth.signOut();
-          if (error) {
-            Alert.alert('エラー', error.message);
-          }
-        },
-      },
-    ]);
+  const switchTab = (next: TabKey) => {
+    if (next === tab) return;
+    setTab(next);
+    setItems([]);
+    loadTab(next);
+  };
+
+  const toggleLike = async (item: FeedCardItem) => {
+    if (!myId) return;
+    const wasLiked = item.is_liked;
+    setItems((prev) =>
+      prev.map((p) =>
+        p.id === item.id
+          ? {
+              ...p,
+              is_liked: !wasLiked,
+              likes_count: Math.max(0, p.likes_count + (wasLiked ? -1 : 1)),
+            }
+          : p,
+      ),
+    );
+    try {
+      if (wasLiked) {
+        await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', myId)
+          .eq('post_id', item.id);
+      } else {
+        await supabase.from('likes').insert({ user_id: myId, post_id: item.id });
+      }
+    } catch (e) {
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === item.id
+            ? {
+                ...p,
+                is_liked: wasLiked,
+                likes_count: Math.max(0, p.likes_count + (wasLiked ? 1 : -1)),
+              }
+            : p,
+        ),
+      );
+      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const toggleBookmark = async (item: FeedCardItem) => {
+    if (!myId) return;
+    const was = item.is_bookmarked;
+    setItems((prev) =>
+      prev.map((p) =>
+        p.id === item.id ? { ...p, is_bookmarked: !was } : p,
+      ),
+    );
+    try {
+      if (was) {
+        await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('user_id', myId)
+          .eq('post_id', item.id);
+      } else {
+        await supabase
+          .from('bookmarks')
+          .insert({ user_id: myId, post_id: item.id });
+      }
+    } catch (e) {
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === item.id ? { ...p, is_bookmarked: was } : p,
+        ),
+      );
+      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const toggleRepost = async (item: FeedCardItem) => {
+    if (!myId) return;
+    const was = item.is_reposted;
+    if (!was) {
+      const ok = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          'リポストしますか？',
+          'フォロワーのフィードに表示されます。',
+          [
+            { text: 'キャンセル', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'リポスト', onPress: () => resolve(true) },
+          ],
+        );
+      });
+      if (!ok) return;
+    }
+    setItems((prev) =>
+      prev.map((p) =>
+        p.id === item.id ? { ...p, is_reposted: !was } : p,
+      ),
+    );
+    try {
+      if (was) {
+        await supabase
+          .from('reposts')
+          .delete()
+          .eq('user_id', myId)
+          .eq('post_id', item.id);
+      } else {
+        await supabase
+          .from('reposts')
+          .insert({ user_id: myId, post_id: item.id });
+      }
+    } catch (e) {
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === item.id ? { ...p, is_reposted: was } : p,
+        ),
+      );
+      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+    }
   };
 
   const email = session?.user.email ?? '';
@@ -96,19 +341,30 @@ export default function ProfileScreen() {
   const flag = profile?.nationality ? flagEmoji(profile.nationality) : '';
   const styleText = tradeStyleLabel(profile?.trade_style);
 
+  const tabs: { key: TabKey; icon: React.ComponentProps<typeof Ionicons>['name']; label: string }[] = [
+    { key: 'posts', icon: 'grid-outline', label: '投稿' },
+    { key: 'likes', icon: 'heart-outline', label: 'いいね' },
+    { key: 'reposts', icon: 'repeat', label: 'リポスト' },
+  ];
+
+  const emptyMessage =
+    tab === 'posts'
+      ? 'まだ投稿がありません'
+      : tab === 'likes'
+        ? 'いいねした投稿はまだありません'
+        : 'リポストした投稿はまだありません';
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>プロフィール</Text>
-        </View>
+        <Text style={styles.title}>プロフィール</Text>
         <Link href="/settings" asChild>
           <Pressable
             style={({ pressed }) => [
               styles.settingsButton,
               pressed && styles.settingsButtonPressed,
             ]}
-            hitSlop={8}
+            hitSlop={12}
           >
             <Ionicons
               name="settings-outline"
@@ -120,106 +376,161 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[1]}
+        contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.profileCard}>
-          <View style={styles.avatarWrap}>
-            <Avatar
-              uri={profile?.avatar_url}
-              displayName={displayName}
-              size={80}
-            />
-          </View>
-          <View style={styles.nameRow}>
-            <Text style={styles.displayName}>{displayName}</Text>
-            {profile?.is_verified && (
-              <View style={styles.verifiedBadge}>
-                <Text style={styles.verifiedBadgeText}>✓</Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.username}>@{username}</Text>
+        {/* index 0: profile info */}
+        <View style={styles.profileSection}>
+          <View style={styles.profileCard}>
+            <View style={styles.avatarWrap}>
+              <Avatar
+                uri={profile?.avatar_url}
+                displayName={displayName}
+                size={84}
+              />
+            </View>
+            <View style={styles.nameRow}>
+              <Text style={styles.displayName}>{displayName}</Text>
+              {profile?.is_verified && (
+                <View style={styles.verifiedBadge}>
+                  <Text style={styles.verifiedBadgeText}>✓</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.username}>@{username}</Text>
 
-          <View style={styles.metaRow}>
-            {flag !== '' && (
-              <View style={styles.metaItem}>
-                <Text style={styles.flag}>{flag}</Text>
-                <Text style={styles.metaText}>
-                  {country?.name ?? profile?.nationality ?? ''}
-                </Text>
-              </View>
-            )}
-            {profile?.trade_style && (
-              <View style={styles.metaItem}>
-                <Ionicons
-                  name="stats-chart-outline"
-                  size={14}
-                  color={c.textSecondary}
-                />
-                <Text style={styles.metaText}>{styleText}</Text>
-              </View>
-            )}
-          </View>
-
-          {profile?.bio && profile.bio.trim() !== '' && (
-            <Text style={styles.bio}>{profile.bio}</Text>
-          )}
-
-          {badges.length > 0 && (
-            <View style={styles.badgesRow}>
-              {badges.map((b) => (
-                <View
-                  key={b.id}
-                  style={[
-                    styles.badgeChip,
-                    { borderColor: tierColor(b.tier) },
-                  ]}
-                >
-                  <Text style={styles.badgeEmoji}>{b.emoji}</Text>
-                  <Text
-                    style={[
-                      styles.badgeLabel,
-                      { color: tierColor(b.tier) },
-                    ]}
-                  >
-                    {b.label}
+            <View style={styles.metaRow}>
+              {flag !== '' && (
+                <View style={styles.metaItem}>
+                  <Text style={styles.flag}>{flag}</Text>
+                  <Text style={styles.metaText}>
+                    {country?.name ?? profile?.nationality ?? ''}
                   </Text>
                 </View>
-              ))}
+              )}
+              {profile?.trade_style && (
+                <View style={styles.metaItem}>
+                  <Ionicons
+                    name="stats-chart-outline"
+                    size={14}
+                    color={c.textSecondary}
+                  />
+                  <Text style={styles.metaText}>{styleText}</Text>
+                </View>
+              )}
             </View>
+
+            {profile?.bio && profile.bio.trim() !== '' && (
+              <Text style={styles.bio}>{profile.bio}</Text>
+            )}
+
+            {badges.length > 0 && (
+              <View style={styles.badgesRow}>
+                {badges.map((b) => (
+                  <View
+                    key={b.id}
+                    style={[
+                      styles.badgeChip,
+                      { borderColor: tierColor(b.tier) },
+                    ]}
+                  >
+                    <Text style={styles.badgeEmoji}>{b.emoji}</Text>
+                    <Text
+                      style={[
+                        styles.badgeLabel,
+                        { color: tierColor(b.tier) },
+                      ]}
+                    >
+                      {b.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{tradeCount}</Text>
+              <Text style={styles.statLabel}>共有取引</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{followerCount}</Text>
+              <Text style={styles.statLabel}>フォロワー</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{followingCount}</Text>
+              <Text style={styles.statLabel}>フォロー中</Text>
+            </View>
+          </View>
+
+          <Link href="/profile-edit" asChild>
+            <Pressable
+              style={({ pressed }) => [
+                styles.editButton,
+                pressed && styles.editButtonPressed,
+              ]}
+              hitSlop={4}
+            >
+              <Text style={styles.editButtonText}>プロフィールを編集</Text>
+            </Pressable>
+          </Link>
+
+          {!loading && !profile && (
+            <Pressable onPress={refresh} style={styles.retryButton}>
+              <Text style={styles.retryText}>プロフィールを再読み込み</Text>
+            </Pressable>
           )}
         </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{tradeCount}</Text>
-            <Text style={styles.statLabel}>共有取引</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{followerCount}</Text>
-            <Text style={styles.statLabel}>フォロワー</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{followingCount}</Text>
-            <Text style={styles.statLabel}>フォロー中</Text>
-          </View>
+        {/* index 1: sticky tab bar */}
+        <View style={styles.tabBar}>
+          {tabs.map((t) => {
+            const active = tab === t.key;
+            return (
+              <Pressable
+                key={t.key}
+                onPress={() => switchTab(t.key)}
+                style={styles.tabButton}
+                hitSlop={4}
+              >
+                <Ionicons
+                  name={t.icon}
+                  size={20}
+                  color={active ? TAB_ACCENT : c.textSecondary}
+                />
+                {active && <View style={styles.tabUnderline} />}
+              </Pressable>
+            );
+          })}
         </View>
 
-        {!loading && !profile && (
-          <Pressable onPress={refresh} style={styles.retryButton}>
-            <Text style={styles.retryText}>プロフィールを再読み込み</Text>
-          </Pressable>
-        )}
-
-        <Pressable
-          style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}
-          onPress={handleLogout}
-        >
-          <Text style={styles.logoutText}>ログアウト</Text>
-        </Pressable>
+        {/* index 2: tab content */}
+        <View style={styles.tabContent}>
+          {tabLoading ? (
+            <View style={styles.center}>
+              <ActivityIndicator color={c.accent} />
+            </View>
+          ) : items.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTitle}>{emptyMessage}</Text>
+            </View>
+          ) : (
+            items.map((item, i) => (
+              <FeedCard
+                key={`${tab}-${item.id}`}
+                item={item}
+                index={i}
+                onToggleLike={toggleLike}
+                onToggleBookmark={toggleBookmark}
+                onToggleRepost={toggleRepost}
+              />
+            ))
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -236,13 +547,10 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 20,
-      paddingTop: 12,
-      paddingBottom: 16,
+      paddingTop: 8,
+      paddingBottom: 10,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
-    },
-    headerLeft: {
-      flex: 1,
     },
     settingsButton: {
       width: 38,
@@ -261,16 +569,18 @@ function makeStyles(c: ThemeColors) {
       color: c.textPrimary,
       letterSpacing: -0.5,
     },
-    body: {
-      paddingHorizontal: 20,
-      paddingTop: 24,
+    scrollContent: {
       paddingBottom: 40,
-      gap: 16,
+    },
+    profileSection: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      gap: 14,
     },
     profileCard: {
       backgroundColor: c.surface,
       borderRadius: 16,
-      padding: 24,
+      padding: 22,
       alignItems: 'center',
     },
     avatarWrap: {
@@ -282,7 +592,7 @@ function makeStyles(c: ThemeColors) {
       gap: 6,
     },
     displayName: {
-      fontSize: 18,
+      fontSize: 19,
       fontWeight: '700',
       color: c.textPrimary,
     },
@@ -373,6 +683,22 @@ function makeStyles(c: ThemeColors) {
       width: StyleSheet.hairlineWidth,
       backgroundColor: c.border,
     },
+    editButton: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 10,
+      paddingVertical: 11,
+      alignItems: 'center',
+      backgroundColor: c.surface,
+    },
+    editButtonPressed: {
+      opacity: 0.6,
+    },
+    editButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.textPrimary,
+    },
     retryButton: {
       paddingVertical: 12,
       alignItems: 'center',
@@ -382,22 +708,47 @@ function makeStyles(c: ThemeColors) {
       fontSize: 13,
       fontWeight: '600',
     },
-    logoutButton: {
-      backgroundColor: c.surface,
-      borderRadius: 12,
-      paddingVertical: 14,
+    tabBar: {
+      flexDirection: 'row',
+      backgroundColor: c.background,
+      marginTop: 16,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    tabButton: {
+      flex: 1,
       alignItems: 'center',
-      marginTop: 8,
-      borderWidth: 1,
-      borderColor: c.border,
+      paddingVertical: 14,
+      position: 'relative',
     },
-    logoutButtonPressed: {
-      opacity: 0.7,
+    tabUnderline: {
+      position: 'absolute',
+      bottom: 0,
+      left: '30%',
+      right: '30%',
+      height: 2,
+      backgroundColor: TAB_ACCENT,
+      borderTopLeftRadius: 2,
+      borderTopRightRadius: 2,
     },
-    logoutText: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: c.danger,
+    tabContent: {
+      paddingHorizontal: 12,
+      paddingTop: 10,
+      gap: 10,
+    },
+    center: {
+      paddingVertical: 40,
+      alignItems: 'center',
+    },
+    emptyBox: {
+      paddingVertical: 60,
+      alignItems: 'center',
+    },
+    emptyTitle: {
+      fontSize: 14,
+      color: c.textSecondary,
     },
   });
 }

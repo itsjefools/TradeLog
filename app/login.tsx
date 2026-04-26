@@ -34,7 +34,8 @@ function validatePassword(password: string): string | null {
 export default function LoginScreen() {
   const c = useThemeColors();
   const { resolved } = useTheme();
-  const styles = useMemo(() => makeStyles(c), [c]);
+  const isDark = resolved === 'dark';
+  const styles = useMemo(() => makeStyles(c, isDark), [c, isDark]);
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -218,7 +219,7 @@ export default function LoginScreen() {
 
 const LOGIN_ACCENT = '#10B981';
 
-function makeStyles(c: ThemeColors) {
+function makeStyles(c: ThemeColors, isDark: boolean) {
   return StyleSheet.create({
   container: {
     flex: 1,
@@ -244,10 +245,10 @@ function makeStyles(c: ThemeColors) {
     marginBottom: 8,
   },
   logoTrade: {
-    color: LOGIN_ACCENT,
+    color: isDark ? '#FFFFFF' : '#1E293B',
   },
   logoLog: {
-    color: c.accent,
+    color: LOGIN_ACCENT,
   },
   tagline: {
     fontSize: 16,

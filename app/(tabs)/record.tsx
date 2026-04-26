@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -104,6 +104,12 @@ export default function RecordScreen() {
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [pairSearch, setPairSearch] = useState('');
+
+  const entryPriceRef = useRef<TextInput>(null);
+  const exitPriceRef = useRef<TextInput>(null);
+  const lotSizeRef = useRef<TextInput>(null);
+  const pnlRef = useRef<TextInput>(null);
+  const pnlPipsRef = useRef<TextInput>(null);
   const { addTrade, trades } = useTrades();
   const { favorites, isFavorite, toggleFavorite } = useFavoritePairs();
   const { profile } = useProfile();
@@ -456,24 +462,30 @@ export default function RecordScreen() {
             <View style={[styles.section, styles.flex]}>
               <Text style={styles.label}>エントリー価格（任意）</Text>
               <TextInput
+                ref={entryPriceRef}
                 style={styles.input}
                 value={form.entryPrice}
                 onChangeText={(t) => updatePriceField('entryPrice', t)}
                 placeholder="例: 148.250"
                 placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
+                returnKeyType="next"
+                onSubmitEditing={() => exitPriceRef.current?.focus()}
                 editable={!loading}
               />
             </View>
             <View style={[styles.section, styles.flex]}>
               <Text style={styles.label}>エグジット価格（任意）</Text>
               <TextInput
+                ref={exitPriceRef}
                 style={styles.input}
                 value={form.exitPrice}
                 onChangeText={(t) => updatePriceField('exitPrice', t)}
                 placeholder="例: 148.800"
                 placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
+                returnKeyType="next"
+                onSubmitEditing={() => lotSizeRef.current?.focus()}
                 editable={!loading}
               />
             </View>
@@ -482,12 +494,15 @@ export default function RecordScreen() {
           <View style={styles.section}>
             <Text style={styles.label}>ロットサイズ</Text>
             <TextInput
+              ref={lotSizeRef}
               style={styles.input}
               value={form.lotSize}
               onChangeText={(t) => setField('lotSize', t)}
               placeholder="例: 0.1"
               placeholderTextColor={c.textSecondary}
               keyboardType="decimal-pad"
+              returnKeyType="next"
+              onSubmitEditing={() => pnlRef.current?.focus()}
               editable={!loading}
             />
           </View>
@@ -496,24 +511,29 @@ export default function RecordScreen() {
             <View style={[styles.section, styles.flex]}>
               <Text style={styles.label}>損益（円）</Text>
               <TextInput
+                ref={pnlRef}
                 style={styles.input}
                 value={form.pnl}
                 onChangeText={(t) => setField('pnl', t)}
                 placeholder="例: 5500"
                 placeholderTextColor={c.textSecondary}
                 keyboardType="numbers-and-punctuation"
+                returnKeyType="next"
+                onSubmitEditing={() => pnlPipsRef.current?.focus()}
                 editable={!loading}
               />
             </View>
             <View style={[styles.section, styles.flex]}>
               <Text style={styles.label}>損益 pips</Text>
               <TextInput
+                ref={pnlPipsRef}
                 style={styles.input}
                 value={form.pnlPips}
                 onChangeText={(t) => setField('pnlPips', t)}
                 placeholder="例: 55"
                 placeholderTextColor={c.textSecondary}
                 keyboardType="numbers-and-punctuation"
+                returnKeyType="done"
                 editable={!loading}
               />
             </View>

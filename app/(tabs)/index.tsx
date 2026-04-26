@@ -13,6 +13,14 @@ import {
   TextStyle,
   View,
 } from 'react-native';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
@@ -502,10 +510,11 @@ export default function FeedScreen() {
               </Text>
             </View>
           ) : (
-            items.map((item) => (
+            items.map((item, index) => (
               <FeedCard
                 key={item.id}
                 item={item}
+                index={index}
                 onToggleLike={toggleLike}
                 onToggleBookmark={toggleBookmark}
                 onToggleRepost={toggleRepost}
@@ -520,11 +529,13 @@ export default function FeedScreen() {
 
 function FeedCard({
   item,
+  index,
   onToggleLike,
   onToggleBookmark,
   onToggleRepost,
 }: {
   item: FeedItem;
+  index: number;
   onToggleLike: (item: FeedItem) => void;
   onToggleBookmark: (item: FeedItem) => void;
   onToggleRepost: (item: FeedItem) => void;
@@ -562,7 +573,10 @@ function FeedCard({
   const userId = profile?.id ?? item.user_id;
 
   return (
-    <View style={styles.card}>
+    <Animated.View
+      entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 35)}
+      style={styles.card}
+    >
       {item.liked_by && (
         <View style={styles.likedByRow}>
           <Ionicons name="heart" size={12} color={c.loss} />
@@ -683,21 +697,11 @@ function FeedCard({
       )}
 
       <View style={styles.footer}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.actionButton,
-            pressed && styles.actionButtonPressed,
-          ]}
+        <LikeButton
+          liked={item.is_liked}
+          count={item.likes_count}
           onPress={() => onToggleLike(item)}
-          hitSlop={6}
-        >
-          <Ionicons
-            name={item.is_liked ? 'heart' : 'heart-outline'}
-            size={20}
-            color={item.is_liked ? c.loss : c.textSecondary}
-          />
-          <Text style={styles.actionCount}>{item.likes_count}</Text>
-        </Pressable>
+        />
 
         <Pressable
           style={({ pressed }) => [
@@ -747,7 +751,53 @@ function FeedCard({
 
         <Text style={styles.date}>{dateStr}</Text>
       </View>
-    </View>
+    </Animated.View>
+  );
+}
+
+function LikeButton({
+  liked,
+  count,
+  onPress,
+}: {
+  liked: boolean;
+  count: number;
+  onPress: () => void;
+}) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const scale = useSharedValue(1);
+
+  const iconAnim = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePress = () => {
+    scale.value = withSequence(
+      withTiming(1.35, { duration: 110 }),
+      withSpring(1, { damping: 6, stiffness: 180 }),
+    );
+    onPress();
+  };
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.actionButton,
+        pressed && styles.actionButtonPressed,
+      ]}
+      onPress={handlePress}
+      hitSlop={6}
+    >
+      <Animated.View style={iconAnim}>
+        <Ionicons
+          name={liked ? 'heart' : 'heart-outline'}
+          size={20}
+          color={liked ? c.loss : c.textSecondary}
+        />
+      </Animated.View>
+      <Text style={styles.actionCount}>{count}</Text>
+    </Pressable>
   );
 }
 

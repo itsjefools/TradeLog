@@ -16,6 +16,8 @@ import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
+import { useTrades } from '@/hooks/use-trades';
+import { computeBadges, tierColor } from '@/lib/badges';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
 import { tradeStyleLabel } from '@/lib/types';
@@ -25,6 +27,8 @@ export default function ProfileScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const { session } = useAuth();
   const { profile, loading, refresh } = useProfile();
+  const { trades } = useTrades();
+  const badges = useMemo(() => computeBadges(trades), [trades]);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [tradeCount, setTradeCount] = useState(0);
@@ -160,6 +164,30 @@ export default function ProfileScreen() {
 
           {profile?.bio && profile.bio.trim() !== '' && (
             <Text style={styles.bio}>{profile.bio}</Text>
+          )}
+
+          {badges.length > 0 && (
+            <View style={styles.badgesRow}>
+              {badges.map((b) => (
+                <View
+                  key={b.id}
+                  style={[
+                    styles.badgeChip,
+                    { borderColor: tierColor(b.tier) },
+                  ]}
+                >
+                  <Text style={styles.badgeEmoji}>{b.emoji}</Text>
+                  <Text
+                    style={[
+                      styles.badgeLabel,
+                      { color: tierColor(b.tier) },
+                    ]}
+                  >
+                    {b.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
           )}
         </View>
 
@@ -302,6 +330,25 @@ function makeStyles(c: ThemeColors) {
       textAlign: 'center',
       lineHeight: 20,
     },
+    badgesRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginTop: 14,
+      justifyContent: 'center',
+    },
+    badgeChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+      borderWidth: 1.5,
+      backgroundColor: c.surfaceAlt,
+    },
+    badgeEmoji: { fontSize: 13 },
+    badgeLabel: { fontSize: 11, fontWeight: '700' },
     statsRow: {
       flexDirection: 'row',
       backgroundColor: c.surface,

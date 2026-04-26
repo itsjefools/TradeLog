@@ -15,12 +15,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+
 import { useFavoritePairs } from '@/hooks/use-favorite-pairs';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { FREE_LIMITS, getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
+import { pickAndUploadImage } from '@/lib/upload-image';
 import {
   ALL_CURRENCY_PAIRS,
   isFxPair,
@@ -41,6 +45,7 @@ const initialState = {
   pnlPips: '',
   memo: '',
   isShared: false,
+  imageUrls: [] as string[],
 };
 
 function applySignToString(value: string, result: TradeResult): string {
@@ -111,6 +116,35 @@ export default function RecordScreen() {
 
   const isOverFreeLimit =
     plan === 'free' && monthlyTradeCount >= FREE_LIMITS.monthlyTrades;
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const addImage = async () => {
+    if (uploadingImage || form.imageUrls.length >= 4) return;
+    setUploadingImage(true);
+    try {
+      const userId = (await supabase.auth.getUser()).data.user?.id ?? 'anon';
+      const url = await pickAndUploadImage({
+        bucket: 'trade-images',
+        pathPrefix: `${userId}/trade`,
+      });
+      if (url) {
+        setField('imageUrls', [...form.imageUrls, url]);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      Alert.alert('画像追加に失敗', msg);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeImage = (idx: number) => {
+    setField(
+      'imageUrls',
+      form.imageUrls.filter((_, i) => i !== idx),
+    );
+  };
 
   const isSearching = pairSearch.trim() !== '';
 
@@ -196,6 +230,7 @@ export default function RecordScreen() {
         pnl_pips: pnlPips,
         memo: form.memo.trim() || null,
         is_shared: form.isShared,
+        image_urls: form.imageUrls,
       };
 
       const { data: insertedRow, error: insertError } = await supabase
@@ -494,6 +529,41 @@ export default function RecordScreen() {
             />
           </View>
 
+          <View style={styles.section}>
+            <Text style={styles.label}>チャート画像（任意・最大4枚）</Text>
+            <View style={styles.imageRow}>
+              {form.imageUrls.map((uri, i) => (
+                <View key={uri} style={styles.imageThumb}>
+                  <Image source={{ uri }} style={styles.imageThumbImg} contentFit="cover" />
+                  <Pressable
+                    onPress={() => removeImage(i)}
+                    hitSlop={6}
+                    style={styles.imageRemove}
+                  >
+                    <Ionicons name="close" size={14} color="#fff" />
+                  </Pressable>
+                </View>
+              ))}
+              {form.imageUrls.length < 4 && (
+                <Pressable
+                  onPress={addImage}
+                  disabled={uploadingImage || loading}
+                  style={({ pressed }) => [
+                    styles.imageAddButton,
+                    pressed && styles.imageAddButtonPressed,
+                    uploadingImage && styles.imageAddButtonDisabled,
+                  ]}
+                >
+                  {uploadingImage ? (
+                    <ActivityIndicator color={c.textSecondary} />
+                  ) : (
+                    <Ionicons name="add" size={32} color={c.textSecondary} />
+                  )}
+                </Pressable>
+              )}
+            </View>
+          </View>
+
           <View style={[styles.section, styles.switchRow]}>
             <View style={styles.flex}>
               <Text style={styles.label}>フィードに共有</Text>
@@ -718,6 +788,51 @@ function makeStyles(c: ThemeColors) {
   },
   resultButtonTextSelected: {
     color: '#fff',
+  },
+  imageRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  imageThumb: {
+    position: 'relative',
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: c.surfaceAlt,
+  },
+  imageThumbImg: {
+    width: '100%',
+    height: '100%',
+  },
+  imageRemove: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageAddButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: c.surface,
+  },
+  imageAddButtonPressed: {
+    opacity: 0.7,
+  },
+  imageAddButtonDisabled: {
+    opacity: 0.5,
   },
   switchRow: {
     flexDirection: 'row',

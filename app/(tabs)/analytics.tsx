@@ -248,6 +248,20 @@ export default function AnalyticsScreen() {
                   </View>
                 </>
               )}
+
+              <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                時間帯別パフォーマンス
+              </Text>
+              <View style={styles.chartCard}>
+                <HourlyHeatmap trades={monthlyTrades} />
+              </View>
+
+              <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                曜日別パフォーマンス
+              </Text>
+              <View style={styles.chartCard}>
+                <WeekdayPerf trades={monthlyTrades} />
+              </View>
             </>
           ) : (
             <View style={[styles.emptyBox, styles.sectionLabelMt]}>
@@ -273,6 +287,110 @@ export default function AnalyticsScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+  );
+}
+
+function HourlyHeatmap({ trades }: { trades: Trade[] }) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
+  const hourly = useMemo(() => {
+    const map = new Map<number, { pnl: number; count: number }>();
+    for (const t of trades) {
+      const h = new Date(t.traded_at).getHours();
+      const cur = map.get(h) ?? { pnl: 0, count: 0 };
+      cur.pnl += t.pnl ?? 0;
+      cur.count += 1;
+      map.set(h, cur);
+    }
+    return map;
+  }, [trades]);
+
+  const maxAbs = Math.max(
+    1,
+    ...Array.from(hourly.values()).map((v) => Math.abs(v.pnl)),
+  );
+
+  return (
+    <View style={styles.heatmapWrap}>
+      {Array.from({ length: 24 }).map((_, h) => {
+        const v = hourly.get(h);
+        const intensity = v ? Math.min(1, Math.abs(v.pnl) / maxAbs) : 0;
+        const bg = !v
+          ? c.surfaceAlt
+          : v.pnl > 0
+            ? withOpacity(c.win, 0.3 + intensity * 0.7)
+            : v.pnl < 0
+              ? withOpacity(c.loss, 0.3 + intensity * 0.7)
+              : c.surfaceAlt;
+        return (
+          <View key={h} style={[styles.heatmapCell, { backgroundColor: bg }]}>
+            <Text style={styles.heatmapHour}>{h}</Text>
+            {v && (
+              <Text
+                style={[
+                  styles.heatmapVal,
+                  v.pnl !== 0 && { color: '#fff' },
+                ]}
+                numberOfLines={1}
+              >
+                {v.count}
+              </Text>
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function WeekdayPerf({ trades }: { trades: Trade[] }) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const labels = ['日', '月', '火', '水', '木', '金', '土'];
+
+  const weekly = useMemo(() => {
+    const arr = labels.map(() => ({ pnl: 0, count: 0, win: 0, loss: 0 }));
+    for (const t of trades) {
+      const w = new Date(t.traded_at).getDay();
+      arr[w].pnl += t.pnl ?? 0;
+      arr[w].count += 1;
+      if (t.result === 'win') arr[w].win += 1;
+      if (t.result === 'loss') arr[w].loss += 1;
+    }
+    return arr;
+  }, [trades, labels]);
+
+  return (
+    <View style={styles.weekdayWrap}>
+      {weekly.map((v, i) => {
+        const winRate =
+          v.win + v.loss > 0
+            ? Math.round((v.win / (v.win + v.loss)) * 100)
+            : null;
+        return (
+          <View key={labels[i]} style={styles.weekdayRow}>
+            <Text
+              style={[
+                styles.weekdayLabel,
+                i === 0 && { color: c.loss },
+                i === 6 && { color: c.verified },
+              ]}
+            >
+              {labels[i]}
+            </Text>
+            <View style={styles.weekdayStats}>
+              <Text style={[styles.weekdayPnl, pnlColor(v.pnl, c)]}>
+                {v.count > 0 ? formatPnl(v.pnl) : '—'}
+              </Text>
+              <Text style={styles.weekdaySub}>
+                {v.count}回{winRate !== null ? ` · 勝率${winRate}%` : ''}
+              </Text>
+            </View>
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -726,6 +844,62 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
     },
     chart: { borderRadius: 8 },
+    heatmapWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 2,
+      width: '100%',
+    },
+    heatmapCell: {
+      width: '12%',
+      aspectRatio: 1,
+      borderRadius: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 2,
+    },
+    heatmapHour: {
+      fontSize: 9,
+      fontWeight: '600',
+      color: c.textPrimary,
+    },
+    heatmapVal: {
+      fontSize: 9,
+      color: c.textSecondary,
+      fontWeight: '500',
+    },
+    weekdayWrap: {
+      width: '100%',
+      gap: 6,
+    },
+    weekdayRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surfaceAlt,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    weekdayLabel: {
+      width: 30,
+      fontSize: 14,
+      fontWeight: '700',
+      color: c.textPrimary,
+    },
+    weekdayStats: {
+      flex: 1,
+      alignItems: 'flex-end',
+    },
+    weekdayPnl: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: c.textPrimary,
+    },
+    weekdaySub: {
+      fontSize: 11,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
     calendarWrap: { width: '100%' },
     calendarWeek: { flexDirection: 'row', marginBottom: 4 },
     calendarHeadCell: { flex: 1, alignItems: 'center', paddingVertical: 4 },

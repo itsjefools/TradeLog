@@ -208,29 +208,42 @@ export default function UserProfileScreen() {
           )}
 
           {!isMyself && (
-            <Pressable
-              onPress={toggleFollow}
-              disabled={actionLoading}
-              style={({ pressed }) => [
-                styles.followButton,
-                isFollowing && styles.followButtonActive,
-                pressed && styles.followButtonPressed,
-                actionLoading && styles.followButtonDisabled,
-              ]}
-            >
-              {actionLoading ? (
-                <ActivityIndicator color={isFollowing ? c.textPrimary : '#fff'} />
-              ) : (
-                <Text
-                  style={[
-                    styles.followButtonText,
-                    isFollowing && styles.followButtonTextActive,
-                  ]}
-                >
-                  {isFollowing ? 'フォロー中' : '+ フォロー'}
-                </Text>
-              )}
-            </Pressable>
+            <View style={styles.actionRow}>
+              <Pressable
+                onPress={toggleFollow}
+                disabled={actionLoading}
+                style={({ pressed }) => [
+                  styles.followButton,
+                  isFollowing && styles.followButtonActive,
+                  pressed && styles.followButtonPressed,
+                  actionLoading && styles.followButtonDisabled,
+                ]}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator
+                    color={isFollowing ? c.textPrimary : '#fff'}
+                  />
+                ) : (
+                  <Text
+                    style={[
+                      styles.followButtonText,
+                      isFollowing && styles.followButtonTextActive,
+                    ]}
+                  >
+                    {isFollowing ? 'フォロー中' : '+ フォロー'}
+                  </Text>
+                )}
+              </Pressable>
+              <Pressable
+                onPress={() => router.push(`/dm/${targetId}`)}
+                style={({ pressed }) => [
+                  styles.messageButton,
+                  pressed && styles.messageButtonPressed,
+                ]}
+              >
+                <Text style={styles.messageButtonText}>メッセージ</Text>
+              </Pressable>
+            </View>
           )}
         </View>
 
@@ -438,8 +451,12 @@ function makeStyles(c: ThemeColors) {
       textAlign: 'center',
       lineHeight: 20,
     },
-    followButton: {
+    actionRow: {
+      flexDirection: 'row',
+      gap: 8,
       marginTop: 16,
+    },
+    followButton: {
       paddingHorizontal: 28,
       paddingVertical: 10,
       borderRadius: 999,
@@ -450,6 +467,25 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: 40,
+    },
+    messageButton: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 999,
+      backgroundColor: c.surfaceAlt,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 40,
+    },
+    messageButtonPressed: {
+      opacity: 0.7,
+    },
+    messageButtonText: {
+      color: c.textPrimary,
+      fontSize: 14,
+      fontWeight: '600',
     },
     followButtonActive: {
       backgroundColor: c.surfaceAlt,

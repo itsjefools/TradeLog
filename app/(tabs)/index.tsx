@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -290,6 +291,20 @@ export default function FeedScreen() {
                 <Ionicons name="trophy-outline" size={20} color={c.textPrimary} />
               </Pressable>
             </Link>
+            <Link href="/messages" asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <Ionicons
+                  name="paper-plane-outline"
+                  size={20}
+                  color={c.textPrimary}
+                />
+              </Pressable>
+            </Link>
             <Link href="/notifications" asChild>
               <Pressable
                 style={({ pressed }) => [
@@ -509,6 +524,24 @@ function FeedCard({
 
       {item.content && item.content.trim() !== '' && (
         <Text style={styles.memo}>{item.content}</Text>
+      )}
+
+      {item.image_urls && item.image_urls.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.imagesScroll}
+          contentContainerStyle={styles.imagesScrollContent}
+        >
+          {item.image_urls.map((uri) => (
+            <Image
+              key={uri}
+              source={{ uri }}
+              style={styles.feedImage}
+              contentFit="cover"
+            />
+          ))}
+        </ScrollView>
       )}
 
       {item.hashtags && item.hashtags.length > 0 && (
@@ -836,6 +869,18 @@ function makeStyles(c: ThemeColors) {
       color: c.textPrimary,
       marginTop: 10,
       lineHeight: 19,
+    },
+    imagesScroll: {
+      marginTop: 10,
+    },
+    imagesScrollContent: {
+      gap: 8,
+    },
+    feedImage: {
+      width: 200,
+      height: 200,
+      borderRadius: 10,
+      backgroundColor: c.surfaceAlt,
     },
     tagChips: {
       flexDirection: 'row',

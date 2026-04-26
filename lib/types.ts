@@ -69,6 +69,7 @@ export type Trade = {
   memo: string | null;
   traded_at: string;
   is_shared: boolean;
+  image_urls: string[] | null;
   created_at: string;
 };
 
@@ -84,6 +85,7 @@ export type TradeInsert = {
   memo?: string | null;
   traded_at?: string;
   is_shared?: boolean;
+  image_urls?: string[];
 };
 
 export const COMMON_CURRENCY_PAIRS = [

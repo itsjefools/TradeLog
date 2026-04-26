@@ -107,6 +107,18 @@ function ThemedRoot() {
               options={{ presentation: 'modal', headerShown: false }}
             />
             <Stack.Screen
+              name="glossary"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="messages"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="dm/[id]"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
               name="search"
               options={{ presentation: 'modal', headerShown: false }}
             />

@@ -1,6 +1,6 @@
 // Free / Premium プランの制限定義
-// 現状は IAP 未統合のため、is_premium=true は Supabase で手動更新が必要
-// 将来的に RevenueCat / expo-in-app-purchases を統合予定
+// 課金は RevenueCat 経由。profiles.is_premium は use-revenue-cat フックが
+// RevenueCat の entitlement を元に自動同期する
 
 export const FREE_LIMITS = {
   monthlyTrades: 30,

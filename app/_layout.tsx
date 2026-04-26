@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { I18nProvider } from '@/hooks/use-i18n';
 import { ProfileProvider } from '@/hooks/use-profile';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
+import { RevenueCatProvider } from '@/hooks/use-revenue-cat';
 import { ThemeProvider, useTheme } from '@/hooks/use-theme';
 import { TradesProvider } from '@/hooks/use-trades';
 
@@ -75,6 +76,7 @@ function ThemedRoot() {
       <ProfileProvider>
         <I18nProvider>
         <TradesProvider>
+        <RevenueCatProvider>
           <Stack>
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -155,6 +157,7 @@ function ThemedRoot() {
               options={{ presentation: 'modal', title: 'Modal' }}
             />
           </Stack>
+        </RevenueCatProvider>
         </TradesProvider>
         </I18nProvider>
       </ProfileProvider>

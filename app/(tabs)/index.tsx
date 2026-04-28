@@ -372,11 +372,10 @@ export default function FeedScreen() {
               </Text>
             </View>
           ) : (
-            items.map((item, index) => (
+            items.map((item) => (
               <FeedCard
                 key={item.id}
                 item={item}
-                index={index}
                 onToggleLike={toggleLike}
                 onToggleBookmark={toggleBookmark}
                 onToggleRepost={toggleRepost}

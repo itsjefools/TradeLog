@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -20,6 +20,7 @@ import { ThemeColors } from '@/constants/theme';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
+import { getPlan } from '@/lib/premium';
 import { Trade } from '@/lib/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -29,6 +30,7 @@ export default function AnalyticsScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const { trades, loading, error, refresh, deleteTrade } = useTrades();
   const { profile } = useProfile();
+  const isPremium = getPlan(profile?.is_premium) === 'premium';
   const [refreshing, setRefreshing] = useState(false);
 
   // 月選択 (offset=0 が今月、-1 で先月)
@@ -201,78 +203,84 @@ export default function AnalyticsScreen() {
                 />
               </View>
 
-              <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                日別P&L推移
-              </Text>
-              <View style={styles.chartCard}>
-                <BarChart
-                  data={dailyData}
-                  width={SCREEN_WIDTH - 64}
-                  height={200}
-                  chartConfig={chartConfig}
-                  fromZero
-                  showValuesOnTopOfBars={false}
-                  yAxisLabel=""
-                  yAxisSuffix=""
-                  withInnerLines
-                  style={styles.chart}
-                />
-              </View>
-
-              {pairData.labels.length > 0 && (
+              {isPremium ? (
                 <>
                   <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                    通貨ペア別損益
+                    日別P&L推移
                   </Text>
                   <View style={styles.chartCard}>
                     <BarChart
-                      data={pairData}
+                      data={dailyData}
                       width={SCREEN_WIDTH - 64}
-                      height={Math.max(200, pairData.labels.length * 36)}
+                      height={200}
                       chartConfig={chartConfig}
                       fromZero
+                      showValuesOnTopOfBars={false}
                       yAxisLabel=""
                       yAxisSuffix=""
-                      verticalLabelRotation={30}
+                      withInnerLines
                       style={styles.chart}
                     />
                   </View>
-                </>
-              )}
 
-              {winLossData.length > 0 && (
-                <>
+                  {pairData.labels.length > 0 && (
+                    <>
+                      <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                        通貨ペア別損益
+                      </Text>
+                      <View style={styles.chartCard}>
+                        <BarChart
+                          data={pairData}
+                          width={SCREEN_WIDTH - 64}
+                          height={Math.max(200, pairData.labels.length * 36)}
+                          chartConfig={chartConfig}
+                          fromZero
+                          yAxisLabel=""
+                          yAxisSuffix=""
+                          verticalLabelRotation={30}
+                          style={styles.chart}
+                        />
+                      </View>
+                    </>
+                  )}
+
+                  {winLossData.length > 0 && (
+                    <>
+                      <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                        勝敗比率
+                      </Text>
+                      <View style={styles.chartCard}>
+                        <PieChart
+                          data={winLossData}
+                          width={SCREEN_WIDTH - 64}
+                          height={180}
+                          chartConfig={chartConfig}
+                          accessor="population"
+                          backgroundColor="transparent"
+                          paddingLeft="0"
+                          hasLegend
+                        />
+                      </View>
+                    </>
+                  )}
+
                   <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                    勝敗比率
+                    時間帯別パフォーマンス
                   </Text>
                   <View style={styles.chartCard}>
-                    <PieChart
-                      data={winLossData}
-                      width={SCREEN_WIDTH - 64}
-                      height={180}
-                      chartConfig={chartConfig}
-                      accessor="population"
-                      backgroundColor="transparent"
-                      paddingLeft="0"
-                      hasLegend
-                    />
+                    <HourlyHeatmap trades={monthlyTrades} />
+                  </View>
+
+                  <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                    曜日別パフォーマンス
+                  </Text>
+                  <View style={styles.chartCard}>
+                    <WeekdayPerf trades={monthlyTrades} />
                   </View>
                 </>
+              ) : (
+                <PremiumLock c={c} styles={styles} />
               )}
-
-              <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                時間帯別パフォーマンス
-              </Text>
-              <View style={styles.chartCard}>
-                <HourlyHeatmap trades={monthlyTrades} />
-              </View>
-
-              <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                曜日別パフォーマンス
-              </Text>
-              <View style={styles.chartCard}>
-                <WeekdayPerf trades={monthlyTrades} />
-              </View>
             </>
           ) : (
             <View style={[styles.emptyBox, styles.sectionLabelMt]}>
@@ -298,6 +306,38 @@ export default function AnalyticsScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+  );
+}
+
+function PremiumLock({
+  c,
+  styles,
+}: {
+  c: ThemeColors;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  return (
+    <Link href="/premium" asChild>
+      <Pressable
+        style={({ pressed }) => [
+          styles.premiumLock,
+          pressed && styles.premiumLockPressed,
+        ]}
+      >
+        <View style={styles.premiumLockIcon}>
+          <Ionicons name="diamond" size={24} color="#fff" />
+        </View>
+        <Text style={styles.premiumLockTitle}>高度な分析は Premium で解放</Text>
+        <Text style={styles.premiumLockBody}>
+          日別P&L推移・通貨ペア別損益・勝敗比率・{'\n'}
+          時間帯別・曜日別パフォーマンスが見られます。
+        </Text>
+        <View style={styles.premiumLockCta}>
+          <Text style={styles.premiumLockCtaText}>Premium にアップグレード</Text>
+          <Ionicons name="chevron-forward" size={16} color="#fff" />
+        </View>
+      </Pressable>
+    </Link>
   );
 }
 
@@ -1035,6 +1075,54 @@ function makeStyles(c: ThemeColors) {
       color: c.textSecondary,
       textAlign: 'center',
       lineHeight: 20,
+    },
+    premiumLock: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 24,
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderColor: c.accent,
+      marginTop: 12,
+      gap: 10,
+    },
+    premiumLockPressed: {
+      opacity: 0.85,
+    },
+    premiumLockIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      backgroundColor: c.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 4,
+    },
+    premiumLockTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.textPrimary,
+    },
+    premiumLockBody: {
+      fontSize: 12,
+      color: c.textSecondary,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
+    premiumLockCta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: c.accent,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 999,
+      marginTop: 6,
+    },
+    premiumLockCtaText: {
+      fontSize: 13,
+      color: '#fff',
+      fontWeight: '700',
     },
     tradeRow: {
       backgroundColor: c.surface,

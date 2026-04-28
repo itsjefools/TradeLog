@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 
@@ -16,6 +17,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: inactive,
         headerShown: false,
         tabBarButton: HapticTab,
+        animation: 'none',
         tabBarStyle: {
           backgroundColor: c.background,
           borderTopColor: c.border,
@@ -33,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: '記録',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="plus.circle.fill" color={color} />
+            <Ionicons size={26} name="create-outline" color={color} />
           ),
         }}
       />

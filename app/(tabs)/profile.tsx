@@ -494,15 +494,17 @@ export default function ProfileScreen() {
               <Pressable
                 key={t.key}
                 onPress={() => switchTab(t.key)}
-                style={styles.tabButton}
+                style={[
+                  styles.tabButton,
+                  active && styles.tabButtonActive,
+                ]}
                 hitSlop={4}
               >
                 <Ionicons
                   name={t.icon}
-                  size={20}
+                  size={22}
                   color={active ? TAB_ACCENT : c.textSecondary}
                 />
-                {active && <View style={styles.tabUnderline} />}
               </Pressable>
             );
           })}
@@ -519,11 +521,10 @@ export default function ProfileScreen() {
               <Text style={styles.emptyTitle}>{emptyMessage}</Text>
             </View>
           ) : (
-            items.map((item, i) => (
+            items.map((item) => (
               <FeedCard
                 key={`${tab}-${item.id}`}
                 item={item}
-                index={i}
                 onToggleLike={toggleLike}
                 onToggleBookmark={toggleBookmark}
                 onToggleRepost={toggleRepost}
@@ -710,6 +711,7 @@ function makeStyles(c: ThemeColors) {
     },
     tabBar: {
       flexDirection: 'row',
+      width: '100%',
       backgroundColor: c.background,
       marginTop: 16,
       borderTopWidth: StyleSheet.hairlineWidth,
@@ -720,18 +722,14 @@ function makeStyles(c: ThemeColors) {
     tabButton: {
       flex: 1,
       alignItems: 'center',
+      justifyContent: 'center',
       paddingVertical: 14,
-      position: 'relative',
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+      marginBottom: -StyleSheet.hairlineWidth,
     },
-    tabUnderline: {
-      position: 'absolute',
-      bottom: 0,
-      left: '30%',
-      right: '30%',
-      height: 2,
-      backgroundColor: TAB_ACCENT,
-      borderTopLeftRadius: 2,
-      borderTopRightRadius: 2,
+    tabButtonActive: {
+      borderBottomColor: TAB_ACCENT,
     },
     tabContent: {
       paddingHorizontal: 12,

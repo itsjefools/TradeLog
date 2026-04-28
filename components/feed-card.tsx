@@ -11,7 +11,6 @@ import {
   View,
 } from 'react-native';
 import Animated, {
-  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -37,13 +36,11 @@ export type FeedCardItem = Post & {
 
 export function FeedCard({
   item,
-  index,
   onToggleLike,
   onToggleBookmark,
   onToggleRepost,
 }: {
   item: FeedCardItem;
-  index: number;
   onToggleLike: (item: FeedCardItem) => void;
   onToggleBookmark: (item: FeedCardItem) => void;
   onToggleRepost: (item: FeedCardItem) => void;
@@ -92,10 +89,7 @@ export function FeedCard({
     null;
 
   return (
-    <Animated.View
-      entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 35)}
-      style={styles.card}
-    >
+    <View style={styles.card}>
       {repostByName && (
         <View style={styles.likedByRow}>
           <Ionicons name="repeat" size={12} color={c.win} />
@@ -277,7 +271,7 @@ export function FeedCard({
 
         <Text style={styles.date}>{dateStr}</Text>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 

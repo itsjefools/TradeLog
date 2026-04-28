@@ -385,6 +385,17 @@ export default function ProfileScreen() {
       >
         <View style={styles.profileSection}>
           <View style={styles.profileCard}>
+            <Link href="/profile-edit" asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.editIconButton,
+                  pressed && styles.editIconButtonPressed,
+                ]}
+                hitSlop={12}
+              >
+                <Ionicons name="create-outline" size={22} color="#94A3B8" />
+              </Pressable>
+            </Link>
             <View style={styles.avatarWrap}>
               <Avatar
                 uri={profile?.avatar_url}
@@ -468,18 +479,6 @@ export default function ProfileScreen() {
               <Text style={styles.statLabel}>フォロー中</Text>
             </View>
           </View>
-
-          <Link href="/profile-edit" asChild>
-            <Pressable
-              style={({ pressed }) => [
-                styles.editButton,
-                pressed && styles.editButtonPressed,
-              ]}
-              hitSlop={4}
-            >
-              <Text style={styles.editButtonText}>プロフィールを編集</Text>
-            </Pressable>
-          </Link>
 
           {!loading && !profile && (
             <Pressable onPress={refresh} style={styles.retryButton}>
@@ -684,21 +683,18 @@ function makeStyles(c: ThemeColors) {
       width: StyleSheet.hairlineWidth,
       backgroundColor: c.border,
     },
-    editButton: {
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: 10,
-      paddingVertical: 11,
+    editIconButton: {
+      position: 'absolute',
+      top: 12,
+      left: 12,
+      width: 32,
+      height: 32,
       alignItems: 'center',
-      backgroundColor: c.surface,
+      justifyContent: 'center',
+      zIndex: 1,
     },
-    editButtonPressed: {
-      opacity: 0.6,
-    },
-    editButtonText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: c.textPrimary,
+    editIconButtonPressed: {
+      opacity: 0.5,
     },
     retryButton: {
       paddingVertical: 12,

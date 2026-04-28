@@ -4,12 +4,16 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const TAB_WIDTH = SCREEN_WIDTH / 3;
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
@@ -377,10 +381,8 @@ export default function ProfileScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[1]}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* index 0: profile info */}
         <View style={styles.profileSection}>
           <View style={styles.profileCard}>
             <View style={styles.avatarWrap}>
@@ -486,7 +488,6 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* index 1: sticky tab bar */}
         <View style={styles.tabBar}>
           {tabs.map((t) => {
             const active = tab === t.key;
@@ -510,7 +511,6 @@ export default function ProfileScreen() {
           })}
         </View>
 
-        {/* index 2: tab content */}
         <View style={styles.tabContent}>
           {tabLoading ? (
             <View style={styles.center}>
@@ -711,7 +711,9 @@ function makeStyles(c: ThemeColors) {
     },
     tabBar: {
       flexDirection: 'row',
-      width: '100%',
+      alignItems: 'stretch',
+      width: SCREEN_WIDTH,
+      height: 52,
       backgroundColor: c.background,
       marginTop: 16,
       borderTopWidth: StyleSheet.hairlineWidth,
@@ -720,13 +722,12 @@ function makeStyles(c: ThemeColors) {
       borderBottomColor: c.border,
     },
     tabButton: {
-      flex: 1,
+      width: TAB_WIDTH,
+      height: 52,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 14,
       borderBottomWidth: 2,
       borderBottomColor: 'transparent',
-      marginBottom: -StyleSheet.hairlineWidth,
     },
     tabButtonActive: {
       borderBottomColor: TAB_ACCENT,

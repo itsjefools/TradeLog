@@ -12,6 +12,7 @@ import 'react-native-reanimated';
 import { useAuth } from '@/hooks/use-auth';
 import { BlocksProvider } from '@/hooks/use-blocks';
 import { I18nProvider } from '@/hooks/use-i18n';
+import { useOnboarding } from '@/hooks/use-onboarding';
 import { ProfileProvider } from '@/hooks/use-profile';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { RevenueCatProvider } from '@/hooks/use-revenue-cat';
@@ -25,21 +26,30 @@ export const unstable_settings = {
 function useProtectedRoute(
   session: ReturnType<typeof useAuth>['session'],
   loading: boolean,
+  onboardingCompleted: boolean | null,
 ) {
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || onboardingCompleted === null) return;
 
-    const inAuthScreen = segments[0] === 'login';
+    const first = segments[0];
+    const inAuthScreen = first === 'login';
+    const inOnboarding = first === 'onboarding';
 
-    if (!session && !inAuthScreen) {
+    // 未オンボーディング & 未ログインなら強制的にオンボーディングへ
+    if (!onboardingCompleted && !session && !inOnboarding) {
+      router.replace('/onboarding');
+      return;
+    }
+
+    if (!session && !inAuthScreen && !inOnboarding) {
       router.replace('/login');
-    } else if (session && inAuthScreen) {
+    } else if (session && (inAuthScreen || inOnboarding)) {
       router.replace('/');
     }
-  }, [session, loading, segments, router]);
+  }, [session, loading, segments, router, onboardingCompleted]);
 }
 
 export default function RootLayout() {
@@ -53,8 +63,9 @@ export default function RootLayout() {
 function ThemedRoot() {
   const { resolved, colors } = useTheme();
   const { session, loading } = useAuth();
+  const { completed: onboardingCompleted } = useOnboarding();
 
-  useProtectedRoute(session, loading);
+  useProtectedRoute(session, loading, onboardingCompleted);
   usePushNotifications();
 
   if (loading) {
@@ -80,6 +91,7 @@ function ThemedRoot() {
         <BlocksProvider>
         <RevenueCatProvider>
           <Stack screenOptions={{ animation: 'none' }}>
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen

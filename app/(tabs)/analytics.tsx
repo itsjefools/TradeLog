@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -17,8 +19,9 @@ import { BarChart, PieChart } from 'react-native-chart-kit';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
-import { useThemeColors } from '@/hooks/use-theme';
+import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { getPlan } from '@/lib/premium';
 import { Trade } from '@/lib/types';
@@ -27,6 +30,9 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function AnalyticsScreen() {
   const c = useThemeColors();
+  const { resolved } = useTheme();
+  const isDark = resolved === 'dark';
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const { trades, loading, error, refresh, deleteTrade } = useTrades();
   const { profile } = useProfile();
@@ -203,8 +209,8 @@ export default function AnalyticsScreen() {
                 />
               </View>
 
-              {isPremium ? (
-                <>
+              <View style={styles.lockedWrap}>
+                <View pointerEvents={isPremium ? 'auto' : 'none'}>
                   <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
                     日別P&L推移
                   </Text>
@@ -277,10 +283,51 @@ export default function AnalyticsScreen() {
                   <View style={styles.chartCard}>
                     <WeekdayPerf trades={monthlyTrades} />
                   </View>
-                </>
-              ) : (
-                <PremiumLock c={c} styles={styles} />
-              )}
+                </View>
+
+                {!isPremium && (
+                  <BlurView
+                    intensity={Platform.OS === 'ios' ? 22 : 40}
+                    tint={isDark ? 'dark' : 'light'}
+                    style={styles.lockedBlur}
+                  >
+                    <View
+                      style={[
+                        styles.lockedTint,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(0,0,0,0.35)'
+                            : 'rgba(255,255,255,0.35)',
+                        },
+                      ]}
+                    />
+                    <View style={styles.lockedCtaWrap}>
+                      <View style={styles.lockedIcon}>
+                        <Ionicons name="lock-closed" size={28} color="#fff" />
+                      </View>
+                      <Text style={styles.lockedTitle}>
+                        {t('premiumLock.title')}
+                      </Text>
+                      <Text style={styles.lockedBody}>
+                        {t('premiumLock.body')}
+                      </Text>
+                      <Link href="/premium" asChild>
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.lockedCta,
+                            pressed && styles.lockedCtaPressed,
+                          ]}
+                          hitSlop={6}
+                        >
+                          <Text style={styles.lockedCtaText}>
+                            {t('premiumLock.cta')}
+                          </Text>
+                        </Pressable>
+                      </Link>
+                    </View>
+                  </BlurView>
+                )}
+              </View>
             </>
           ) : (
             <View style={[styles.emptyBox, styles.sectionLabelMt]}>
@@ -306,38 +353,6 @@ export default function AnalyticsScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
-  );
-}
-
-function PremiumLock({
-  c,
-  styles,
-}: {
-  c: ThemeColors;
-  styles: ReturnType<typeof makeStyles>;
-}) {
-  return (
-    <Link href="/premium" asChild>
-      <Pressable
-        style={({ pressed }) => [
-          styles.premiumLock,
-          pressed && styles.premiumLockPressed,
-        ]}
-      >
-        <View style={styles.premiumLockIcon}>
-          <Ionicons name="diamond" size={24} color="#fff" />
-        </View>
-        <Text style={styles.premiumLockTitle}>高度な分析は Premium で解放</Text>
-        <Text style={styles.premiumLockBody}>
-          日別P&L推移・通貨ペア別損益・勝敗比率・{'\n'}
-          時間帯別・曜日別パフォーマンスが見られます。
-        </Text>
-        <View style={styles.premiumLockCta}>
-          <Text style={styles.premiumLockCtaText}>Premium にアップグレード</Text>
-          <Ionicons name="chevron-forward" size={16} color="#fff" />
-        </View>
-      </Pressable>
-    </Link>
   );
 }
 
@@ -1076,51 +1091,75 @@ function makeStyles(c: ThemeColors) {
       textAlign: 'center',
       lineHeight: 20,
     },
-    premiumLock: {
-      backgroundColor: c.surface,
-      borderRadius: 16,
-      padding: 24,
-      alignItems: 'center',
-      borderWidth: 1.5,
-      borderColor: c.accent,
+    lockedWrap: {
+      position: 'relative',
       marginTop: 12,
+      borderRadius: 16,
+      overflow: 'hidden',
+    },
+    lockedBlur: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: 16,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      paddingTop: 60,
+    },
+    lockedTint: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    lockedCtaWrap: {
+      alignItems: 'center',
+      paddingHorizontal: 28,
       gap: 10,
     },
-    premiumLockPressed: {
-      opacity: 0.85,
-    },
-    premiumLockIcon: {
-      width: 48,
-      height: 48,
-      borderRadius: 12,
+    lockedIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 16,
       backgroundColor: c.accent,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 4,
+      marginBottom: 6,
+      shadowColor: '#000',
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 6,
     },
-    premiumLockTitle: {
-      fontSize: 15,
-      fontWeight: '700',
+    lockedTitle: {
+      fontSize: 18,
+      fontWeight: '800',
       color: c.textPrimary,
+      letterSpacing: -0.3,
+      textAlign: 'center',
     },
-    premiumLockBody: {
-      fontSize: 12,
+    lockedBody: {
+      fontSize: 13,
       color: c.textSecondary,
       textAlign: 'center',
-      lineHeight: 18,
+      lineHeight: 19,
+      maxWidth: 320,
     },
-    premiumLockCta: {
+    lockedCta: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
       backgroundColor: c.accent,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
+      paddingHorizontal: 22,
+      paddingVertical: 13,
       borderRadius: 999,
-      marginTop: 6,
+      marginTop: 10,
+      shadowColor: c.accent,
+      shadowOpacity: 0.4,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 6,
     },
-    premiumLockCtaText: {
-      fontSize: 13,
+    lockedCtaPressed: {
+      opacity: 0.85,
+    },
+    lockedCtaText: {
+      fontSize: 14,
       color: '#fff',
       fontWeight: '700',
     },

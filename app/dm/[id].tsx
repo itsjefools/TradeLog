@@ -162,6 +162,7 @@ export default function DMThreadScreen() {
               uri={partner.avatar_url}
               displayName={displayName}
               size={28}
+              profile={partner}
             />
           )}
           <Text style={styles.headerTitle} numberOfLines={1}>

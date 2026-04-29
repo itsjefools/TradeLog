@@ -135,7 +135,13 @@ function BookmarkCard({
       onPress={() => router.push(`/comments?postId=${item.id}`)}
     >
       <View style={styles.cardHead}>
-        <Avatar uri={profile?.avatar_url} displayName={displayName} size={32} />
+        <Avatar
+          uri={profile?.avatar_url}
+          displayName={displayName}
+          size={32}
+          profile={profile}
+          onPress={profile ? () => router.push(`/user/${profile.id}`) : undefined}
+        />
         <View style={{ flex: 1 }}>
           <Text style={styles.userName} numberOfLines={1}>
             {displayName}

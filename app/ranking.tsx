@@ -232,7 +232,18 @@ function RankingRowItem({
       <View style={[styles.rankBadge, rankStyle]}>
         <Text style={styles.rankText}>{rank}</Text>
       </View>
-      <Avatar uri={row.avatar_url} displayName={displayName} size={44} />
+      <Avatar
+        uri={row.avatar_url}
+        displayName={displayName}
+        size={44}
+        profile={{
+          username: row.username,
+          is_verified: row.is_verified,
+          nationality: row.nationality,
+          trade_style: row.trade_style,
+        }}
+        onPress={() => router.push(`/user/${row.user_id}`)}
+      />
       <View style={styles.userInfo}>
         <View style={styles.nameRow}>
           <Text style={styles.displayName} numberOfLines={1}>

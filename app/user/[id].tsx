@@ -175,7 +175,12 @@ export default function UserProfileScreen() {
 
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.profileCard}>
-          <Avatar uri={profile.avatar_url} displayName={displayName} size={80} />
+          <Avatar
+            uri={profile.avatar_url}
+            displayName={displayName}
+            size={80}
+            profile={profile}
+          />
           <View style={styles.nameRow}>
             <Text style={styles.displayName}>{displayName}</Text>
             {profile.is_verified && (

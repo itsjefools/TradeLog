@@ -207,7 +207,13 @@ function UserRow({
       style={({ pressed }) => [styles.userRow, pressed && styles.userRowPressed]}
       onPress={() => router.push(`/user/${profile.id}`)}
     >
-      <Avatar uri={profile.avatar_url} displayName={displayName} size={48} />
+      <Avatar
+        uri={profile.avatar_url}
+        displayName={displayName}
+        size={48}
+        profile={profile}
+        onPress={() => router.push(`/user/${profile.id}`)}
+      />
       <View style={styles.userInfo}>
         <View style={styles.nameRow}>
           <Text style={styles.displayName} numberOfLines={1}>
@@ -258,7 +264,13 @@ function TagPostRow({ post, router }: { post: TagPost; router: Router }) {
       onPress={() => router.push(`/comments?postId=${post.id}`)}
     >
       <View style={styles.tagPostHead}>
-        <Avatar uri={profile?.avatar_url} displayName={displayName} size={32} />
+        <Avatar
+          uri={profile?.avatar_url}
+          displayName={displayName}
+          size={32}
+          profile={profile}
+          onPress={profile ? () => router.push(`/user/${profile.id}`) : undefined}
+        />
         <View style={{ flex: 1 }}>
           <Text style={styles.displayName} numberOfLines={1}>
             {displayName}

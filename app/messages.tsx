@@ -126,6 +126,10 @@ function ConversationRow({
         uri={conv.partner_avatar_url}
         displayName={displayName}
         size={48}
+        profile={{
+          username: conv.partner_username,
+          is_verified: conv.partner_is_verified,
+        }}
       />
       <View style={styles.rowBody}>
         <View style={styles.rowHead}>

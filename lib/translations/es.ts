@@ -56,4 +56,9 @@ export default {
     followers: 'Seguidores',
     following: 'Siguiendo',
   },
+  premiumLock: {
+    title: 'Desbloquea análisis avanzado',
+    body: 'Tendencia diaria de P&L, ganancias por par, ratio de victorias y rendimiento por hora.',
+    cta: 'Suscríbete a Premium · 9,99 €/mes',
+  },
 };

@@ -260,9 +260,13 @@ function CommentNode({
   return (
     <View>
       <View style={[styles.commentRow, { paddingLeft: indent }]}>
-        <Pressable onPress={() => router.push(`/user/${cm.user_id}`)}>
-          <Avatar uri={profile?.avatar_url} displayName={displayName} size={depth === 0 ? 36 : 28} />
-        </Pressable>
+        <Avatar
+          uri={profile?.avatar_url}
+          displayName={displayName}
+          size={depth === 0 ? 36 : 28}
+          profile={profile}
+          onPress={() => router.push(`/user/${cm.user_id}`)}
+        />
         <View style={styles.commentBody}>
           <View style={styles.commentHead}>
             <Text style={styles.commentName} numberOfLines={1}>

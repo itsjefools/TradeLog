@@ -56,4 +56,9 @@ export default {
     followers: 'Seguidores',
     following: 'Seguindo',
   },
+  premiumLock: {
+    title: 'Libere análises avançadas',
+    body: 'Tendências diárias de P&L, resultados por par, taxa de acerto e desempenho por hora.',
+    cta: 'Assinar Premium · R$49,90/mês',
+  },
 };

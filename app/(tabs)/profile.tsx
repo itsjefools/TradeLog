@@ -385,22 +385,25 @@ export default function ProfileScreen() {
       >
         <View style={styles.profileSection}>
           <View style={styles.profileCard}>
-            <Link href="/profile-edit" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.editIconButton,
-                  pressed && styles.editIconButtonPressed,
-                ]}
-                hitSlop={12}
-              >
-                <Ionicons name="create-outline" size={22} color="#94A3B8" />
-              </Pressable>
-            </Link>
+            <View style={styles.editIconButton}>
+              <Link href="/profile-edit" asChild>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.editIconInner,
+                    pressed && styles.editIconButtonPressed,
+                  ]}
+                  hitSlop={12}
+                >
+                  <Ionicons name="create-outline" size={18} color="#94A3B8" />
+                </Pressable>
+              </Link>
+            </View>
             <View style={styles.avatarWrap}>
               <Avatar
                 uri={profile?.avatar_url}
                 displayName={displayName}
                 size={84}
+                profile={profile}
               />
             </View>
             <View style={styles.nameRow}>
@@ -687,11 +690,13 @@ function makeStyles(c: ThemeColors) {
       position: 'absolute',
       top: 12,
       left: 12,
-      width: 32,
-      height: 32,
+      zIndex: 1,
+    },
+    editIconInner: {
+      width: 28,
+      height: 28,
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1,
     },
     editIconButtonPressed: {
       opacity: 0.5,

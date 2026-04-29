@@ -56,4 +56,9 @@ export default {
     followers: 'フォロワー',
     following: 'フォロー中',
   },
+  premiumLock: {
+    title: '高度な分析を解放',
+    body: '日別P&L推移・通貨ペア別損益・勝敗比率・時間帯別パフォーマンスが見られます',
+    cta: 'Premium にアップグレード ¥980/月',
+  },
 };

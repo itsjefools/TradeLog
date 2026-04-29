@@ -115,6 +115,8 @@ export function FeedCard({
           uri={profile?.avatar_url}
           displayName={displayName}
           size={40}
+          profile={profile}
+          onPress={() => router.push(`/user/${userId}`)}
         />
         <View style={styles.userInfo}>
           <View style={styles.nameRow}>

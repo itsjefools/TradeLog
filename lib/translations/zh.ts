@@ -55,4 +55,9 @@ export default {
     followers: '粉丝',
     following: '关注',
   },
+  premiumLock: {
+    title: '解锁高级分析',
+    body: '每日盈亏走势、货币对收益、胜负比和时段表现。',
+    cta: '升级 Premium · ¥68/月',
+  },
 };

@@ -176,7 +176,13 @@ function NotificationRow({ item }: { item: NotificationItem }) {
         pressed && styles.rowPressed,
       ]}
     >
-      <Avatar uri={actor?.avatar_url} displayName={displayName} size={40} />
+      <Avatar
+        uri={actor?.avatar_url}
+        displayName={displayName}
+        size={40}
+        profile={actor}
+        onPress={actor ? () => router.push(`/user/${item.actor_id}`) : undefined}
+      />
       <View style={styles.body2}>
         <Text style={styles.text}>
           <Text style={styles.actorName}>{displayName}</Text>

@@ -56,4 +56,9 @@ export default {
     followers: 'Followers',
     following: 'Following',
   },
+  premiumLock: {
+    title: 'Unlock advanced analytics',
+    body: 'Daily P&L trends, pair-by-pair results, win/loss ratio, and hourly performance.',
+    cta: 'Upgrade to Premium · $9.99/mo',
+  },
 };

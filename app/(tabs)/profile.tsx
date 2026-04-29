@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -58,6 +58,7 @@ export default function ProfileScreen() {
   const [tabLoading, setTabLoading] = useState(false);
 
   const myId = session?.user.id ?? null;
+  const router = useRouter();
 
   const loadCounts = useCallback(async () => {
     if (!myId) {
@@ -472,15 +473,33 @@ export default function ProfileScreen() {
               <Text style={styles.statLabel}>共有取引</Text>
             </View>
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.statItem,
+                pressed && styles.statItemPressed,
+              ]}
+              onPress={() =>
+                myId &&
+                router.push(`/follow-list?userId=${myId}&tab=followers`)
+              }
+            >
               <Text style={styles.statValue}>{followerCount}</Text>
               <Text style={styles.statLabel}>フォロワー</Text>
-            </View>
+            </Pressable>
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.statItem,
+                pressed && styles.statItemPressed,
+              ]}
+              onPress={() =>
+                myId &&
+                router.push(`/follow-list?userId=${myId}&tab=following`)
+              }
+            >
               <Text style={styles.statValue}>{followingCount}</Text>
               <Text style={styles.statLabel}>フォロー中</Text>
-            </View>
+            </Pressable>
           </View>
 
           {!loading && !profile && (
@@ -671,6 +690,9 @@ function makeStyles(c: ThemeColors) {
     statItem: {
       flex: 1,
       alignItems: 'center',
+    },
+    statItemPressed: {
+      opacity: 0.5,
     },
     statValue: {
       fontSize: 20,

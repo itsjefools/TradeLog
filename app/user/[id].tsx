@@ -327,15 +327,33 @@ export default function UserProfileScreen() {
             <Text style={styles.statLabel}>共有取引</Text>
           </View>
           <View style={styles.statDivider} />
-          <View style={styles.statItem}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.statItem,
+              pressed && styles.statItemPressed,
+            ]}
+            onPress={() =>
+              targetId &&
+              router.push(`/follow-list?userId=${targetId}&tab=followers`)
+            }
+          >
             <Text style={styles.statValue}>{followerCount}</Text>
             <Text style={styles.statLabel}>フォロワー</Text>
-          </View>
+          </Pressable>
           <View style={styles.statDivider} />
-          <View style={styles.statItem}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.statItem,
+              pressed && styles.statItemPressed,
+            ]}
+            onPress={() =>
+              targetId &&
+              router.push(`/follow-list?userId=${targetId}&tab=following`)
+            }
+          >
             <Text style={styles.statValue}>{followingCount}</Text>
             <Text style={styles.statLabel}>フォロー中</Text>
-          </View>
+          </Pressable>
         </View>
 
         <Text style={styles.sectionLabel}>共有された取引</Text>
@@ -588,6 +606,9 @@ function makeStyles(c: ThemeColors) {
     statItem: {
       flex: 1,
       alignItems: 'center',
+    },
+    statItemPressed: {
+      opacity: 0.5,
     },
     statValue: {
       fontSize: 20,

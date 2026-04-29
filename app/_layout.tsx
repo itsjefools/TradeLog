@@ -167,6 +167,10 @@ function ThemedRoot() {
               options={{ headerShown: false }}
             />
             <Stack.Screen
+              name="follow-list"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
               name="dm/[id]"
               options={{ headerShown: false }}
             />

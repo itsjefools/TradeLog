@@ -17,8 +17,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { MentionText } from '@/components/mention-text';
+import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useBlocks } from '@/hooks/use-blocks';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { Comment, Profile } from '@/lib/types';
@@ -38,6 +40,7 @@ export default function CommentsScreen() {
   const router = useRouter();
   const { postId } = useLocalSearchParams<{ postId: string }>();
   const { session } = useAuth();
+  const { isBlocked } = useBlocks();
   const myId = session?.user.id ?? null;
 
   const [comments, setComments] = useState<CommentItem[]>([]);
@@ -63,10 +66,13 @@ export default function CommentsScreen() {
     if (fetchError) {
       setError(fetchError.message);
     } else {
-      setComments((data ?? []) as CommentItem[]);
+      const filtered = ((data ?? []) as CommentItem[]).filter(
+        (cm) => !isBlocked(cm.user_id),
+      );
+      setComments(filtered);
     }
     setLoading(false);
-  }, [postId]);
+  }, [postId, isBlocked]);
 
   useFocusEffect(
     useCallback(() => {
@@ -244,6 +250,7 @@ function CommentNode({
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
+  const [reportVisible, setReportVisible] = useState(false);
   const cm = node.comment;
   const profile = cm.profile;
   const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
@@ -281,11 +288,22 @@ function CommentNode({
             <Text style={styles.commentDate}>{dateStr}</Text>
           </View>
           <MentionText content={cm.content} style={styles.commentText} />
-          <Pressable onPress={() => onReply(cm)} hitSlop={6}>
-            <Text style={styles.replyLink}>返信</Text>
-          </Pressable>
+          <View style={styles.commentActions}>
+            <Pressable onPress={() => onReply(cm)} hitSlop={6}>
+              <Text style={styles.replyLink}>返信</Text>
+            </Pressable>
+            <Pressable onPress={() => setReportVisible(true)} hitSlop={6}>
+              <Text style={styles.reportLink}>通報</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
+      <ReportModal
+        visible={reportVisible}
+        onClose={() => setReportVisible(false)}
+        targetType="comment"
+        targetId={cm.id}
+      />
       {node.children.map((child) => (
         <CommentNode
           key={child.comment.id}
@@ -355,11 +373,20 @@ function makeStyles(c: ThemeColors) {
     commentUsername: { fontSize: 11, color: c.textSecondary },
     commentDate: { fontSize: 11, color: c.textSecondary, marginLeft: 'auto' },
     commentText: { fontSize: 14, color: c.textPrimary, lineHeight: 20 },
+    commentActions: {
+      flexDirection: 'row',
+      gap: 14,
+      marginTop: 4,
+    },
     replyLink: {
       fontSize: 12,
       color: c.textSecondary,
       fontWeight: '600',
-      marginTop: 4,
+    },
+    reportLink: {
+      fontSize: 12,
+      color: c.textSecondary,
+      fontWeight: '600',
     },
     replyBanner: {
       flexDirection: 'row',

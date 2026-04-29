@@ -10,6 +10,7 @@ import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { useAuth } from '@/hooks/use-auth';
+import { BlocksProvider } from '@/hooks/use-blocks';
 import { I18nProvider } from '@/hooks/use-i18n';
 import { ProfileProvider } from '@/hooks/use-profile';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
@@ -76,6 +77,7 @@ function ThemedRoot() {
       <ProfileProvider>
         <I18nProvider>
         <TradesProvider>
+        <BlocksProvider>
         <RevenueCatProvider>
           <Stack screenOptions={{ animation: 'none' }}>
             <Stack.Screen name="login" options={{ headerShown: false }} />
@@ -137,6 +139,22 @@ function ThemedRoot() {
               options={{ headerShown: false }}
             />
             <Stack.Screen
+              name="blocked-users"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="terms"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="privacy"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="account-delete"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
               name="dm/[id]"
               options={{ headerShown: false }}
             />
@@ -158,6 +176,7 @@ function ThemedRoot() {
             />
           </Stack>
         </RevenueCatProvider>
+        </BlocksProvider>
         </TradesProvider>
         </I18nProvider>
       </ProfileProvider>

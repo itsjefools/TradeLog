@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,6 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/avatar';
+import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
@@ -48,6 +50,18 @@ export function FeedCard({
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
+  const [reportVisible, setReportVisible] = useState(false);
+
+  const handleMenu = () => {
+    Alert.alert('オプション', undefined, [
+      {
+        text: '通報',
+        style: 'destructive',
+        onPress: () => setReportVisible(true),
+      },
+      { text: 'キャンセル', style: 'cancel' },
+    ]);
+  };
   const profile = item.profile;
   const trade = item.trade;
   const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
@@ -107,48 +121,71 @@ export function FeedCard({
         </View>
       )}
 
-      <Pressable
-        style={({ pressed }) => [styles.userRow, pressed && styles.userRowPressed]}
-        onPress={() => router.push(`/user/${userId}`)}
-      >
-        <Avatar
-          uri={profile?.avatar_url}
-          displayName={displayName}
-          size={40}
-          profile={profile}
+      <View style={styles.userRowOuter}>
+        <Pressable
+          style={({ pressed }) => [styles.userRow, pressed && styles.userRowPressed]}
           onPress={() => router.push(`/user/${userId}`)}
-        />
-        <View style={styles.userInfo}>
-          <View style={styles.nameRow}>
-            <Text style={styles.displayName} numberOfLines={1}>
-              {displayName}
-            </Text>
-            {profile?.is_verified && (
-              <View style={styles.verifiedBadge}>
-                <Text style={styles.verifiedBadgeText}>✓</Text>
-              </View>
-            )}
+        >
+          <Avatar
+            uri={profile?.avatar_url}
+            displayName={displayName}
+            size={40}
+            profile={profile}
+            onPress={() => router.push(`/user/${userId}`)}
+          />
+          <View style={styles.userInfo}>
+            <View style={styles.nameRow}>
+              <Text style={styles.displayName} numberOfLines={1}>
+                {displayName}
+              </Text>
+              {profile?.is_verified && (
+                <View style={styles.verifiedBadge}>
+                  <Text style={styles.verifiedBadgeText}>✓</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.userMeta}>
+              <Text style={styles.username}>@{username}</Text>
+              {flag !== '' && (
+                <>
+                  <Text style={styles.metaSep}>·</Text>
+                  <Text style={styles.flag}>{flag}</Text>
+                  {country && (
+                    <Text style={styles.metaText}>{country.name}</Text>
+                  )}
+                </>
+              )}
+              {styleText && (
+                <>
+                  <Text style={styles.metaSep}>·</Text>
+                  <Text style={styles.metaText}>{styleText}</Text>
+                </>
+              )}
+            </View>
           </View>
-          <View style={styles.userMeta}>
-            <Text style={styles.username}>@{username}</Text>
-            {flag !== '' && (
-              <>
-                <Text style={styles.metaSep}>·</Text>
-                <Text style={styles.flag}>{flag}</Text>
-                {country && (
-                  <Text style={styles.metaText}>{country.name}</Text>
-                )}
-              </>
-            )}
-            {styleText && (
-              <>
-                <Text style={styles.metaSep}>·</Text>
-                <Text style={styles.metaText}>{styleText}</Text>
-              </>
-            )}
-          </View>
-        </View>
-      </Pressable>
+        </Pressable>
+        <Pressable
+          onPress={handleMenu}
+          style={({ pressed }) => [
+            styles.moreButton,
+            pressed && styles.moreButtonPressed,
+          ]}
+          hitSlop={12}
+        >
+          <Ionicons
+            name="ellipsis-horizontal"
+            size={18}
+            color={c.textSecondary}
+          />
+        </Pressable>
+      </View>
+
+      <ReportModal
+        visible={reportVisible}
+        onClose={() => setReportVisible(false)}
+        targetType="post"
+        targetId={item.id}
+      />
 
       {trade && (
         <View style={styles.tradeBlock}>
@@ -359,14 +396,26 @@ function makeStyles(c: ThemeColors) {
       fontSize: 11,
       color: c.textSecondary,
     },
+    userRowOuter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
     userRow: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
-      marginBottom: 12,
     },
     userRowPressed: {
       opacity: 0.7,
+    },
+    moreButton: {
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+    },
+    moreButtonPressed: {
+      opacity: 0.5,
     },
     userInfo: {
       flex: 1,

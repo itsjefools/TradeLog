@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
+import { useBlocks } from '@/hooks/use-blocks';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
@@ -38,6 +39,7 @@ export default function SearchScreen() {
   const [tagResults, setTagResults] = useState<TagPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isBlocked } = useBlocks();
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -60,7 +62,10 @@ export default function SearchScreen() {
           .or(`username.ilike.${pattern},display_name.ilike.${pattern}`)
           .limit(30);
         if (fetchError) setError(fetchError.message);
-        else setUserResults((data ?? []) as Profile[]);
+        else
+          setUserResults(
+            ((data ?? []) as Profile[]).filter((p) => !isBlocked(p.id)),
+          );
       } else {
         const tag = trimmed.replace(/^#/, '').toLowerCase();
         const { data, error: rpcError } = await supabase
@@ -77,13 +82,18 @@ export default function SearchScreen() {
           .order('created_at', { ascending: false })
           .limit(50);
         if (rpcError) setError(rpcError.message);
-        else setTagResults((data ?? []) as TagPost[]);
+        else
+          setTagResults(
+            ((data ?? []) as TagPost[]).filter(
+              (p) => !isBlocked(p.user_id),
+            ),
+          );
       }
       setLoading(false);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query, mode]);
+  }, [query, mode, isBlocked]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

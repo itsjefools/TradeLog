@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FeedCard, FeedCardItem } from '@/components/feed-card';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useBlocks } from '@/hooks/use-blocks';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { Post, Profile, Trade } from '@/lib/types';
@@ -26,6 +27,7 @@ export default function FeedScreen() {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const { session } = useAuth();
+  const { isBlocked } = useBlocks();
   const myId = session?.user.id ?? null;
 
   const [items, setItems] = useState<FeedItem[]>([]);
@@ -109,18 +111,20 @@ export default function FeedScreen() {
         );
       }
 
-      const merged = posts.map((p) => ({
-        ...p,
-        is_liked: likedSet.has(p.id),
-        is_bookmarked: bookmarkedSet.has(p.id),
-        is_reposted: repostedSet.has(p.id),
-      })) as FeedItem[];
+      const merged = posts
+        .filter((p) => !isBlocked(p.user_id))
+        .map((p) => ({
+          ...p,
+          is_liked: likedSet.has(p.id),
+          is_bookmarked: bookmarkedSet.has(p.id),
+          is_reposted: repostedSet.has(p.id),
+        })) as FeedItem[];
       setItems(merged);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError(msg);
     }
-  }, [myId, loadAllFeed]);
+  }, [myId, loadAllFeed, isBlocked]);
 
   useFocusEffect(
     useCallback(() => {

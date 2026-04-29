@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -13,8 +14,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useBlocks } from '@/hooks/use-blocks';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
@@ -26,8 +29,55 @@ export default function UserProfileScreen() {
   const router = useRouter();
   const { id: targetId } = useLocalSearchParams<{ id: string }>();
   const { session } = useAuth();
+  const { isBlocked, block, unblock } = useBlocks();
   const myId = session?.user.id ?? null;
   const isMyself = !!myId && myId === targetId;
+  const blocked = !!targetId && isBlocked(targetId);
+  const [reportVisible, setReportVisible] = useState(false);
+
+  const handleMenuOpen = () => {
+    if (!targetId || isMyself) return;
+    Alert.alert('オプション', undefined, [
+      {
+        text: blocked ? 'ブロックを解除' : 'ブロック',
+        style: blocked ? 'default' : 'destructive',
+        onPress: async () => {
+          try {
+            if (blocked) {
+              await unblock(targetId);
+            } else {
+              await new Promise<void>((resolve, reject) => {
+                Alert.alert(
+                  'ブロックしますか？',
+                  'このユーザーの投稿・コメントが表示されなくなります。',
+                  [
+                    {
+                      text: 'キャンセル',
+                      style: 'cancel',
+                      onPress: () => reject(new Error('cancel')),
+                    },
+                    {
+                      text: 'ブロック',
+                      style: 'destructive',
+                      onPress: () => resolve(),
+                    },
+                  ],
+                );
+              }).then(() => block(targetId)).catch(() => undefined);
+            }
+          } catch (e) {
+            Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+          }
+        },
+      },
+      {
+        text: '通報',
+        style: 'destructive',
+        onPress: () => setReportVisible(true),
+      },
+      { text: 'キャンセル', style: 'cancel' },
+    ]);
+  };
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -164,14 +214,33 @@ export default function UserProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Text style={styles.headerLink}>← 戻る</Text>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>
           @{username}
         </Text>
-        <View style={styles.headerSpacer} />
+        {!isMyself ? (
+          <Pressable onPress={handleMenuOpen} hitSlop={12}>
+            <Ionicons
+              name="ellipsis-horizontal"
+              size={22}
+              color={c.textPrimary}
+            />
+          </Pressable>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
       </View>
+
+      {targetId && (
+        <ReportModal
+          visible={reportVisible}
+          onClose={() => setReportVisible(false)}
+          targetType="user"
+          targetId={targetId}
+        />
+      )}
 
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.profileCard}>

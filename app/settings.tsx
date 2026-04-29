@@ -182,6 +182,46 @@ export default function SettingsScreen() {
           />
         </View>
 
+        {/* プライバシーと安全 */}
+        <Text style={styles.sectionLabel}>プライバシーと安全</Text>
+        <View style={styles.card}>
+          <NavRow
+            href="/blocked-users"
+            icon="ban-outline"
+            label="ブロック中のユーザー"
+            c={c}
+            styles={styles}
+          />
+          <Divider c={c} />
+          <NavRow
+            href="/account-delete"
+            icon="trash-outline"
+            label="アカウントを削除"
+            c={c}
+            styles={styles}
+          />
+        </View>
+
+        {/* 法的事項 */}
+        <Text style={styles.sectionLabel}>法的事項</Text>
+        <View style={styles.card}>
+          <NavRow
+            href="/terms"
+            icon="document-text-outline"
+            label="利用規約"
+            c={c}
+            styles={styles}
+          />
+          <Divider c={c} />
+          <NavRow
+            href="/privacy"
+            icon="shield-checkmark-outline"
+            label="プライバシーポリシー"
+            c={c}
+            styles={styles}
+          />
+        </View>
+
         {/* ログアウト */}
         <Pressable
           style={({ pressed }) => [

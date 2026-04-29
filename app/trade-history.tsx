@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -13,8 +14,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
+import { exportTradesCsv } from '@/lib/export-csv';
+import { getPlan } from '@/lib/premium';
 import { Trade } from '@/lib/types';
 
 export default function TradeHistoryScreen() {
@@ -22,6 +26,39 @@ export default function TradeHistoryScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { trades, refresh, deleteTrade } = useTrades();
+  const { profile } = useProfile();
+  const isPremium = getPlan(profile?.is_premium) === 'premium';
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (!isPremium) {
+      Alert.alert(
+        'Premium 機能',
+        'CSV エクスポートは Premium プラン専用です。Premium にアップグレードして全ての取引をエクスポートしましょう。',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          {
+            text: 'Premium を見る',
+            onPress: () => router.push('/premium'),
+          },
+        ],
+      );
+      return;
+    }
+    if (trades.length === 0) {
+      Alert.alert('データなし', 'エクスポートする取引がありません。');
+      return;
+    }
+    setExporting(true);
+    try {
+      await exportTradesCsv(trades);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      Alert.alert('エクスポート失敗', msg);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -54,11 +91,29 @@ export default function TradeHistoryScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>取引履歴</Text>
-        <View style={styles.headerSpacer} />
+        <Pressable
+          onPress={handleExport}
+          disabled={exporting}
+          hitSlop={12}
+          style={({ pressed }) => [
+            styles.exportButton,
+            pressed && styles.exportButtonPressed,
+          ]}
+        >
+          {exporting ? (
+            <ActivityIndicator color={c.accent} size="small" />
+          ) : (
+            <Ionicons
+              name={isPremium ? 'share-outline' : 'lock-closed-outline'}
+              size={20}
+              color={c.textPrimary}
+            />
+          )}
+        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
@@ -183,6 +238,15 @@ function makeStyles(c: ThemeColors) {
     },
     headerSpacer: {
       width: 40,
+    },
+    exportButton: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    exportButtonPressed: {
+      opacity: 0.5,
     },
     body: {
       padding: 16,

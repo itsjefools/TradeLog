@@ -1,0 +1,116 @@
+/* TradeLog Legal Docs - shared styles */
+* {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+  background: #fafafa;
+  color: #1e293b;
+  line-height: 1.7;
+  margin: 0;
+  padding: 24px 16px 64px;
+  -webkit-font-smoothing: antialiased;
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #0f172a;
+    color: #f1f5f9;
+  }
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+header.brand {
+  text-align: center;
+  margin-bottom: 32px;
+}
+header.brand .logo {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+header.brand .logo .trade { color: #1e293b; }
+header.brand .logo .log { color: #10b981; }
+@media (prefers-color-scheme: dark) {
+  header.brand .logo .trade { color: #f1f5f9; }
+}
+
+h1 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 24px 0 8px;
+}
+.meta {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 32px;
+}
+
+h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 32px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+@media (prefers-color-scheme: dark) {
+  h2 { border-bottom-color: #1e293b; }
+}
+
+p {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+ol, ul {
+  padding-left: 24px;
+}
+li {
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+a {
+  color: #10b981;
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+footer {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 13px;
+  color: #64748b;
+  text-align: center;
+}
+@media (prefers-color-scheme: dark) {
+  footer { border-top-color: #1e293b; }
+}
+
+.nav-links {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+@media (prefers-color-scheme: dark) {
+  .card {
+    background: #1e293b;
+    box-shadow: none;
+  }
+}

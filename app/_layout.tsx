@@ -171,6 +171,10 @@ function ThemedRoot() {
               options={{ headerShown: false }}
             />
             <Stack.Screen
+              name="create-post"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
               name="dm/[id]"
               options={{ headerShown: false }}
             />

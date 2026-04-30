@@ -63,7 +63,7 @@ export default function FeedScreen() {
         trade:trades!posts_trade_id_fkey (*),
         profile:profiles!posts_user_id_fkey (${profileSelect})`,
       )
-      .eq('post_type', 'trade_result')
+      .in('post_type', ['trade_result', 'text', 'strategy'])
       .order('created_at', { ascending: false })
       .limit(50);
     if (fetchError) throw new Error(fetchError.message);
@@ -388,6 +388,18 @@ export default function FeedScreen() {
           )}
         </ScrollView>
       )}
+
+      <Link href="/create-post" asChild>
+        <Pressable
+          style={({ pressed }) => [
+            styles.fab,
+            pressed && styles.fabPressed,
+          ]}
+          hitSlop={6}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </Pressable>
+      </Link>
     </SafeAreaView>
   );
 }
@@ -440,6 +452,26 @@ function makeStyles(c: ThemeColors) {
     },
     headerButtonPressed: {
       opacity: 0.7,
+    },
+    fab: {
+      position: 'absolute',
+      bottom: 20,
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#10B981',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#10B981',
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 8,
+    },
+    fabPressed: {
+      opacity: 0.85,
+      transform: [{ scale: 0.95 }],
     },
     title: {
       fontSize: 28,

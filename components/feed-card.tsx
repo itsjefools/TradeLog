@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { ResizeMode, Video } from 'expo-av';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Alert,
+  Dimensions,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextStyle,
@@ -23,6 +24,7 @@ import { Avatar } from '@/components/avatar';
 import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
 import { useThemeColors } from '@/hooks/use-theme';
+import { isVideoUrl } from '@/lib/upload-media';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { Post, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
@@ -223,21 +225,7 @@ export function FeedCard({
       )}
 
       {item.image_urls && item.image_urls.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.imagesScroll}
-          contentContainerStyle={styles.imagesScrollContent}
-        >
-          {item.image_urls.map((uri) => (
-            <Image
-              key={uri}
-              source={{ uri }}
-              style={styles.feedImage}
-              contentFit="cover"
-            />
-          ))}
-        </ScrollView>
+        <MediaGrid urls={item.image_urls} />
       )}
 
       {item.hashtags && item.hashtags.length > 0 && (
@@ -312,6 +300,117 @@ export function FeedCard({
       </View>
     </View>
   );
+}
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CARD_PADDING = 14;
+const CARD_INNER = SCREEN_WIDTH - 12 * 2 - CARD_PADDING * 2;
+const GAP = 2;
+
+function MediaGrid({ urls }: { urls: string[] }) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeMediaStyles(c), [c]);
+  const list = urls.slice(0, 4);
+  const count = list.length;
+
+  if (count === 1) {
+    return (
+      <View style={[styles.wrap, { marginTop: 10 }]}>
+        <MediaTile
+          uri={list[0]}
+          style={[styles.tile, { width: CARD_INNER, aspectRatio: 16 / 10 }]}
+        />
+      </View>
+    );
+  }
+  if (count === 2) {
+    const w = (CARD_INNER - GAP) / 2;
+    return (
+      <View style={[styles.row, { marginTop: 10 }]}>
+        <MediaTile uri={list[0]} style={[styles.tile, { width: w, height: w }]} />
+        <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} />
+      </View>
+    );
+  }
+  if (count === 3) {
+    const w = (CARD_INNER - GAP) / 2;
+    return (
+      <View style={[styles.col, { marginTop: 10 }]}>
+        <MediaTile
+          uri={list[0]}
+          style={[styles.tile, { width: CARD_INNER, height: 200 }]}
+        />
+        <View style={styles.row}>
+          <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} />
+          <MediaTile uri={list[2]} style={[styles.tile, { width: w, height: w }]} />
+        </View>
+      </View>
+    );
+  }
+  // 4枚
+  const w = (CARD_INNER - GAP) / 2;
+  return (
+    <View style={[styles.col, { marginTop: 10 }]}>
+      <View style={styles.row}>
+        <MediaTile uri={list[0]} style={[styles.tile, { width: w, height: w }]} />
+        <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} />
+      </View>
+      <View style={styles.row}>
+        <MediaTile uri={list[2]} style={[styles.tile, { width: w, height: w }]} />
+        <MediaTile uri={list[3]} style={[styles.tile, { width: w, height: w }]} />
+      </View>
+    </View>
+  );
+}
+
+function MediaTile({
+  uri,
+  style,
+}: {
+  uri: string;
+  style: object | object[];
+}) {
+  const isVideo = isVideoUrl(uri);
+  if (isVideo) {
+    return (
+      <Video
+        source={{ uri }}
+        style={style as object}
+        useNativeControls
+        resizeMode={ResizeMode.COVER}
+        isLooping={false}
+      />
+    );
+  }
+  return (
+    <Image
+      source={{ uri }}
+      style={style as object}
+      contentFit="cover"
+    />
+  );
+}
+
+function makeMediaStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    wrap: {
+      borderRadius: 12,
+      overflow: 'hidden',
+    },
+    row: {
+      flexDirection: 'row',
+      gap: GAP,
+    },
+    col: {
+      flexDirection: 'column',
+      gap: GAP,
+    },
+    tile: {
+      borderRadius: 12,
+      backgroundColor: c.surfaceAlt,
+      overflow: 'hidden',
+    },
+  });
 }
 
 function LikeButton({
@@ -520,18 +619,6 @@ function makeStyles(c: ThemeColors) {
       color: c.textPrimary,
       marginTop: 10,
       lineHeight: 19,
-    },
-    imagesScroll: {
-      marginTop: 10,
-    },
-    imagesScrollContent: {
-      gap: 8,
-    },
-    feedImage: {
-      width: 200,
-      height: 200,
-      borderRadius: 10,
-      backgroundColor: c.surfaceAlt,
     },
     tagChips: {
       flexDirection: 'row',

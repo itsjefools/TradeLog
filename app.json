@@ -53,7 +53,20 @@
           }
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "投稿に写真を添付するためにフォトライブラリへのアクセスが必要です。",
+          "cameraPermission": "投稿の写真を撮影するためにカメラへのアクセスが必要です。"
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "投稿動画の音声を録音するためにマイクへのアクセスが必要です。"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

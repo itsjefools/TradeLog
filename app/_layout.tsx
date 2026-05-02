@@ -7,6 +7,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { ToastProvider } from '@/components/toast';
@@ -56,11 +57,13 @@ function useProtectedRoute(
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <OnboardingProvider>
-        <ThemedRoot />
-      </OnboardingProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <OnboardingProvider>
+          <ThemedRoot />
+        </OnboardingProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 

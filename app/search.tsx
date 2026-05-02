@@ -18,7 +18,7 @@ import { useBlocks } from '@/hooks/use-blocks';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
-import { Post, Profile, Trade, tradeStyleLabel } from '@/lib/types';
+import { Post, PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
 type SearchMode = 'users' | 'tags';
 
@@ -58,7 +58,7 @@ export default function SearchScreen() {
         const pattern = `%${trimmed}%`;
         const { data, error: fetchError } = await supabase
           .from('profiles')
-          .select('*')
+          .select(PROFILE_COLUMNS)
           .or(`username.ilike.${pattern},display_name.ilike.${pattern}`)
           .limit(30);
         if (fetchError) setError(fetchError.message);

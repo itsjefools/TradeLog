@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useScrollToTop } from '@react-navigation/native';
 import { Link, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
+  FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,12 +14,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FeedCard, FeedCardItem } from '@/components/feed-card';
+import { FeedSkeletonList } from '@/components/skeleton';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useBlocks } from '@/hooks/use-blocks';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
-import { Post, Profile, Trade } from '@/lib/types';
+import { Post, PROFILE_COLUMNS, Profile, Trade } from '@/lib/types';
 
 type FeedItem = FeedCardItem;
 
@@ -28,6 +29,8 @@ export default function FeedScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const { session } = useAuth();
   const { isBlocked } = useBlocks();
+  const listRef = useRef<FlatList<FeedItem>>(null);
+  useScrollToTop(listRef);
   const myId = session?.user.id ?? null;
 
   const [items, setItems] = useState<FeedItem[]>([]);
@@ -50,18 +53,13 @@ export default function FeedScreen() {
     setUnreadCount(count ?? 0);
   }, [myId]);
 
-  const profileSelect = `
-    id, email, username, display_name, avatar_url, bio,
-    trade_style, language, is_premium, nationality, is_verified, created_at
-  `;
-
   const loadAllFeed = useCallback(async () => {
     const { data, error: fetchError } = await supabase
       .from('posts')
       .select(
         `*,
         trade:trades!posts_trade_id_fkey (*),
-        profile:profiles!posts_user_id_fkey (${profileSelect})`,
+        profile:profiles!posts_user_id_fkey (${PROFILE_COLUMNS})`,
       )
       .in('post_type', ['trade_result', 'text', 'strategy'])
       .order('created_at', { ascending: false })
@@ -71,7 +69,7 @@ export default function FeedScreen() {
       trade: Trade | null;
       profile: Profile | null;
     })[];
-  }, [profileSelect]);
+  }, []);
 
   const loadFeed = useCallback(async () => {
     setError(null);
@@ -347,12 +345,23 @@ export default function FeedScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={c.accent} size="large" />
+        <View style={styles.body}>
+          <FeedSkeletonList count={4} />
         </View>
       ) : (
-        <ScrollView
+        <FlatList
+          ref={listRef}
+          data={items}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.body}
+          renderItem={({ item }) => (
+            <FeedCard
+              item={item}
+              onToggleLike={toggleLike}
+              onToggleBookmark={toggleBookmark}
+              onToggleRepost={toggleRepost}
+            />
+          )}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -360,14 +369,14 @@ export default function FeedScreen() {
               tintColor={c.accent}
             />
           }
-        >
-          {error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>エラー: {error}</Text>
-            </View>
-          )}
-
-          {items.length === 0 ? (
+          ListHeaderComponent={
+            error ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>エラー: {error}</Text>
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
             <View style={styles.emptyBox}>
               <Text style={styles.emptyTitle}>まだ投稿がありません</Text>
               <Text style={styles.emptyText}>
@@ -375,18 +384,12 @@ export default function FeedScreen() {
                 取引を保存すると、ここに表示されます。
               </Text>
             </View>
-          ) : (
-            items.map((item) => (
-              <FeedCard
-                key={item.id}
-                item={item}
-                onToggleLike={toggleLike}
-                onToggleBookmark={toggleBookmark}
-                onToggleRepost={toggleRepost}
-              />
-            ))
-          )}
-        </ScrollView>
+          }
+          windowSize={7}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          removeClippedSubviews
+        />
       )}
 
       <Link href="/create-post" asChild>

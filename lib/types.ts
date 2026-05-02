@@ -32,8 +32,20 @@ export type Profile = {
   nationality: string | null;
   is_verified: boolean | null;
   monthly_pnl_goal: number | null;
+  push_token: string | null;
   created_at: string | null;
 };
+
+/**
+ * profiles テーブルのカラム一覧。
+ * Supabase select で `select('*')` を避けるため共通的に使う。
+ * Profile 型と一致させる。
+ */
+export const PROFILE_COLUMNS = `
+  id, email, username, display_name, avatar_url, bio,
+  trade_style, language, is_premium, nationality, is_verified,
+  monthly_pnl_goal, push_token, created_at
+`;
 
 export type Post = {
   id: string;

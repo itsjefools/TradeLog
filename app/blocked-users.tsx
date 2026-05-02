@@ -17,7 +17,7 @@ import { ThemeColors } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
-import { Profile } from '@/lib/types';
+import { PROFILE_COLUMNS, Profile } from '@/lib/types';
 
 export default function BlockedUsersScreen() {
   const c = useThemeColors();
@@ -35,7 +35,7 @@ export default function BlockedUsersScreen() {
     }
     const { data } = await supabase
       .from('profiles')
-      .select('*')
+      .select(PROFILE_COLUMNS)
       .in('id', blockedIds);
     setProfiles((data ?? []) as Profile[]);
     setLoading(false);

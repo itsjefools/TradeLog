@@ -217,8 +217,6 @@ export default function LoginScreen() {
   );
 }
 
-const LOGIN_ACCENT = '#10B981';
-
 function makeStyles(c: ThemeColors, isDark: boolean) {
   return StyleSheet.create({
   container: {
@@ -248,7 +246,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
     color: isDark ? '#FFFFFF' : '#1E293B',
   },
   logoLog: {
-    color: LOGIN_ACCENT,
+    color: c.accent,
   },
   tagline: {
     fontSize: 16,
@@ -276,7 +274,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
     color: c.textPrimary,
   },
   primaryButton: {
-    backgroundColor: LOGIN_ACCENT,
+    backgroundColor: c.accent,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -304,7 +302,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
     color: c.textSecondary,
   },
   switchTextAccent: {
-    color: LOGIN_ACCENT,
+    color: c.accent,
     fontWeight: '600',
   },
   chipsRow: {
@@ -321,8 +319,8 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
     borderColor: c.border,
   },
   chipSelected: {
-    backgroundColor: LOGIN_ACCENT,
-    borderColor: LOGIN_ACCENT,
+    backgroundColor: c.accent,
+    borderColor: c.accent,
   },
   chipText: {
     fontSize: 13,

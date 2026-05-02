@@ -11,13 +11,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
-import { PRIVACY_POLICY } from '@/lib/legal-text';
+import { getPrivacyText } from '@/lib/legal-text';
 
 export default function PrivacyScreen() {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
+  const { locale } = useI18n();
+  const text = useMemo(() => getPrivacyText(locale), [locale]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -30,7 +33,7 @@ export default function PrivacyScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
-        <Text style={styles.text}>{PRIVACY_POLICY}</Text>
+        <Text style={styles.text}>{text}</Text>
       </ScrollView>
     </SafeAreaView>
   );

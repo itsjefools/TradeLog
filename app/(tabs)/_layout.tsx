@@ -5,10 +5,13 @@ import React from 'react';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeColors } from '@/hooks/use-theme';
+import { useUnreadCounts } from '@/hooks/use-unread-counts';
 
 export default function TabLayout() {
   const c = useThemeColors();
   const inactive = c.textSecondary;
+  const { notifications } = useUnreadCounts();
+  const badge = notifications > 0 ? notifications : undefined;
 
   return (
     <Tabs
@@ -22,12 +25,18 @@ export default function TabLayout() {
           backgroundColor: c.background,
           borderTopColor: c.border,
         },
+        tabBarBadgeStyle: {
+          backgroundColor: c.loss,
+          fontSize: 10,
+          fontWeight: '700',
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'フィード',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarBadge: badge,
         }}
       />
       <Tabs.Screen
@@ -44,15 +53,6 @@ export default function TabLayout() {
         options={{
           title: '分析',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="school"
-        options={{
-          title: 'スクール',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="graduationcap.fill" color={color} />
-          ),
         }}
       />
       <Tabs.Screen

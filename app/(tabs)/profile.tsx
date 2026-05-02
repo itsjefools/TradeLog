@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useScrollToTop } from '@react-navigation/native';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -26,16 +27,9 @@ import { useTrades } from '@/hooks/use-trades';
 import { computeBadges, tierColor } from '@/lib/badges';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
-import { Post, Profile, Trade, tradeStyleLabel } from '@/lib/types';
-
-const TAB_ACCENT = '#10B981';
+import { Post, PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
 type TabKey = 'posts' | 'likes' | 'reposts';
-
-const PROFILE_SELECT = `
-  id, email, username, display_name, avatar_url, bio,
-  trade_style, language, is_premium, nationality, is_verified, created_at
-`;
 
 type RawPost = Post & {
   trade: Trade | null;
@@ -59,6 +53,8 @@ export default function ProfileScreen() {
 
   const myId = session?.user.id ?? null;
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const loadCounts = useCallback(async () => {
     if (!myId) {
@@ -148,7 +144,7 @@ export default function ProfileScreen() {
             .select(
               `*,
               trade:trades!posts_trade_id_fkey (*),
-              profile:profiles!posts_user_id_fkey (${PROFILE_SELECT})`,
+              profile:profiles!posts_user_id_fkey (${PROFILE_COLUMNS})`,
             )
             .eq('user_id', myId)
             .eq('post_type', 'trade_result')
@@ -164,7 +160,7 @@ export default function ProfileScreen() {
               post:posts!likes_post_id_fkey (
                 *,
                 trade:trades!posts_trade_id_fkey (*),
-                profile:profiles!posts_user_id_fkey (${PROFILE_SELECT})
+                profile:profiles!posts_user_id_fkey (${PROFILE_COLUMNS})
               )`,
             )
             .eq('user_id', myId)
@@ -184,7 +180,7 @@ export default function ProfileScreen() {
               post:posts!reposts_post_id_fkey (
                 *,
                 trade:trades!posts_trade_id_fkey (*),
-                profile:profiles!posts_user_id_fkey (${PROFILE_SELECT})
+                profile:profiles!posts_user_id_fkey (${PROFILE_COLUMNS})
               )`,
             )
             .eq('user_id', myId)
@@ -381,6 +377,7 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -525,7 +522,7 @@ export default function ProfileScreen() {
                 <Ionicons
                   name={t.icon}
                   size={22}
-                  color={active ? TAB_ACCENT : c.textSecondary}
+                  color={active ? c.accent : c.textSecondary}
                 />
               </Pressable>
             );
@@ -753,7 +750,7 @@ function makeStyles(c: ThemeColors) {
       borderBottomColor: 'transparent',
     },
     tabButtonActive: {
-      borderBottomColor: TAB_ACCENT,
+      borderBottomColor: c.accent,
     },
     tabContent: {
       paddingHorizontal: 12,

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { useScrollToTop } from '@react-navigation/native';
 import { Link, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -38,6 +39,8 @@ export default function AnalyticsScreen() {
   const { profile } = useProfile();
   const isPremium = getPlan(profile?.is_premium) === 'premium';
   const [refreshing, setRefreshing] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   // 月選択 (offset=0 が今月、-1 で先月)
   const [monthOffset, setMonthOffset] = useState(0);
@@ -132,6 +135,7 @@ export default function AnalyticsScreen() {
         </View>
       ) : (
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.body}
           refreshControl={
             <RefreshControl

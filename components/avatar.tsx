@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AvatarPreview, AvatarPreviewProfile } from '@/components/avatar-preview';
+import { PremiumBadge } from '@/components/premium-badge';
 import { useThemeColors } from '@/hooks/use-theme';
 
 type AvatarProps = {
@@ -13,6 +14,8 @@ type AvatarProps = {
   profile?: AvatarPreviewProfile | null;
   /** タップ時のハンドラ。長押しプレビューと併用可能 */
   onPress?: () => void;
+  /** Premium バッジを表示するか。サイズ 32 未満では自動的に非表示 */
+  showPremiumBadge?: boolean;
 };
 
 export function Avatar({
@@ -21,14 +24,24 @@ export function Avatar({
   size = 40,
   profile,
   onPress,
+  showPremiumBadge = true,
 }: AvatarProps) {
   const c = useThemeColors();
   const [previewVisible, setPreviewVisible] = useState(false);
   const initial = (displayName.charAt(0) || '?').toUpperCase();
 
+  const showBadge =
+    showPremiumBadge && profile?.is_premium === true && size >= 32;
+  const badgeSize = Math.max(12, Math.round(size * 0.32));
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
+        outer: {
+          width: size,
+          height: size,
+          position: 'relative',
+        },
         wrap: {
           width: size,
           height: size,
@@ -47,16 +60,28 @@ export function Avatar({
           fontWeight: '700',
           color: '#fff',
         },
+        badge: {
+          position: 'absolute',
+          right: -2,
+          bottom: -2,
+        },
       }),
     [size, c.accent],
   );
 
   const inner = (
-    <View style={styles.wrap}>
-      {uri ? (
-        <Image source={{ uri }} style={styles.image} contentFit="cover" />
-      ) : (
-        <Text style={styles.text}>{initial}</Text>
+    <View style={styles.outer}>
+      <View style={styles.wrap}>
+        {uri ? (
+          <Image source={{ uri }} style={styles.image} contentFit="cover" />
+        ) : (
+          <Text style={styles.text}>{initial}</Text>
+        )}
+      </View>
+      {showBadge && (
+        <View style={styles.badge}>
+          <PremiumBadge size={badgeSize} />
+        </View>
       )}
     </View>
   );

@@ -6,7 +6,7 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "PingFang SC", "Microsoft YaHei", sans-serif;
   background: #fafafa;
   color: #1e293b;
   line-height: 1.7;
@@ -28,7 +28,7 @@ main {
 
 header.brand {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 header.brand .logo {
   font-size: 28px;
@@ -41,16 +41,35 @@ header.brand .logo .log { color: #10b981; }
   header.brand .logo .trade { color: #f1f5f9; }
 }
 
+.lang-switcher {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+.lang-switcher a {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #64748b;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.lang-switcher a.active {
+  background: #10b981;
+  color: #fff;
+  font-weight: 600;
+}
+.lang-switcher a:not(.active):hover {
+  border-color: #cbd5e1;
+}
+
 h1 {
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.5px;
-  margin: 24px 0 8px;
-}
-.meta {
-  font-size: 13px;
-  color: #64748b;
-  margin-bottom: 32px;
+  margin: 0 0 24px;
 }
 
 h2 {
@@ -82,6 +101,25 @@ a {
   text-decoration: none;
 }
 a:hover { text-decoration: underline; }
+
+.legal-body {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.8;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  margin: 0;
+}
+@media (prefers-color-scheme: dark) {
+  .legal-body {
+    background: #1e293b;
+    box-shadow: none;
+  }
+}
 
 footer {
   margin-top: 48px;

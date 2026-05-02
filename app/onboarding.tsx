@@ -18,7 +18,6 @@ import { useOnboarding } from '@/hooks/use-onboarding';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const ACCENT = '#10B981';
 
 type Page = {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -171,7 +170,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
       fontSize: 22,
       fontWeight: '800',
       letterSpacing: -0.5,
-      color: ACCENT,
+      color: c.accent,
     },
     skipText: {
       fontSize: 14,
@@ -193,11 +192,11 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
       width: 140,
       height: 140,
       borderRadius: 36,
-      backgroundColor: ACCENT,
+      backgroundColor: c.accent,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 40,
-      shadowColor: ACCENT,
+      shadowColor: c.accent,
       shadowOpacity: 0.4,
       shadowRadius: 24,
       shadowOffset: { width: 0, height: 12 },
@@ -232,7 +231,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
       backgroundColor: c.border,
     },
     dotActive: {
-      backgroundColor: ACCENT,
+      backgroundColor: c.accent,
       width: 24,
     },
     bottom: {
@@ -240,13 +239,13 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
       paddingBottom: 16,
     },
     nextButton: {
-      backgroundColor: ACCENT,
+      backgroundColor: c.accent,
       borderRadius: 16,
       paddingVertical: 18,
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: 56,
-      shadowColor: ACCENT,
+      shadowColor: c.accent,
       shadowOpacity: 0.3,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 6 },

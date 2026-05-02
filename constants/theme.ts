@@ -29,7 +29,8 @@ export type ThemeColors = {
 };
 
 // アクセント・ステータス色（モード非依存）
-const ACCENT = '#6366F1';
+// アクセント = ブランドカラーのグリーン
+const ACCENT = '#10B981';
 const WIN = '#10B981';
 const LOSS = '#EF4444';
 const STAR = '#F59E0B';

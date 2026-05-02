@@ -21,7 +21,7 @@ import { useBlocks } from '@/hooks/use-blocks';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
-import { Profile, Trade, tradeStyleLabel } from '@/lib/types';
+import { PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
 export default function UserProfileScreen() {
   const c = useThemeColors();
@@ -94,7 +94,7 @@ export default function UserProfileScreen() {
 
     const [profileRes, followerRes, followingRes, tradesRes, isFollowingRes] =
       await Promise.all([
-        supabase.from('profiles').select('*').eq('id', targetId).maybeSingle(),
+        supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', targetId).maybeSingle(),
         supabase
           .from('follows')
           .select('*', { count: 'exact', head: true })

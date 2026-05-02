@@ -17,12 +17,8 @@ import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
-import { Post, Profile, Trade } from '@/lib/types';
+import { Post, PROFILE_COLUMNS, Profile, Trade } from '@/lib/types';
 
-const PROFILE_FRAG = `
-  id, email, username, display_name, avatar_url, bio,
-  trade_style, language, is_premium, nationality, is_verified, created_at
-`;
 
 type BookmarkRow = {
   created_at: string;
@@ -50,7 +46,7 @@ export default function BookmarksScreen() {
          post:posts!bookmarks_post_id_fkey (
            *,
            trade:trades!posts_trade_id_fkey (*),
-           profile:profiles!posts_user_id_fkey (${PROFILE_FRAG})
+           profile:profiles!posts_user_id_fkey (${PROFILE_COLUMNS})
          )`,
       )
       .eq('user_id', myId)
@@ -95,9 +91,14 @@ export default function BookmarksScreen() {
 
           {items.length === 0 && !error && (
             <View style={styles.emptyBox}>
+              <Ionicons
+                name="bookmark-outline"
+                size={48}
+                color={c.textSecondary}
+              />
               <Text style={styles.emptyTitle}>ブックマークがありません</Text>
               <Text style={styles.emptyText}>
-                フィードの投稿で🔖アイコンをタップすると{'\n'}
+                フィードの投稿でブックマークアイコンをタップすると{'\n'}
                 ここに保存されます。
               </Text>
             </View>
@@ -204,6 +205,7 @@ function makeStyles(c: ThemeColors) {
       padding: 32,
       alignItems: 'center',
       marginTop: 24,
+      gap: 8,
     },
     emptyTitle: {
       fontSize: 16,

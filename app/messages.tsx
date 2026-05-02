@@ -79,6 +79,11 @@ export default function MessagesScreen() {
 
           {convs.length === 0 && !error && (
             <View style={styles.emptyBox}>
+              <Ionicons
+                name="paper-plane-outline"
+                size={48}
+                color={c.textSecondary}
+              />
               <Text style={styles.emptyTitle}>メッセージがありません</Text>
               <Text style={styles.emptyText}>
                 ユーザーのプロフィールから{'\n'}
@@ -181,6 +186,7 @@ function makeStyles(c: ThemeColors) {
       padding: 32,
       alignItems: 'center',
       marginTop: 24,
+      gap: 8,
     },
     emptyTitle: {
       fontSize: 16,

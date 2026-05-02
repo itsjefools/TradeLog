@@ -17,8 +17,6 @@ import { SUPPORTED_LOCALES, useI18n } from '@/hooks/use-i18n';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
-const PREMIUM_GREEN = '#10B981';
-
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 export default function SettingsScreen() {
@@ -126,6 +124,14 @@ export default function SettingsScreen() {
             href="/economic-calendar"
             icon="calendar-outline"
             label="経済指標カレンダー"
+            c={c}
+            styles={styles}
+          />
+          <Divider c={c} />
+          <NavRow
+            href="/glossary"
+            icon="book-outline"
+            label="用語集"
             c={c}
             styles={styles}
           />
@@ -377,7 +383,7 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: c.surface,
       borderRadius: 14,
       borderWidth: 1.5,
-      borderColor: PREMIUM_GREEN,
+      borderColor: c.accent,
       paddingHorizontal: 14,
       paddingVertical: 14,
       marginTop: 12,
@@ -392,7 +398,7 @@ function makeStyles(c: ThemeColors) {
       width: 36,
       height: 36,
       borderRadius: 10,
-      backgroundColor: PREMIUM_GREEN,
+      backgroundColor: c.accent,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -402,7 +408,7 @@ function makeStyles(c: ThemeColors) {
     premiumTitle: {
       fontSize: 16,
       fontWeight: '700',
-      color: PREMIUM_GREEN,
+      color: c.accent,
     },
     premiumSub: {
       fontSize: 12,
@@ -432,7 +438,7 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
     },
     segmentChipSelected: {
-      backgroundColor: PREMIUM_GREEN,
+      backgroundColor: c.accent,
     },
     segmentText: {
       fontSize: 12,

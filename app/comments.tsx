@@ -23,16 +23,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { useBlocks } from '@/hooks/use-blocks';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
-import { Comment, Profile } from '@/lib/types';
+import { Comment, PROFILE_COLUMNS, Profile } from '@/lib/types';
 
 type CommentItem = Comment & {
   profile: Profile | null;
 };
 
-const PROFILE_FRAG = `
-  id, email, username, display_name, avatar_url, bio,
-  trade_style, language, is_premium, nationality, is_verified, created_at
-`;
 
 export default function CommentsScreen() {
   const c = useThemeColors();
@@ -57,7 +53,7 @@ export default function CommentsScreen() {
       .from('comments')
       .select(
         `*,
-        profile:profiles!comments_user_id_fkey (${PROFILE_FRAG})`,
+        profile:profiles!comments_user_id_fkey (${PROFILE_COLUMNS})`,
       )
       .eq('post_id', postId)
       .order('created_at', { ascending: true })
@@ -99,7 +95,7 @@ export default function CommentsScreen() {
         })
         .select(
           `*,
-          profile:profiles!comments_user_id_fkey (${PROFILE_FRAG})`,
+          profile:profiles!comments_user_id_fkey (${PROFILE_COLUMNS})`,
         )
         .single();
       if (insertError) throw new Error(insertError.message);
@@ -267,6 +263,7 @@ function CommentNode({
   return (
     <View>
       <View style={[styles.commentRow, { paddingLeft: indent }]}>
+        {depth > 0 && <View style={[styles.threadLine, { left: indent - 14 }]} />}
         <Avatar
           uri={profile?.avatar_url}
           displayName={displayName}
@@ -351,6 +348,15 @@ function makeStyles(c: ThemeColors) {
       flexDirection: 'row',
       gap: 10,
       paddingVertical: 8,
+      position: 'relative',
+    },
+    threadLine: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      width: 2,
+      backgroundColor: c.border,
+      borderRadius: 1,
     },
     commentBody: { flex: 1 },
     commentHead: {

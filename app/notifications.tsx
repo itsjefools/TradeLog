@@ -15,6 +15,8 @@ import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useThemeColors } from '@/hooks/use-theme';
+import { useUnreadCounts } from '@/hooks/use-unread-counts';
+import { formatRelativeTime } from '@/lib/format-time';
 import { supabase } from '@/lib/supabase';
 import { Profile } from '@/lib/types';
 
@@ -29,16 +31,55 @@ type NotificationItem = {
   actor: Profile | null;
 };
 
+type SectionKey = 'today' | 'yesterday' | 'thisWeek' | 'older';
+
+const SECTION_LABEL: Record<SectionKey, string> = {
+  today: '今日',
+  yesterday: '昨日',
+  thisWeek: '今週',
+  older: 'これ以前',
+};
+
+function sectionFor(date: Date): SectionKey {
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  const ms = date.getTime();
+  if (ms >= startOfToday) return 'today';
+  if (ms >= startOfToday - 86400000) return 'yesterday';
+  if (ms >= startOfToday - 6 * 86400000) return 'thisWeek';
+  return 'older';
+}
+
+function groupByDay(items: NotificationItem[]) {
+  const sections: { key: SectionKey; data: NotificationItem[] }[] = [];
+  for (const it of items) {
+    const k = sectionFor(new Date(it.created_at));
+    let bucket = sections.find((s) => s.key === k);
+    if (!bucket) {
+      bucket = { key: k, data: [] };
+      sections.push(bucket);
+    }
+    bucket.data.push(it);
+  }
+  return sections;
+}
+
 export default function NotificationsScreen() {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { session } = useAuth();
+  const { refresh: refreshUnread } = useUnreadCounts();
   const myId = session?.user.id ?? null;
 
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const sections = useMemo(() => groupByDay(items), [items]);
 
   const load = useCallback(async () => {
     if (!myId) return;
@@ -85,8 +126,9 @@ export default function NotificationsScreen() {
         .from('notifications')
         .update({ is_read: true })
         .in('id', unreadIds);
+      await refreshUnread();
     }
-  }, [myId]);
+  }, [myId, refreshUnread]);
 
   useFocusEffect(
     useCallback(() => {
@@ -118,6 +160,11 @@ export default function NotificationsScreen() {
 
           {items.length === 0 ? (
             <View style={styles.emptyBox}>
+              <Ionicons
+                name="notifications-outline"
+                size={48}
+                color={c.textSecondary}
+              />
               <Text style={styles.emptyTitle}>通知はまだありません</Text>
               <Text style={styles.emptyText}>
                 いいね・コメント・フォローがあると{'\n'}
@@ -125,7 +172,16 @@ export default function NotificationsScreen() {
               </Text>
             </View>
           ) : (
-            items.map((n) => <NotificationRow key={n.id} item={n} />)
+            sections.map((section) => (
+              <View key={section.key}>
+                <Text style={styles.sectionLabel}>
+                  {SECTION_LABEL[section.key]}
+                </Text>
+                {section.data.map((n) => (
+                  <NotificationRow key={n.id} item={n} />
+                ))}
+              </View>
+            ))
           )}
         </ScrollView>
       )}
@@ -143,8 +199,7 @@ function NotificationRow({ item }: { item: NotificationItem }) {
     actor?.display_name?.trim() ||
     actor?.username?.trim() ||
     fallbackName;
-  const date = new Date(item.created_at);
-  const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const dateStr = formatRelativeTime(item.created_at);
 
   const message =
     item.type === 'like'
@@ -194,10 +249,6 @@ function NotificationRow({ item }: { item: NotificationItem }) {
       {!item.is_read && <View style={styles.unreadDot} />}
     </Pressable>
   );
-}
-
-function pad(n: number): string {
-  return String(n).padStart(2, '0');
 }
 
 function makeStyles(c: ThemeColors) {
@@ -251,18 +302,29 @@ function makeStyles(c: ThemeColors) {
       padding: 32,
       alignItems: 'center',
       marginTop: 24,
+      gap: 8,
     },
     emptyTitle: {
       fontSize: 16,
       fontWeight: '600',
       color: c.textPrimary,
-      marginBottom: 8,
+      marginTop: 4,
     },
     emptyText: {
       fontSize: 13,
       color: c.textSecondary,
       textAlign: 'center',
       lineHeight: 20,
+    },
+    sectionLabel: {
+      fontSize: 11,
+      color: c.textSecondary,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginTop: 16,
+      marginBottom: 6,
+      marginLeft: 4,
     },
     row: {
       flexDirection: 'row',

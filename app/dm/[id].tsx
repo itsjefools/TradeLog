@@ -19,7 +19,7 @@ import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
-import { Profile } from '@/lib/types';
+import { PROFILE_COLUMNS, Profile } from '@/lib/types';
 
 type Message = {
   id: string;
@@ -48,7 +48,7 @@ export default function DMThreadScreen() {
   const load = useCallback(async () => {
     if (!partnerId || !myId) return;
     const [partnerRes, msgRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', partnerId).maybeSingle(),
+      supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', partnerId).maybeSingle(),
       supabase
         .from('messages')
         .select('*')

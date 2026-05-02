@@ -17,10 +17,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { useToast } from '@/components/toast';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
+import { notifyError, notifySuccess, notifyWarning } from '@/lib/haptics';
 import { FREE_LIMITS, getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
 import {
@@ -31,7 +33,6 @@ import {
   uploadPostMedia,
 } from '@/lib/upload-media';
 
-const ACCENT = '#10B981';
 const MAX_CHARS = 1000;
 const MAX_MEDIA = 4;
 
@@ -45,6 +46,7 @@ export default function CreatePostScreen() {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
+  const toast = useToast();
   const { session } = useAuth();
   const { profile } = useProfile();
   const myId = session?.user.id ?? null;
@@ -129,6 +131,7 @@ export default function CreatePostScreen() {
   const handleSubmit = async () => {
     if (!myId) return;
     if (overLimit) {
+      notifyWarning();
       Alert.alert(
         'Free プランの上限',
         `Free プランでは月 ${FREE_LIMITS.monthlyPosts} 件まで投稿できます。Premium で無制限になります。`,
@@ -159,8 +162,11 @@ export default function CreatePostScreen() {
       });
       if (error) throw new Error(error.message);
 
+      notifySuccess();
+      toast.success('投稿しました');
       router.back();
     } catch (e) {
+      notifyError();
       Alert.alert('投稿失敗', e instanceof Error ? e.message : String(e));
     } finally {
       setSubmitting(false);
@@ -384,7 +390,7 @@ function makeStyles(c: ThemeColors) {
     },
     headerTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
     submitButton: {
-      backgroundColor: ACCENT,
+      backgroundColor: c.accent,
       paddingHorizontal: 14,
       paddingVertical: 8,
       borderRadius: 999,

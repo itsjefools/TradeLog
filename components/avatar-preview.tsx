@@ -26,6 +26,7 @@ const PREVIEW_SIZE = Math.round(SCREEN_WIDTH * 0.75);
 export type AvatarPreviewProfile = {
   username?: string | null;
   is_verified?: boolean | null;
+  is_premium?: boolean | null;
   nationality?: string | null;
   trade_style?: string | null;
 };

@@ -22,12 +22,19 @@ import { useFavoritePairs } from '@/hooks/use-favorite-pairs';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
+import { useToast } from '@/components/toast';
+import { notifyError, notifySuccess } from '@/lib/haptics';
 import { FREE_LIMITS, getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
+import {
+  applySignToNum,
+  applySignToString,
+  parseNumOrNull,
+  recalcPipsField,
+} from '@/lib/trade-math';
 import { pickAndUploadImage } from '@/lib/upload-image';
 import {
   ALL_CURRENCY_PAIRS,
-  isFxPair,
   Trade,
   TradeDirection,
   TradeInsert,
@@ -50,53 +57,7 @@ const initialState = {
   imageUrls: [] as string[],
 };
 
-function applySignToString(value: string, result: TradeResult): string {
-  if (value.trim() === '') return value;
-  const n = Number(value);
-  if (!Number.isFinite(n) || n === 0) return value;
-  const desired = result === 'loss' ? -Math.abs(n) : Math.abs(n);
-  return String(desired);
-}
-
-function applySignToNum(
-  value: number | null,
-  result: TradeResult | null,
-): number | null {
-  if (value === null || result === null) return value;
-  return result === 'loss' ? -Math.abs(value) : Math.abs(value);
-}
-
-function parseNumOrNull(s: string): number | null {
-  if (s.trim() === '') return null;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
-
-function computePips(
-  pair: string,
-  direction: TradeDirection,
-  entry: number,
-  exit: number,
-): number | null {
-  // FX以外（仮想通貨・商品・指数）はpipsの定義が銘柄ごとに違うので自動計算しない
-  if (!isFxPair(pair)) return null;
-  const isJpyPair = pair.toUpperCase().endsWith('/JPY');
-  const multiplier = isJpyPair ? 100 : 10000;
-  const diff = direction === 'long' ? exit - entry : entry - exit;
-  return diff * multiplier;
-}
-
 type FormState = typeof initialState;
-
-function recalcPips(form: FormState): FormState {
-  const entry = parseNumOrNull(form.entryPrice);
-  const exit = parseNumOrNull(form.exitPrice);
-  if (entry === null || exit === null) return form;
-  const pips = computePips(form.currencyPair, form.direction, entry, exit);
-  if (pips === null) return form;
-  const rounded = Math.round(pips * 10) / 10;
-  return { ...form, pnlPips: String(rounded) };
-}
 
 export default function RecordScreen() {
   const c = useThemeColors();
@@ -113,6 +74,7 @@ export default function RecordScreen() {
   const { addTrade, trades } = useTrades();
   const { favorites, isFavorite, toggleFavorite } = useFavoritePairs();
   const { profile } = useProfile();
+  const toast = useToast();
   const plan = getPlan(profile?.is_premium);
 
   // 今月の取引数（Free プラン制限用）
@@ -171,15 +133,15 @@ export default function RecordScreen() {
   };
 
   const updatePriceField = (key: 'entryPrice' | 'exitPrice', value: string) => {
-    setForm((prev) => recalcPips({ ...prev, [key]: value }));
+    setForm((prev) => recalcPipsField({ ...prev, [key]: value }));
   };
 
   const updateDirection = (direction: TradeDirection) => {
-    setForm((prev) => recalcPips({ ...prev, direction }));
+    setForm((prev) => recalcPipsField({ ...prev, direction }));
   };
 
   const updateCurrencyPair = (currencyPair: string) => {
-    setForm((prev) => recalcPips({ ...prev, currencyPair }));
+    setForm((prev) => recalcPipsField({ ...prev, currencyPair }));
     setPairSearch('');
   };
 
@@ -263,11 +225,12 @@ export default function RecordScreen() {
         addTrade(insertedRow as Trade);
       }
 
-      Alert.alert('保存しました', '取引を記録しました。', [
-        { text: 'OK', onPress: resetForm },
-      ]);
+      notifySuccess();
+      toast.success('取引を記録しました');
+      resetForm();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
+      notifyError();
       Alert.alert('予期せぬエラー', message);
     } finally {
       setLoading(false);

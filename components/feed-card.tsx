@@ -21,11 +21,14 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/avatar';
+import { ImageViewer } from '@/components/image-viewer';
 import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
 import { useThemeColors } from '@/hooks/use-theme';
-import { isVideoUrl } from '@/lib/upload-media';
 import { findCountry, flagEmoji } from '@/lib/countries';
+import { formatRelativeTime } from '@/lib/format-time';
+import { tapSuccess } from '@/lib/haptics';
+import { isVideoUrl } from '@/lib/upload-media';
 import { Post, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
 export type FeedCardItem = Post & {
@@ -53,6 +56,7 @@ export function FeedCard({
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [reportVisible, setReportVisible] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const handleMenu = () => {
     Alert.alert('オプション', undefined, [
@@ -90,8 +94,7 @@ export function FeedCard({
         ? '損切り'
         : null
     : null;
-  const date = new Date(trade?.traded_at ?? item.created_at);
-  const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const dateStr = formatRelativeTime(trade?.traded_at ?? item.created_at);
 
   const userId = profile?.id ?? item.user_id;
 
@@ -225,7 +228,25 @@ export function FeedCard({
       )}
 
       {item.image_urls && item.image_urls.length > 0 && (
-        <MediaGrid urls={item.image_urls} />
+        <MediaGrid
+          urls={item.image_urls}
+          onTapImage={(uri) => {
+            const photoOnly = (item.image_urls ?? []).filter(
+              (u) => !isVideoUrl(u),
+            );
+            const i = photoOnly.indexOf(uri);
+            if (i >= 0) setViewerIndex(i);
+          }}
+        />
+      )}
+
+      {item.image_urls && (
+        <ImageViewer
+          visible={viewerIndex !== null}
+          uris={item.image_urls.filter((u) => !isVideoUrl(u))}
+          initialIndex={viewerIndex ?? 0}
+          onClose={() => setViewerIndex(null)}
+        />
       )}
 
       {item.hashtags && item.hashtags.length > 0 && (
@@ -271,7 +292,10 @@ export function FeedCard({
             styles.actionButton,
             pressed && styles.actionButtonPressed,
           ]}
-          onPress={() => onToggleRepost(item)}
+          onPress={() => {
+            tapSuccess();
+            onToggleRepost(item);
+          }}
           hitSlop={12}
         >
           <Ionicons
@@ -286,7 +310,10 @@ export function FeedCard({
             styles.actionButton,
             pressed && styles.actionButtonPressed,
           ]}
-          onPress={() => onToggleBookmark(item)}
+          onPress={() => {
+            tapSuccess();
+            onToggleBookmark(item);
+          }}
           hitSlop={12}
         >
           <Ionicons
@@ -307,7 +334,13 @@ const CARD_PADDING = 14;
 const CARD_INNER = SCREEN_WIDTH - 12 * 2 - CARD_PADDING * 2;
 const GAP = 2;
 
-function MediaGrid({ urls }: { urls: string[] }) {
+function MediaGrid({
+  urls,
+  onTapImage,
+}: {
+  urls: string[];
+  onTapImage: (uri: string) => void;
+}) {
   const c = useThemeColors();
   const styles = useMemo(() => makeMediaStyles(c), [c]);
   const list = urls.slice(0, 4);
@@ -319,6 +352,7 @@ function MediaGrid({ urls }: { urls: string[] }) {
         <MediaTile
           uri={list[0]}
           style={[styles.tile, { width: CARD_INNER, aspectRatio: 16 / 10 }]}
+          onTapImage={onTapImage}
         />
       </View>
     );
@@ -327,8 +361,8 @@ function MediaGrid({ urls }: { urls: string[] }) {
     const w = (CARD_INNER - GAP) / 2;
     return (
       <View style={[styles.row, { marginTop: 10 }]}>
-        <MediaTile uri={list[0]} style={[styles.tile, { width: w, height: w }]} />
-        <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} />
+        <MediaTile uri={list[0]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
+        <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
       </View>
     );
   }
@@ -339,10 +373,11 @@ function MediaGrid({ urls }: { urls: string[] }) {
         <MediaTile
           uri={list[0]}
           style={[styles.tile, { width: CARD_INNER, height: 200 }]}
+          onTapImage={onTapImage}
         />
         <View style={styles.row}>
-          <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} />
-          <MediaTile uri={list[2]} style={[styles.tile, { width: w, height: w }]} />
+          <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
+          <MediaTile uri={list[2]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
         </View>
       </View>
     );
@@ -352,12 +387,12 @@ function MediaGrid({ urls }: { urls: string[] }) {
   return (
     <View style={[styles.col, { marginTop: 10 }]}>
       <View style={styles.row}>
-        <MediaTile uri={list[0]} style={[styles.tile, { width: w, height: w }]} />
-        <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} />
+        <MediaTile uri={list[0]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
+        <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
       </View>
       <View style={styles.row}>
-        <MediaTile uri={list[2]} style={[styles.tile, { width: w, height: w }]} />
-        <MediaTile uri={list[3]} style={[styles.tile, { width: w, height: w }]} />
+        <MediaTile uri={list[2]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
+        <MediaTile uri={list[3]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
       </View>
     </View>
   );
@@ -366,9 +401,11 @@ function MediaGrid({ urls }: { urls: string[] }) {
 function MediaTile({
   uri,
   style,
+  onTapImage,
 }: {
   uri: string;
   style: object | object[];
+  onTapImage: (uri: string) => void;
 }) {
   const isVideo = isVideoUrl(uri);
   if (isVideo) {
@@ -383,11 +420,13 @@ function MediaTile({
     );
   }
   return (
+    <Pressable onPress={() => onTapImage(uri)} style={style}>
     <Image
       source={{ uri }}
       style={style as object}
       contentFit="cover"
     />
+    </Pressable>
   );
 }
 
@@ -435,6 +474,7 @@ function LikeButton({
       withTiming(1.35, { duration: 110 }),
       withSpring(1, { damping: 6, stiffness: 180 }),
     );
+    tapSuccess();
     onPress();
   };
 
@@ -472,10 +512,6 @@ function formatPips(n: number): string {
 function pnlColor(n: number | null, c: ThemeColors): TextStyle | undefined {
   if (n === null || n === 0) return undefined;
   return { color: n > 0 ? c.win : c.loss };
-}
-
-function pad(n: number): string {
-  return String(n).padStart(2, '0');
 }
 
 function makeStyles(c: ThemeColors) {

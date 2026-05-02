@@ -22,8 +22,13 @@ import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { supabase } from '@/lib/supabase';
 import {
+  applySignToNum,
+  applySignToString,
+  parseNumOrNull,
+  recalcPipsField,
+} from '@/lib/trade-math';
+import {
   ALL_CURRENCY_PAIRS,
-  isFxPair,
   Trade,
   TradeDirection,
   TradeResult,
@@ -43,51 +48,6 @@ type FormState = {
   reviewMemo: string;
   isShared: boolean;
 };
-
-function parseNumOrNull(s: string): number | null {
-  if (s.trim() === '') return null;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
-
-function applySignToString(value: string, result: TradeResult): string {
-  if (value.trim() === '') return value;
-  const n = Number(value);
-  if (!Number.isFinite(n) || n === 0) return value;
-  const desired = result === 'loss' ? -Math.abs(n) : Math.abs(n);
-  return String(desired);
-}
-
-function applySignToNum(
-  value: number | null,
-  result: TradeResult | null,
-): number | null {
-  if (value === null || result === null) return value;
-  return result === 'loss' ? -Math.abs(value) : Math.abs(value);
-}
-
-function computePips(
-  pair: string,
-  direction: TradeDirection,
-  entry: number,
-  exit: number,
-): number | null {
-  if (!isFxPair(pair)) return null;
-  const isJpyPair = pair.toUpperCase().endsWith('/JPY');
-  const multiplier = isJpyPair ? 100 : 10000;
-  const diff = direction === 'long' ? exit - entry : entry - exit;
-  return diff * multiplier;
-}
-
-function recalcPips(form: FormState): FormState {
-  const entry = parseNumOrNull(form.entryPrice);
-  const exit = parseNumOrNull(form.exitPrice);
-  if (entry === null || exit === null) return form;
-  const pips = computePips(form.currencyPair, form.direction, entry, exit);
-  if (pips === null) return form;
-  const rounded = Math.round(pips * 10) / 10;
-  return { ...form, pnlPips: String(rounded) };
-}
 
 function tradeToForm(t: Trade): FormState {
   return {
@@ -169,15 +129,15 @@ export default function TradeEditScreen() {
     key: 'entryPrice' | 'exitPrice',
     value: string,
   ) => {
-    setForm((prev) => (prev ? recalcPips({ ...prev, [key]: value }) : prev));
+    setForm((prev) => (prev ? recalcPipsField({ ...prev, [key]: value }) : prev));
   };
 
   const updateDirection = (direction: TradeDirection) => {
-    setForm((prev) => (prev ? recalcPips({ ...prev, direction }) : prev));
+    setForm((prev) => (prev ? recalcPipsField({ ...prev, direction }) : prev));
   };
 
   const updateCurrencyPair = (currencyPair: string) => {
-    setForm((prev) => (prev ? recalcPips({ ...prev, currencyPair }) : prev));
+    setForm((prev) => (prev ? recalcPipsField({ ...prev, currencyPair }) : prev));
     setPairSearch('');
   };
 

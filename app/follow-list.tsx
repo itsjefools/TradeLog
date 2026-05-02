@@ -20,16 +20,10 @@ import { useBlocks } from '@/hooks/use-blocks';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
-import { Profile, tradeStyleLabel } from '@/lib/types';
-
-const ACCENT = '#10B981';
+import { PROFILE_COLUMNS, Profile, tradeStyleLabel } from '@/lib/types';
 
 type TabKey = 'followers' | 'following';
 
-const PROFILE_FRAG = `
-  id, email, username, display_name, avatar_url, bio,
-  trade_style, language, is_premium, nationality, is_verified, created_at
-`;
 
 export default function FollowListScreen() {
   const c = useThemeColors();
@@ -63,7 +57,7 @@ export default function FollowListScreen() {
 
       const { data: rows, error } = await supabase
         .from('follows')
-        .select(`${fkColumn}, profile:profiles!follows_${fkColumn}_fkey (${PROFILE_FRAG})`)
+        .select(`${fkColumn}, profile:profiles!follows_${fkColumn}_fkey (${PROFILE_COLUMNS})`)
         .eq(filterColumn, userId)
         .order('created_at', { ascending: false });
       if (error) throw new Error(error.message);
@@ -408,7 +402,7 @@ function makeStyles(c: ThemeColors) {
       marginBottom: -StyleSheet.hairlineWidth,
     },
     tabButtonActive: {
-      borderBottomColor: ACCENT,
+      borderBottomColor: c.accent,
     },
     tabText: {
       fontSize: 14,
@@ -515,7 +509,7 @@ function makeStyles(c: ThemeColors) {
       paddingHorizontal: 14,
       paddingVertical: 8,
       borderRadius: 999,
-      backgroundColor: ACCENT,
+      backgroundColor: c.accent,
       minWidth: 84,
       alignItems: 'center',
       justifyContent: 'center',

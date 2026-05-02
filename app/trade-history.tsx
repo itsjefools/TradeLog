@@ -119,6 +119,11 @@ export default function TradeHistoryScreen() {
       <ScrollView contentContainerStyle={styles.body}>
         {trades.length === 0 ? (
           <View style={styles.emptyBox}>
+            <Ionicons
+              name="document-text-outline"
+              size={48}
+              color={c.textSecondary}
+            />
             <Text style={styles.emptyText}>
               まだ取引がありません。{'\n'}記録タブから追加してください。
             </Text>
@@ -259,6 +264,7 @@ function makeStyles(c: ThemeColors) {
       padding: 32,
       alignItems: 'center',
       marginTop: 24,
+      gap: 8,
     },
     emptyText: {
       fontSize: 13,

@@ -8,7 +8,7 @@ import {
 } from 'react';
 
 import { supabase } from '@/lib/supabase';
-import { Profile } from '@/lib/types';
+import { PROFILE_COLUMNS, Profile } from '@/lib/types';
 
 import { useAuth } from './use-auth';
 
@@ -37,7 +37,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     setError(null);
     const { data, error: fetchError } = await supabase
       .from('profiles')
-      .select('*')
+      .select(PROFILE_COLUMNS)
       .eq('id', session.user.id)
       .maybeSingle();
     if (fetchError) {

@@ -9,15 +9,17 @@ import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 
+import { ToastProvider } from '@/components/toast';
 import { useAuth } from '@/hooks/use-auth';
 import { BlocksProvider } from '@/hooks/use-blocks';
 import { I18nProvider } from '@/hooks/use-i18n';
-import { useOnboarding } from '@/hooks/use-onboarding';
+import { OnboardingProvider, useOnboarding } from '@/hooks/use-onboarding';
 import { ProfileProvider } from '@/hooks/use-profile';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { RevenueCatProvider } from '@/hooks/use-revenue-cat';
 import { ThemeProvider, useTheme } from '@/hooks/use-theme';
 import { TradesProvider } from '@/hooks/use-trades';
+import { UnreadCountsProvider } from '@/hooks/use-unread-counts';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -55,7 +57,9 @@ function useProtectedRoute(
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <ThemedRoot />
+      <OnboardingProvider>
+        <ThemedRoot />
+      </OnboardingProvider>
     </ThemeProvider>
   );
 }
@@ -68,7 +72,8 @@ function ThemedRoot() {
   useProtectedRoute(session, loading, onboardingCompleted);
   usePushNotifications();
 
-  if (loading) {
+  // 認証 or オンボーディング判定がまだ済んでないならスプラッシュ
+  if (loading || onboardingCompleted === null) {
     return (
       <View
         style={{
@@ -90,6 +95,8 @@ function ThemedRoot() {
         <TradesProvider>
         <BlocksProvider>
         <RevenueCatProvider>
+        <UnreadCountsProvider>
+        <ToastProvider>
           <Stack screenOptions={{ animation: 'none' }}>
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
@@ -190,11 +197,9 @@ function ThemedRoot() {
               name="user/[id]"
               options={{ headerShown: false }}
             />
-            <Stack.Screen
-              name="modal"
-              options={{ title: 'Modal' }}
-            />
           </Stack>
+        </ToastProvider>
+        </UnreadCountsProvider>
         </RevenueCatProvider>
         </BlocksProvider>
         </TradesProvider>

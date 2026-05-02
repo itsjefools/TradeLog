@@ -102,7 +102,7 @@ export function ImageViewer({
           onPress={onClose}
           hitSlop={24}
         >
-          <Ionicons name="close" size={30} color="#fff" />
+          <Ionicons name="close" size={22} color="#fff" />
         </Pressable>
       </GestureHandlerRootView>
     </Modal>
@@ -266,14 +266,14 @@ function makeStyles() {
     },
     closeBtn: {
       position: 'absolute',
-      top: 50,
-      right: 12,
+      top: 56,
+      right: 16,
       zIndex: 100,
       elevation: 100,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: 'rgba(0,0,0,0.7)',
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: 'rgba(0,0,0,0.6)',
       alignItems: 'center',
       justifyContent: 'center',
     },

@@ -44,12 +44,14 @@ type FormState = {
   pnl: string;
   pnlPips: string;
   memo: string;
-  postMemo: string;
-  reviewMemo: string;
   isShared: boolean;
 };
 
 function tradeToForm(t: Trade): FormState {
+  // 旧データ（post_memo / review_memo）が残っている場合は memo に統合表示
+  const merged = [t.memo, t.post_memo, t.review_memo]
+    .filter((s) => s && s.trim() !== '')
+    .join('\n\n');
   return {
     currencyPair: t.currency_pair,
     direction: t.direction,
@@ -59,9 +61,7 @@ function tradeToForm(t: Trade): FormState {
     lotSize: String(t.lot_size),
     pnl: t.pnl !== null ? String(t.pnl) : '',
     pnlPips: t.pnl_pips !== null ? String(t.pnl_pips) : '',
-    memo: t.memo ?? '',
-    postMemo: t.post_memo ?? '',
-    reviewMemo: t.review_memo ?? '',
+    memo: merged,
     isShared: t.is_shared,
   };
 }
@@ -186,8 +186,8 @@ export default function TradeEditScreen() {
           pnl: applySignToNum(parseNumOrNull(form.pnl), form.result),
           pnl_pips: applySignToNum(parseNumOrNull(form.pnlPips), form.result),
           memo: form.memo.trim() || null,
-          post_memo: form.postMemo.trim() || null,
-          review_memo: form.reviewMemo.trim() || null,
+          post_memo: null,
+          review_memo: null,
           is_shared: form.isShared,
         })
         .eq('id', id);
@@ -227,6 +227,7 @@ export default function TradeEditScreen() {
           style={styles.flex}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
           <View style={styles.section}>
             <Text style={styles.label}>通貨ペア</Text>
@@ -440,43 +441,15 @@ export default function TradeEditScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>📝 エントリー前メモ</Text>
+            <Text style={styles.label}>メモ（任意）</Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
               value={form.memo}
               onChangeText={(t) => setField('memo', t)}
-              placeholder="取引の根拠"
+              placeholder="取引の根拠、感想、振り返りなどを自由に記録"
               placeholderTextColor={c.textSecondary}
               multiline
-              numberOfLines={3}
-              editable={!saving}
-            />
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>🎯 エグジット後メモ</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              value={form.postMemo}
-              onChangeText={(t) => setField('postMemo', t)}
-              placeholder="実際の値動きへの感想"
-              placeholderTextColor={c.textSecondary}
-              multiline
-              numberOfLines={3}
-              editable={!saving}
-            />
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>🔍 振り返り</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              value={form.reviewMemo}
-              onChangeText={(t) => setField('reviewMemo', t)}
-              placeholder="次回への教訓"
-              placeholderTextColor={c.textSecondary}
-              multiline
-              numberOfLines={3}
+              maxLength={1000}
               editable={!saving}
             />
           </View>
@@ -538,7 +511,7 @@ function makeStyles(c: ThemeColors) {
       fontSize: 16,
       color: c.textPrimary,
     },
-    inputMultiline: { minHeight: 80, textAlignVertical: 'top', paddingTop: 12 },
+    inputMultiline: { minHeight: 120, textAlignVertical: 'top', paddingTop: 12 },
     chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chipsRowMt: { marginTop: 12 },
     selectedPairText: { marginTop: 10, fontSize: 12, color: c.textSecondary },

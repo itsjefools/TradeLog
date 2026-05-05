@@ -1,8 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +15,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { ThemeColors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,20 +55,40 @@ const initialState = {
   pnl: '',
   pnlPips: '',
   memo: '',
-  postMemo: '',
-  reviewMemo: '',
   isShared: false,
   imageUrls: [] as string[],
 };
 
-type FormState = typeof initialState;
+function parseInitialDate(raw: string | string[] | undefined): Date {
+  if (typeof raw !== 'string' || !raw) return new Date();
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? new Date() : d;
+}
+
+function formatTradedDate(date: Date): string {
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${days[date.getDay()]}）`;
+}
 
 export default function RecordScreen() {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
+  const params = useLocalSearchParams<{ date?: string }>();
   const [form, setForm] = useState(initialState);
+  const [tradedAt, setTradedAt] = useState<Date>(() =>
+    parseInitialDate(params.date),
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pairSearch, setPairSearch] = useState('');
+
+  // カレンダーから日付パラメータが渡されたら反映（URL変更時）
+  useEffect(() => {
+    if (typeof params.date === 'string' && params.date) {
+      const d = new Date(params.date);
+      if (!isNaN(d.getTime())) setTradedAt(d);
+    }
+  }, [params.date]);
 
   const entryPriceRef = useRef<TextInput>(null);
   const exitPriceRef = useRef<TextInput>(null);
@@ -199,10 +223,11 @@ export default function RecordScreen() {
         pnl,
         pnl_pips: pnlPips,
         memo: form.memo.trim() || null,
-        post_memo: form.postMemo.trim() || null,
-        review_memo: form.reviewMemo.trim() || null,
+        post_memo: null,
+        review_memo: null,
         is_shared: form.isShared,
         image_urls: form.imageUrls,
+        traded_at: tradedAt.toISOString(),
       };
 
       const { data: insertedRow, error: insertError } = await supabase
@@ -273,7 +298,73 @@ export default function RecordScreen() {
           style={styles.flex}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
+          <View style={styles.section}>
+            <Text style={styles.label}>取引日</Text>
+            <Pressable
+              onPress={() => setShowDatePicker(true)}
+              disabled={loading}
+              style={({ pressed }) => [
+                styles.dateField,
+                pressed && styles.dateFieldPressed,
+              ]}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={18}
+                color={c.textSecondary}
+              />
+              <Text style={styles.dateFieldText}>
+                {formatTradedDate(tradedAt)}
+              </Text>
+            </Pressable>
+          </View>
+
+          {Platform.OS === 'ios' && (
+            <Modal
+              transparent
+              animationType="slide"
+              visible={showDatePicker}
+              onRequestClose={() => setShowDatePicker(false)}
+            >
+              <Pressable
+                style={styles.datePickerBackdrop}
+                onPress={() => setShowDatePicker(false)}
+              />
+              <View style={styles.datePickerSheet}>
+                <View style={styles.datePickerHeader}>
+                  <Pressable onPress={() => setShowDatePicker(false)} hitSlop={12}>
+                    <Text style={styles.datePickerDone}>完了</Text>
+                  </Pressable>
+                </View>
+                <DateTimePicker
+                  value={tradedAt}
+                  mode="date"
+                  display="spinner"
+                  maximumDate={new Date()}
+                  themeVariant={c.background === '#fff' ? 'light' : 'dark'}
+                  onChange={(_, selected) => {
+                    if (selected) setTradedAt(selected);
+                  }}
+                />
+              </View>
+            </Modal>
+          )}
+
+          {Platform.OS === 'android' && showDatePicker && (
+            <DateTimePicker
+              value={tradedAt}
+              mode="date"
+              display="default"
+              maximumDate={new Date()}
+              onChange={(event, selected) => {
+                setShowDatePicker(false);
+                if (event.type === 'set' && selected) setTradedAt(selected);
+              }}
+            />
+          )}
+
           <View style={styles.section}>
             <Text style={styles.label}>通貨ペア</Text>
             <TextInput
@@ -503,43 +594,15 @@ export default function RecordScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>📝 エントリー前メモ（取引の根拠）</Text>
+            <Text style={styles.label}>メモ（任意）</Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
               value={form.memo}
               onChangeText={(t) => setField('memo', t)}
-              placeholder="例: ロンドン時間の押し目買い。移動平均線でサポート確認。 #USDJPY"
+              placeholder="取引の根拠、感想、振り返りなどを自由に記録"
               placeholderTextColor={c.textSecondary}
               multiline
-              numberOfLines={3}
-              editable={!loading}
-            />
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>🎯 エグジット後メモ（実際の値動きへの感想・任意）</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              value={form.postMemo}
-              onChangeText={(t) => setField('postMemo', t)}
-              placeholder="例: 想定通り上昇したが、利確が早すぎた。"
-              placeholderTextColor={c.textSecondary}
-              multiline
-              numberOfLines={3}
-              editable={!loading}
-            />
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>🔍 振り返り（次回への教訓・任意）</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              value={form.reviewMemo}
-              onChangeText={(t) => setField('reviewMemo', t)}
-              placeholder="例: 次回は利確目標まで保有する。トレール戦略を試す。"
-              placeholderTextColor={c.textSecondary}
-              multiline
-              numberOfLines={3}
+              maxLength={1000}
               editable={!loading}
             />
           </View>
@@ -677,8 +740,48 @@ function makeStyles(c: ThemeColors) {
   inputMt: {
     marginTop: 8,
   },
+  dateField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  dateFieldPressed: {
+    opacity: 0.7,
+  },
+  dateFieldText: {
+    fontSize: 16,
+    color: c.textPrimary,
+    fontWeight: '500',
+  },
+  datePickerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  datePickerSheet: {
+    backgroundColor: c.surface,
+    paddingBottom: 24,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+  },
+  datePickerDone: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: c.accent,
+  },
   inputMultiline: {
-    minHeight: 96,
+    minHeight: 120,
     textAlignVertical: 'top',
     paddingTop: 12,
   },

@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useScrollToTop } from '@react-navigation/native';
-import { Link, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  LayoutAnimation,
   Platform,
   Pressable,
   RefreshControl,
@@ -14,8 +15,16 @@ import {
   StyleSheet,
   Text,
   TextStyle,
+  UIManager,
   View,
 } from 'react-native';
+
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -37,6 +46,7 @@ export default function AnalyticsScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const { trades, loading, error, refresh, deleteTrade } = useTrades();
   const { profile } = useProfile();
+  const router = useRouter();
   const isPremium = getPlan(profile?.is_premium) === 'premium';
   const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -44,6 +54,17 @@ export default function AnalyticsScreen() {
 
   // 月選択 (offset=0 が今月、-1 で先月)
   const [monthOffset, setMonthOffset] = useState(0);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+  const selectDay = useCallback((day: number | null) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSelectedDay(day);
+  }, []);
+
+  // 月が変わったら選択をリセット
+  useEffect(() => {
+    setSelectedDay(null);
+  }, [monthOffset]);
 
   useFocusEffect(
     useCallback(() => {
@@ -210,8 +231,38 @@ export default function AnalyticsScreen() {
                 <CalendarView
                   trades={monthlyTrades}
                   monthInfo={monthInfo}
+                  selectedDay={selectedDay}
+                  onSelectDay={selectDay}
                 />
               </View>
+
+              {selectedDay !== null && (
+                <DayDetail
+                  year={monthInfo.start.getFullYear()}
+                  month={monthInfo.start.getMonth() + 1}
+                  day={selectedDay}
+                  trades={monthlyTrades.filter(
+                    (t) => new Date(t.traded_at).getDate() === selectedDay,
+                  )}
+                  onTradePress={(trade) =>
+                    router.push(`/trade-edit?id=${trade.id}`)
+                  }
+                  onRecordPress={() => {
+                    const d = new Date(
+                      monthInfo.start.getFullYear(),
+                      monthInfo.start.getMonth(),
+                      selectedDay,
+                      12, // 正午で固定（タイムゾーンずれ防止）
+                      0,
+                      0,
+                    );
+                    router.push(
+                      `/(tabs)/record?date=${encodeURIComponent(d.toISOString())}`,
+                    );
+                  }}
+                  onClose={() => selectDay(null)}
+                />
+              )}
 
               <View style={styles.lockedWrap}>
                 <View pointerEvents={isPremium ? 'auto' : 'none'}>
@@ -509,9 +560,13 @@ function WeekdayPerf({ trades }: { trades: Trade[] }) {
 function CalendarView({
   trades,
   monthInfo,
+  selectedDay,
+  onSelectDay,
 }: {
   trades: Trade[];
   monthInfo: MonthRange;
+  selectedDay: number | null;
+  onSelectDay: (day: number | null) => void;
 }) {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
@@ -571,13 +626,17 @@ function CalendarView({
             const hasPnl = pnl !== undefined;
             const positive = hasPnl && pnl > 0;
             const negative = hasPnl && pnl < 0;
+            const isSelected = selectedDay === day;
             return (
-              <View
+              <Pressable
                 key={ci}
+                onPress={() => onSelectDay(isSelected ? null : day)}
+                hitSlop={2}
                 style={[
                   styles.calendarCell,
                   positive && styles.calendarCellWin,
                   negative && styles.calendarCellLoss,
+                  isSelected && styles.calendarCellSelected,
                 ]}
               >
                 <Text
@@ -599,11 +658,156 @@ function CalendarView({
                     {formatCompactPnl(pnl)}
                   </Text>
                 )}
-              </View>
+              </Pressable>
             );
           })}
         </View>
       ))}
+    </View>
+  );
+}
+
+function DayDetail({
+  year,
+  month,
+  day,
+  trades,
+  onTradePress,
+  onRecordPress,
+  onClose,
+}: {
+  year: number;
+  month: number;
+  day: number;
+  trades: Trade[];
+  onTradePress: (trade: Trade) => void;
+  onRecordPress: () => void;
+  onClose: () => void;
+}) {
+  const c = useThemeColors();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
+  const stats = useMemo(() => {
+    if (trades.length === 0) return null;
+    const total = trades
+      .filter((t) => t.pnl !== null)
+      .reduce((s, t) => s + (t.pnl ?? 0), 0);
+    const withResult = trades.filter((t) => t.result !== null);
+    const wins = withResult.filter((t) => t.result === 'win').length;
+    const winRate =
+      withResult.length > 0
+        ? Math.round((wins / withResult.length) * 100)
+        : null;
+    return { count: trades.length, total, winRate };
+  }, [trades]);
+
+  return (
+    <View style={styles.dayDetailCard}>
+      <View style={styles.dayDetailHead}>
+        <Text style={styles.dayDetailTitle}>
+          {year}年{month}月{day}日の取引
+        </Text>
+        <Pressable onPress={onClose} hitSlop={10}>
+          <Ionicons name="close" size={20} color={c.textSecondary} />
+        </Pressable>
+      </View>
+
+      {stats ? (
+        <>
+          <View style={styles.dayDetailSummary}>
+            <View style={styles.dayDetailSummaryItem}>
+              <Text style={styles.dayDetailSummaryLabel}>取引数</Text>
+              <Text style={styles.dayDetailSummaryValue}>{stats.count}回</Text>
+            </View>
+            <View style={styles.dayDetailSummaryItem}>
+              <Text style={styles.dayDetailSummaryLabel}>損益合計</Text>
+              <Text
+                style={[
+                  styles.dayDetailSummaryValue,
+                  pnlColor(stats.total, c),
+                ]}
+              >
+                {formatPnl(stats.total)}
+              </Text>
+            </View>
+            {stats.winRate !== null && (
+              <View style={styles.dayDetailSummaryItem}>
+                <Text style={styles.dayDetailSummaryLabel}>勝率</Text>
+                <Text style={styles.dayDetailSummaryValue}>
+                  {stats.winRate}%
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.dayDetailDivider} />
+
+          <View style={{ gap: 8 }}>
+            {trades.map((trade) => (
+              <Pressable
+                key={trade.id}
+                onPress={() => onTradePress(trade)}
+                style={({ pressed }) => [
+                  styles.dayTradeCard,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <View style={styles.dayTradeHead}>
+                  <Text style={styles.tradePair}>{trade.currency_pair}</Text>
+                  <Text style={styles.tradeDirection}>
+                    {trade.direction === 'long' ? 'ロング' : 'ショート'}
+                  </Text>
+                  {trade.result && (
+                    <View
+                      style={[
+                        styles.resultBadge,
+                        trade.result === 'win'
+                          ? styles.resultBadgeWin
+                          : styles.resultBadgeLoss,
+                      ]}
+                    >
+                      <Text style={styles.resultBadgeText}>
+                        {trade.result === 'win' ? '利確' : '損切り'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.dayTradeNumbers}>
+                  <Text style={[styles.tradePnl, pnlColor(trade.pnl, c)]}>
+                    {trade.pnl !== null ? formatPnl(trade.pnl) : '—'}
+                  </Text>
+                  {trade.pnl_pips !== null && (
+                    <Text
+                      style={[styles.tradePips, pnlColor(trade.pnl_pips, c)]}
+                    >
+                      {formatPips(trade.pnl_pips)}
+                    </Text>
+                  )}
+                </View>
+                {trade.memo && (
+                  <Text style={styles.dayTradeMemo} numberOfLines={2}>
+                    {trade.memo}
+                  </Text>
+                )}
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : (
+        <View style={styles.dayEmptyWrap}>
+          <Text style={styles.dayEmptyText}>この日の取引はありません</Text>
+          <Pressable
+            onPress={onRecordPress}
+            style={({ pressed }) => [
+              styles.dayEmptyCta,
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <Ionicons name="add" size={16} color="#fff" />
+            <Text style={styles.dayEmptyCtaText}>取引を記録する</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -1062,6 +1266,10 @@ function makeStyles(c: ThemeColors) {
     },
     calendarCellWin: { backgroundColor: c.win },
     calendarCellLoss: { backgroundColor: c.loss },
+    calendarCellSelected: {
+      borderWidth: 2,
+      borderColor: c.accent,
+    },
     calendarDayNum: {
       fontSize: 11,
       fontWeight: '600',
@@ -1072,6 +1280,95 @@ function makeStyles(c: ThemeColors) {
       fontWeight: '700',
       color: c.textPrimary,
       marginTop: 1,
+    },
+    dayDetailCard: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 14,
+      marginTop: 12,
+    },
+    dayDetailHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    dayDetailTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.textPrimary,
+      letterSpacing: -0.2,
+    },
+    dayDetailSummary: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 12,
+    },
+    dayDetailSummaryItem: {
+      flex: 1,
+      backgroundColor: c.surfaceAlt,
+      borderRadius: 10,
+      padding: 10,
+    },
+    dayDetailSummaryLabel: {
+      fontSize: 11,
+      color: c.textSecondary,
+      marginBottom: 4,
+    },
+    dayDetailSummaryValue: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.textPrimary,
+    },
+    dayDetailDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+      marginBottom: 12,
+    },
+    dayTradeCard: {
+      backgroundColor: c.surfaceAlt,
+      borderRadius: 10,
+      padding: 12,
+      gap: 6,
+    },
+    dayTradeHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    dayTradeNumbers: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 12,
+    },
+    dayTradeMemo: {
+      fontSize: 12,
+      color: c.textSecondary,
+      lineHeight: 17,
+      marginTop: 2,
+    },
+    dayEmptyWrap: {
+      alignItems: 'center',
+      paddingVertical: 16,
+      gap: 12,
+    },
+    dayEmptyText: {
+      fontSize: 14,
+      color: c.textSecondary,
+    },
+    dayEmptyCta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: c.accent,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 999,
+    },
+    dayEmptyCtaText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#fff',
     },
     errorBox: {
       backgroundColor: '#7F1D1D',

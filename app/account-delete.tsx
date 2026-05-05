@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -80,7 +82,15 @@ export default function AccountDeleteScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
         <View style={styles.warningCard}>
           <View style={styles.warningIcon}>
             <Ionicons name="warning" size={28} color="#fff" />
@@ -153,7 +163,8 @@ export default function AccountDeleteScreen() {
         >
           <Text style={styles.cancelButtonText}>やめる</Text>
         </Pressable>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -80,7 +80,11 @@ export default function GoalEditScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.body}>
+        <ScrollView
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
           <Text style={styles.intro}>
             月間のP&L目標を円で設定すると、{'\n'}
             分析画面に進捗バーが表示されます。

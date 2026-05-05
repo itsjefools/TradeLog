@@ -64,6 +64,7 @@ export default function RiskCalculatorScreen() {
         <ScrollView
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
           <Text style={styles.intro}>
             残高・リスク%・損切り幅から、適正なロットサイズを計算します。

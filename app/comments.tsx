@@ -144,6 +144,7 @@ export default function CommentsScreen() {
             style={styles.flex}
             contentContainerStyle={styles.body}
             keyboardShouldPersistTaps="handled"
+            bounces={false}
           >
             {error && (
               <View style={styles.errorBox}>

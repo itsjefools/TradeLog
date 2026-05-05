@@ -194,6 +194,7 @@ export default function ProfileEditScreen() {
           style={styles.flex}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
           <View style={styles.avatarSection}>
             <Pressable

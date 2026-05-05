@@ -185,6 +185,7 @@ export default function DMThreadScreen() {
             ref={scrollRef}
             contentContainerStyle={styles.body}
             keyboardShouldPersistTaps="handled"
+            bounces={false}
             onContentSizeChange={() =>
               scrollRef.current?.scrollToEnd({ animated: false })
             }

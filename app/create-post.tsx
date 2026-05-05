@@ -213,6 +213,7 @@ export default function CreatePostScreen() {
         <ScrollView
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
           <View style={styles.userRow}>
             <Avatar

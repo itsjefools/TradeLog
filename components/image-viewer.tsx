@@ -61,9 +61,10 @@ export function ImageViewer({
   return (
     <Modal
       visible={visible}
-      animationType="fade"
+      animationType="none"
       transparent
       statusBarTranslucent
+      hardwareAccelerated
       onRequestClose={onClose}
     >
       <GestureHandlerRootView style={styles.container}>
@@ -196,6 +197,27 @@ function ZoomableImage({
     [zoomed, tx, ty, savedTx, savedTy],
   );
 
+  // 下スワイプで閉じる: zoomed=false のときだけ有効
+  // 横方向に大きく動いたら fail させて ScrollView (ページャー) に譲る
+  const swipeDownToDismiss = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(!zoomed)
+        .activeOffsetY([20, 1000])
+        .failOffsetX([-30, 30])
+        .onUpdate((e) => {
+          ty.value = Math.max(0, e.translationY);
+        })
+        .onEnd((e) => {
+          if (e.translationY > 120 || e.velocityY > 800) {
+            runOnJS(onClose)();
+          } else {
+            ty.value = withTiming(0, { duration: 140 });
+          }
+        }),
+    [zoomed, ty, onClose],
+  );
+
   const doubleTap = useMemo(
     () =>
       Gesture.Tap()
@@ -230,9 +252,10 @@ function ZoomableImage({
       Gesture.Simultaneous(
         pinch,
         pan,
+        swipeDownToDismiss,
         Gesture.Exclusive(doubleTap, singleTap),
       ),
-    [pinch, pan, doubleTap, singleTap],
+    [pinch, pan, swipeDownToDismiss, doubleTap, singleTap],
   );
 
   const animStyle = useAnimatedStyle(() => ({

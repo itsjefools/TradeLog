@@ -2,8 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
+  ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -35,40 +37,61 @@ export default function UserProfileScreen() {
   const blocked = !!targetId && isBlocked(targetId);
   const [reportVisible, setReportVisible] = useState(false);
 
+  const performBlockToggle = async () => {
+    if (!targetId) return;
+    try {
+      if (blocked) {
+        await unblock(targetId);
+        return;
+      }
+      Alert.alert(
+        'ブロックしますか？',
+        'このユーザーの投稿・コメントが表示されなくなります。',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          {
+            text: 'ブロック',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await block(targetId);
+              } catch (e) {
+                Alert.alert(
+                  'エラー',
+                  e instanceof Error ? e.message : String(e),
+                );
+              }
+            },
+          },
+        ],
+      );
+    } catch (e) {
+      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const handleMenuOpen = () => {
     if (!targetId || isMyself) return;
+    const blockLabel = blocked ? 'ブロックを解除' : 'ブロック';
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['キャンセル', blockLabel, '通報'],
+          destructiveButtonIndex: blocked ? 2 : [1, 2],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) performBlockToggle();
+          if (buttonIndex === 2) setReportVisible(true);
+        },
+      );
+      return;
+    }
     Alert.alert('オプション', undefined, [
       {
-        text: blocked ? 'ブロックを解除' : 'ブロック',
+        text: blockLabel,
         style: blocked ? 'default' : 'destructive',
-        onPress: async () => {
-          try {
-            if (blocked) {
-              await unblock(targetId);
-            } else {
-              await new Promise<void>((resolve, reject) => {
-                Alert.alert(
-                  'ブロックしますか？',
-                  'このユーザーの投稿・コメントが表示されなくなります。',
-                  [
-                    {
-                      text: 'キャンセル',
-                      style: 'cancel',
-                      onPress: () => reject(new Error('cancel')),
-                    },
-                    {
-                      text: 'ブロック',
-                      style: 'destructive',
-                      onPress: () => resolve(),
-                    },
-                  ],
-                );
-              }).then(() => block(targetId)).catch(() => undefined);
-            }
-          } catch (e) {
-            Alert.alert('エラー', e instanceof Error ? e.message : String(e));
-          }
-        },
+        onPress: performBlockToggle,
       },
       {
         text: '通報',

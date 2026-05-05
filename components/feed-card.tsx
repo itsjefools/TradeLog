@@ -2,14 +2,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { ResizeMode, Video } from 'expo-av';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Dimensions,
+  Image as RNImage,
+  Modal,
   Pressable,
+  ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextStyle,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import Animated, {
@@ -24,10 +29,12 @@ import { Avatar } from '@/components/avatar';
 import { ImageViewer } from '@/components/image-viewer';
 import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
-import { useThemeColors } from '@/hooks/use-theme';
+import { useAuth } from '@/hooks/use-auth';
+import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { formatRelativeTime } from '@/lib/format-time';
 import { tapSuccess } from '@/lib/haptics';
+import { supabase } from '@/lib/supabase';
 import { isVideoUrl } from '@/lib/upload-media';
 import { Post, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
@@ -46,28 +53,81 @@ export function FeedCard({
   onToggleLike,
   onToggleBookmark,
   onToggleRepost,
+  onDeleted,
 }: {
   item: FeedCardItem;
   onToggleLike: (item: FeedCardItem) => void;
   onToggleBookmark: (item: FeedCardItem) => void;
   onToggleRepost: (item: FeedCardItem) => void;
+  onDeleted?: (postId: string) => void;
 }) {
   const c = useThemeColors();
+  const { resolved } = useTheme();
+  const isDark = resolved === 'dark';
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
+  const { session } = useAuth();
   const [reportVisible, setReportVisible] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
 
-  const handleMenu = () => {
-    Alert.alert('オプション', undefined, [
-      {
-        text: '通報',
-        style: 'destructive',
-        onPress: () => setReportVisible(true),
-      },
-      { text: 'キャンセル', style: 'cancel' },
-    ]);
+  const myUserId = session?.user.id ?? null;
+  const isMyPost = !!myUserId && item.user_id === myUserId;
+
+  const handleEdit = () => {
+    if (item.trade_id) {
+      router.push(`/trade-edit?id=${item.trade_id}`);
+    } else {
+      Alert.alert('編集できません', 'この投稿は編集できません。');
+    }
   };
+
+  const handleDelete = () => {
+    Alert.alert(
+      '投稿を削除',
+      'この投稿を削除しますか？この操作は取り消せません。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase
+              .from('posts')
+              .delete()
+              .eq('id', item.id);
+            if (error) {
+              Alert.alert('削除失敗', error.message);
+              return;
+            }
+            onDeleted?.(item.id);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleReport = () => setReportVisible(true);
+
+  const handleShare = async () => {
+    const trade = item.trade;
+    const tradeLine =
+      trade && trade.pnl !== null
+        ? `${trade.currency_pair} ${trade.direction === 'long' ? 'ロング' : 'ショート'} ${trade.pnl > 0 ? '+' : ''}${Math.round(trade.pnl).toLocaleString('ja-JP')}円`
+        : '';
+    const message = [item.content ?? '', tradeLine, 'TradeLogで共有 #TradeLog']
+      .filter((s) => s.trim() !== '')
+      .join('\n\n');
+    try {
+      await Share.share({ message });
+    } catch {
+      // ユーザーキャンセル等は無視
+    }
+  };
+
+  const handleMenu = useCallback(() => {
+    setMenuVisible(true);
+  }, []);
   const profile = item.profile;
   const trade = item.trade;
   const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
@@ -136,7 +196,6 @@ export function FeedCard({
             displayName={displayName}
             size={40}
             profile={profile}
-            onPress={() => router.push(`/user/${userId}`)}
           />
           <View style={styles.userInfo}>
             <View style={styles.nameRow}>
@@ -169,20 +228,20 @@ export function FeedCard({
             </View>
           </View>
         </Pressable>
-        <Pressable
+        <TouchableOpacity
           onPress={handleMenu}
-          style={({ pressed }) => [
-            styles.moreButton,
-            pressed && styles.moreButtonPressed,
-          ]}
-          hitSlop={12}
+          activeOpacity={0.6}
+          style={{
+            padding: 8,
+            marginRight: -8,
+          }}
         >
           <Ionicons
             name="ellipsis-horizontal"
             size={18}
             color={c.textSecondary}
           />
-        </Pressable>
+        </TouchableOpacity>
       </View>
 
       <ReportModal
@@ -228,7 +287,7 @@ export function FeedCard({
       )}
 
       {item.image_urls && item.image_urls.length > 0 && (
-        <MediaGrid
+        <MediaCarousel
           urls={item.image_urls}
           onTapImage={(uri) => {
             const photoOnly = (item.image_urls ?? []).filter(
@@ -323,8 +382,169 @@ export function FeedCard({
           />
         </Pressable>
 
+        <Pressable
+          style={({ pressed }) => [
+            styles.actionButton,
+            pressed && styles.actionButtonPressed,
+          ]}
+          onPress={handleShare}
+          hitSlop={12}
+        >
+          <Ionicons
+            name="share-outline"
+            size={20}
+            color={c.textSecondary}
+          />
+        </Pressable>
+
         <Text style={styles.date}>{dateStr}</Text>
       </View>
+
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}
+          onPress={() => setMenuVisible(false)}
+        >
+          <Pressable
+            style={{
+              backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+              borderTopLeftRadius: 14,
+              borderTopRightRadius: 14,
+              paddingBottom: 34,
+              paddingTop: 8,
+            }}
+            onPress={(e) => e.stopPropagation()}
+          >
+            {/* ハンドルバー */}
+            <View
+              style={{
+                width: 36,
+                height: 5,
+                borderRadius: 3,
+                backgroundColor: isDark ? '#48484A' : '#D1D1D6',
+                alignSelf: 'center',
+                marginBottom: 16,
+              }}
+            />
+
+            {isMyPost ? (
+              <>
+                <TouchableOpacity
+                  onPress={() => {
+                    setMenuVisible(false);
+                    handleEdit();
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 16,
+                    paddingHorizontal: 20,
+                  }}
+                >
+                  <Ionicons
+                    name="create-outline"
+                    size={22}
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                  />
+                  <Text
+                    style={{
+                      marginLeft: 16,
+                      fontSize: 17,
+                      color: isDark ? '#FFFFFF' : '#000000',
+                    }}
+                  >
+                    編集
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setMenuVisible(false);
+                    handleDelete();
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 16,
+                    paddingHorizontal: 20,
+                  }}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={22}
+                    color="#FF3B30"
+                  />
+                  <Text
+                    style={{
+                      marginLeft: 16,
+                      fontSize: 17,
+                      color: '#FF3B30',
+                    }}
+                  >
+                    削除
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  setMenuVisible(false);
+                  setReportVisible(true);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 16,
+                  paddingHorizontal: 20,
+                }}
+              >
+                <Ionicons name="flag-outline" size={22} color="#FF3B30" />
+                <Text
+                  style={{
+                    marginLeft: 16,
+                    fontSize: 17,
+                    color: '#FF3B30',
+                  }}
+                >
+                  通報
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* キャンセルボタン */}
+            <TouchableOpacity
+              onPress={() => setMenuVisible(false)}
+              style={{
+                alignItems: 'center',
+                paddingVertical: 16,
+                marginTop: 8,
+                marginHorizontal: 16,
+                borderRadius: 12,
+                backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 17,
+                  fontWeight: '600',
+                  color: isDark ? '#FFFFFF' : '#007AFF',
+                }}
+              >
+                キャンセル
+              </Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -332,9 +552,16 @@ export function FeedCard({
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_PADDING = 14;
 const CARD_INNER = SCREEN_WIDTH - 12 * 2 - CARD_PADDING * 2;
-const GAP = 2;
+// 画像高さの上下限。極端に縦長/横長の画像を防ぐ
+const MEDIA_MIN_HEIGHT = 220;
+const MEDIA_MAX_HEIGHT = Math.round(SCREEN_WIDTH * 1.25); // 4:5 縦長まで
 
-function MediaGrid({
+/**
+ * FX チャート向けカルーセル:
+ * 最初の画像の本来のアスペクト比に高さを合わせて、画像が縮小されない。
+ * 1 枚ずつ横スワイプ + ドット表示。タップでフルスクリーン viewer を開く。
+ */
+function MediaCarousel({
   urls,
   onTapImage,
 }: {
@@ -342,112 +569,190 @@ function MediaGrid({
   onTapImage: (uri: string) => void;
 }) {
   const c = useThemeColors();
-  const styles = useMemo(() => makeMediaStyles(c), [c]);
-  const list = urls.slice(0, 4);
-  const count = list.length;
+  const [index, setIndex] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
-  if (count === 1) {
-    return (
-      <View style={[styles.wrap, { marginTop: 10 }]}>
-        <MediaTile
-          uri={list[0]}
-          style={[styles.tile, { width: CARD_INNER, aspectRatio: 16 / 10 }]}
-          onTapImage={onTapImage}
-        />
-      </View>
+  // 最初の画像の自然なアスペクト比を取得（動画ならスキップしてデフォルト 16:9）
+  useEffect(() => {
+    const first = urls[0];
+    if (!first) return;
+    if (isVideoUrl(first)) {
+      setAspectRatio(16 / 9);
+      return;
+    }
+    let cancelled = false;
+    RNImage.getSize(
+      first,
+      (w, h) => {
+        if (cancelled) return;
+        setAspectRatio(w > 0 && h > 0 ? w / h : 16 / 9);
+      },
+      () => {
+        if (!cancelled) setAspectRatio(16 / 9);
+      },
     );
+    return () => {
+      cancelled = true;
+    };
+  }, [urls]);
+
+  // CARD_INNER / aspect = 推奨高さ。MIN/MAX でクランプ
+  const naturalHeight =
+    aspectRatio && aspectRatio > 0 ? CARD_INNER / aspectRatio : CARD_INNER;
+  const mediaHeight = Math.max(
+    MEDIA_MIN_HEIGHT,
+    Math.min(MEDIA_MAX_HEIGHT, naturalHeight),
+  );
+
+  const styles = useMemo(
+    () => makeMediaStyles(c, mediaHeight),
+    [c, mediaHeight],
+  );
+
+  const onScroll = (e: {
+    nativeEvent: { contentOffset: { x: number } };
+  }) => {
+    const next = Math.round(e.nativeEvent.contentOffset.x / CARD_INNER);
+    if (next !== index) setIndex(next);
+  };
+
+  // アスペクト計算前は黙ってスケルトン的なスペースを確保（幅は維持）
+  if (aspectRatio === null) {
+    return <View style={styles.wrap} />;
   }
-  if (count === 2) {
-    const w = (CARD_INNER - GAP) / 2;
-    return (
-      <View style={[styles.row, { marginTop: 10 }]}>
-        <MediaTile uri={list[0]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
-        <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
-      </View>
-    );
-  }
-  if (count === 3) {
-    const w = (CARD_INNER - GAP) / 2;
-    return (
-      <View style={[styles.col, { marginTop: 10 }]}>
-        <MediaTile
-          uri={list[0]}
-          style={[styles.tile, { width: CARD_INNER, height: 200 }]}
-          onTapImage={onTapImage}
-        />
-        <View style={styles.row}>
-          <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
-          <MediaTile uri={list[2]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
-        </View>
-      </View>
-    );
-  }
-  // 4枚
-  const w = (CARD_INNER - GAP) / 2;
+
   return (
-    <View style={[styles.col, { marginTop: 10 }]}>
-      <View style={styles.row}>
-        <MediaTile uri={list[0]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
-        <MediaTile uri={list[1]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
-      </View>
-      <View style={styles.row}>
-        <MediaTile uri={list[2]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
-        <MediaTile uri={list[3]} style={[styles.tile, { width: w, height: w }]} onTapImage={onTapImage} />
-      </View>
+    <View style={styles.wrap}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        scrollEnabled={urls.length > 1}
+        showsHorizontalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
+        {urls.map((uri) => (
+          <MediaTile
+            key={uri}
+            uri={uri}
+            height={mediaHeight}
+            onTapImage={onTapImage}
+          />
+        ))}
+      </ScrollView>
+
+      {urls.length > 1 && (
+        <View style={styles.counterPill}>
+          <Text style={styles.counterText}>
+            {index + 1}/{urls.length}
+          </Text>
+        </View>
+      )}
+
+      {urls.length > 1 && (
+        <View style={styles.dots}>
+          {urls.map((u, i) => (
+            <View
+              key={u}
+              style={[styles.dot, i === index && styles.dotActive]}
+            />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
 function MediaTile({
   uri,
-  style,
+  height,
   onTapImage,
 }: {
   uri: string;
-  style: object | object[];
+  height: number;
   onTapImage: (uri: string) => void;
 }) {
+  const c = useThemeColors();
+  const tileStyle = {
+    width: CARD_INNER,
+    height,
+    backgroundColor: c.surfaceAlt,
+  };
   const isVideo = isVideoUrl(uri);
   if (isVideo) {
     return (
       <Video
         source={{ uri }}
-        style={style as object}
+        style={tileStyle}
         useNativeControls
-        resizeMode={ResizeMode.COVER}
+        resizeMode={ResizeMode.CONTAIN}
         isLooping={false}
       />
     );
   }
   return (
-    <Pressable onPress={() => onTapImage(uri)} style={style}>
-    <Image
-      source={{ uri }}
-      style={style as object}
-      contentFit="cover"
-    />
+    <Pressable
+      onPress={() => onTapImage(uri)}
+      style={tileStyle}
+      unstable_pressDelay={0}
+      delayLongPress={800}
+      pressRetentionOffset={40}
+      hitSlop={4}
+    >
+      <Image
+        source={{ uri }}
+        style={tileStyle}
+        contentFit="contain"
+      />
     </Pressable>
   );
 }
 
-function makeMediaStyles(c: ThemeColors) {
+function makeMediaStyles(c: ThemeColors, height: number) {
   return StyleSheet.create({
     wrap: {
+      marginTop: 10,
+      width: CARD_INNER,
+      height,
       borderRadius: 12,
       overflow: 'hidden',
-    },
-    row: {
-      flexDirection: 'row',
-      gap: GAP,
-    },
-    col: {
-      flexDirection: 'column',
-      gap: GAP,
-    },
-    tile: {
-      borderRadius: 12,
       backgroundColor: c.surfaceAlt,
-      overflow: 'hidden',
+      position: 'relative',
+    },
+    counterPill: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      backgroundColor: 'rgba(0,0,0,0.65)',
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 999,
+    },
+    counterText: {
+      fontSize: 11,
+      color: '#fff',
+      fontWeight: '700',
+    },
+    dots: {
+      position: 'absolute',
+      bottom: 8,
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 4,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: 'rgba(255,255,255,0.5)',
+    },
+    dotActive: {
+      backgroundColor: '#fff',
+      width: 8,
+      height: 8,
+      borderRadius: 4,
     },
   });
 }

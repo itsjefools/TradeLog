@@ -147,7 +147,7 @@ export default function ProfileScreen() {
               profile:profiles!posts_user_id_fkey (${PROFILE_COLUMNS})`,
             )
             .eq('user_id', myId)
-            .eq('post_type', 'trade_result')
+            .in('post_type', ['trade_result', 'text', 'strategy'])
             .order('created_at', { ascending: false })
             .limit(50);
           const decorated = await decorateItems((data ?? []) as RawPost[]);
@@ -361,10 +361,8 @@ export default function ProfileScreen() {
         <Text style={styles.title}>プロフィール</Text>
         <Link href="/settings" asChild>
           <Pressable
-            style={({ pressed }) => [
-              styles.settingsButton,
-              pressed && styles.settingsButtonPressed,
-            ]}
+            style={styles.settingsButton}
+            android_ripple={{ color: c.surfaceAlt, borderless: true }}
             hitSlop={12}
           >
             <Ionicons
@@ -546,6 +544,9 @@ export default function ProfileScreen() {
                 onToggleLike={toggleLike}
                 onToggleBookmark={toggleBookmark}
                 onToggleRepost={toggleRepost}
+                onDeleted={(postId) =>
+                  setItems((prev) => prev.filter((p) => p.id !== postId))
+                }
               />
             ))
           )}

@@ -360,6 +360,9 @@ export default function FeedScreen() {
               onToggleLike={toggleLike}
               onToggleBookmark={toggleBookmark}
               onToggleRepost={toggleRepost}
+              onDeleted={(postId) =>
+                setItems((prev) => prev.filter((p) => p.id !== postId))
+              }
             />
           )}
           refreshControl={

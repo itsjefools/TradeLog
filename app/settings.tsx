@@ -1,19 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import {
   Alert,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemeColors, ThemeMode } from '@/constants/theme';
+import { Avatar } from '@/components/avatar';
+import { ThemeMode } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { SUPPORTED_LOCALES, useI18n } from '@/hooks/use-i18n';
+import { useProfile } from '@/hooks/use-profile';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
@@ -21,18 +23,26 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 export default function SettingsScreen() {
   const c = useThemeColors();
-  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { session } = useAuth();
+  const { profile } = useProfile();
   const { mode, setMode } = useTheme();
   const { locale } = useI18n();
-  const email = session?.user.email ?? '—';
 
-  const themeOptions: { value: ThemeMode; label: string }[] = [
-    { value: 'system', label: 'システム' },
-    { value: 'light', label: 'ライト' },
-    { value: 'dark', label: 'ダーク' },
-  ];
+  const email = session?.user.email ?? '';
+  const fallbackName = email.split('@')[0] || 'ユーザー';
+  const displayName =
+    profile?.display_name?.trim() || profile?.username?.trim() || fallbackName;
+  const username = profile?.username?.trim() || fallbackName;
+
+  const themeOptions: { value: ThemeMode; label: string }[] = useMemo(
+    () => [
+      { value: 'system', label: 'システム' },
+      { value: 'light', label: 'ライト' },
+      { value: 'dark', label: 'ダーク' },
+    ],
+    [],
+  );
 
   const currentLocaleLabel =
     SUPPORTED_LOCALES.find((l) => l.code === locale)?.label ?? '日本語';
@@ -47,420 +57,344 @@ export default function SettingsScreen() {
           const { error } = await supabase.auth.signOut();
           if (error) {
             Alert.alert('エラー', error.message);
-          } else {
-            router.back();
+            return;
           }
+          router.replace('/login');
         },
       },
     ]);
   };
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>設定</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.body}
-        showsVerticalScrollIndicator={false}
+  // Inline SettingRow
+  const SettingRow = ({
+    icon,
+    label,
+    onPress,
+    color,
+    rightElement,
+  }: {
+    icon: IoniconName;
+    label: string;
+    onPress?: () => void;
+    color?: string;
+    rightElement?: React.ReactNode;
+  }) => {
+    const right =
+      rightElement !== undefined ? (
+        rightElement
+      ) : (
+        <Ionicons name="chevron-forward" size={16} color={c.textSecondary} />
+      );
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.6}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+        }}
       >
-        {/* アカウント */}
-        <Text style={styles.sectionLabel}>アカウント</Text>
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.iconBubble, { backgroundColor: c.surfaceAlt }]}>
-                <Ionicons name="mail-outline" size={18} color={c.textPrimary} />
-              </View>
-              <Text style={styles.rowLabel}>メール</Text>
-            </View>
-            <Text style={styles.rowValue} numberOfLines={1}>
-              {email}
-            </Text>
-          </View>
-          <Divider c={c} />
-          <NavRow href="/profile-edit" icon="person-outline" label="プロフィールを編集" c={c} styles={styles} />
-          <Divider c={c} />
-          <NavRow href="/trade-history" icon="document-text-outline" label="取引履歴" c={c} styles={styles} />
-          <Divider c={c} />
-          <NavRow href="/bookmarks" icon="bookmark-outline" label="ブックマーク" c={c} styles={styles} />
-        </View>
-
-        {/* Premium */}
-        <Link href="/premium" asChild>
-          <Pressable
-            style={({ pressed }) => [
-              styles.premiumCard,
-              pressed && styles.rowPressed,
-            ]}
-          >
-            <View style={styles.premiumLeft}>
-              <View style={styles.premiumIcon}>
-                <Ionicons name="diamond" size={18} color="#fff" />
-              </View>
-              <View style={styles.premiumTextWrap}>
-                <Text style={styles.premiumTitle}>Premium</Text>
-                <Text style={styles.premiumSub}>
-                  無制限記録・高度分析・広告なし
-                </Text>
-              </View>
-            </View>
-          </Pressable>
-        </Link>
-
-        {/* ツール */}
-        <Text style={styles.sectionLabel}>ツール</Text>
-        <View style={styles.card}>
-          <NavRow href="/goal-edit" icon="flag-outline" label="月間目標" c={c} styles={styles} />
-          <Divider c={c} />
-          <NavRow href="/risk-calculator" icon="calculator-outline" label="リスク計算機" c={c} styles={styles} />
-          <Divider c={c} />
-          <NavRow
-            href="/economic-calendar"
-            icon="calendar-outline"
-            label="経済指標カレンダー"
-            c={c}
-            styles={styles}
-          />
-          <Divider c={c} />
-          <NavRow
-            href="/glossary"
-            icon="book-outline"
-            label="用語集"
-            c={c}
-            styles={styles}
-          />
-        </View>
-
-        {/* 表示 */}
-        <Text style={styles.sectionLabel}>表示</Text>
-        <View style={styles.card}>
-          <View style={styles.themeRowOuter}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.iconBubble, { backgroundColor: c.surfaceAlt }]}>
-                <Ionicons
-                  name="contrast-outline"
-                  size={18}
-                  color={c.textPrimary}
-                />
-              </View>
-              <Text style={styles.rowLabel}>テーマ</Text>
-            </View>
-            <View style={styles.segment}>
-              {themeOptions.map((opt) => {
-                const selected = mode === opt.value;
-                return (
-                  <Pressable
-                    key={opt.value}
-                    onPress={() => setMode(opt.value)}
-                    style={[
-                      styles.segmentChip,
-                      selected && styles.segmentChipSelected,
-                    ]}
-                    hitSlop={4}
-                  >
-                    <Text
-                      style={[
-                        styles.segmentText,
-                        selected && styles.segmentTextSelected,
-                      ]}
-                    >
-                      {opt.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-          <Divider c={c} />
-          <NavRow
-            href="/language-edit"
-            icon="language-outline"
-            label="言語"
-            value={currentLocaleLabel}
-            c={c}
-            styles={styles}
-          />
-        </View>
-
-        {/* プライバシーと安全 */}
-        <Text style={styles.sectionLabel}>プライバシーと安全</Text>
-        <View style={styles.card}>
-          <NavRow
-            href="/blocked-users"
-            icon="ban-outline"
-            label="ブロック中のユーザー"
-            c={c}
-            styles={styles}
-          />
-          <Divider c={c} />
-          <NavRow
-            href="/account-delete"
-            icon="trash-outline"
-            label="アカウントを削除"
-            c={c}
-            styles={styles}
-          />
-        </View>
-
-        {/* 法的事項 */}
-        <Text style={styles.sectionLabel}>法的事項</Text>
-        <View style={styles.card}>
-          <NavRow
-            href="/terms"
-            icon="document-text-outline"
-            label="利用規約"
-            c={c}
-            styles={styles}
-          />
-          <Divider c={c} />
-          <NavRow
-            href="/privacy"
-            icon="shield-checkmark-outline"
-            label="プライバシーポリシー"
-            c={c}
-            styles={styles}
-          />
-        </View>
-
-        {/* ログアウト */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.logoutButton,
-            pressed && styles.logoutButtonPressed,
-          ]}
-          onPress={handleLogout}
-          hitSlop={4}
+        <Ionicons
+          name={icon}
+          size={24}
+          color={color || c.textPrimary}
+          style={{ width: 32 }}
+        />
+        <Text
+          style={{
+            flex: 1,
+            fontSize: 16,
+            fontWeight: '400',
+            color: color || c.textPrimary,
+            marginLeft: 12,
+          }}
         >
-          <Text style={styles.logoutText}>ログアウト</Text>
-        </Pressable>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
+          {label}
+        </Text>
+        {right}
+      </TouchableOpacity>
+    );
+  };
 
-function Divider({ c }: { c: ThemeColors }) {
-  return (
+  // Inline SectionTitle
+  const SectionTitle = ({ title }: { title: string }) => (
+    <Text
+      style={{
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#8E8E93',
+        paddingHorizontal: 16,
+        paddingTop: 24,
+        paddingBottom: 8,
+      }}
+    >
+      {title}
+    </Text>
+  );
+
+  // Inline Divider
+  const Divider = () => (
     <View
       style={{
         height: StyleSheet.hairlineWidth,
         backgroundColor: c.border,
-        marginLeft: 56,
+        marginHorizontal: 16,
       }}
     />
   );
-}
 
-function NavRow({
-  href,
-  icon,
-  label,
-  value,
-  c,
-  styles,
-}: {
-  href: string;
-  icon: IoniconName;
-  label: string;
-  value?: string;
-  c: ThemeColors;
-  styles: ReturnType<typeof makeStyles>;
-}) {
   return (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Link href={href as any} asChild>
-      <Pressable
-        style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-        hitSlop={4}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: c.background }}
+      edges={['top', 'bottom']}
+    >
+      {/* ヘッダー */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+        }}
       >
-        <View style={styles.rowLeft}>
-          <View style={[styles.iconBubble, { backgroundColor: c.surfaceAlt }]}>
-            <Ionicons name={icon} size={18} color={c.textPrimary} />
-          </View>
-          <Text style={styles.rowLabel}>{label}</Text>
-        </View>
-        {value && (
-          <Text style={styles.rowValue} numberOfLines={1}>
-            {value}
-          </Text>
-        )}
-      </Pressable>
-    </Link>
-  );
-}
+        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+          <Ionicons name="chevron-back" size={24} color={c.textPrimary} />
+        </TouchableOpacity>
+        <Text
+          style={{
+            flex: 1,
+            textAlign: 'center',
+            fontSize: 17,
+            fontWeight: '600',
+            color: c.textPrimary,
+          }}
+        >
+          設定とアクティビティ
+        </Text>
+        <View style={{ width: 24 }} />
+      </View>
 
-function makeStyles(c: ThemeColors) {
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: c.background,
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: c.border,
-    },
-    headerLink: {
-      fontSize: 15,
-      color: c.textSecondary,
-      minWidth: 56,
-    },
-    headerTitle: {
-      fontSize: 17,
-      fontWeight: '700',
-      color: c.textPrimary,
-    },
-    headerSpacer: {
-      width: 56,
-    },
-    body: {
-      padding: 20,
-      paddingBottom: 60,
-    },
-    sectionLabel: {
-      fontSize: 12,
-      color: c.textSecondary,
-      fontWeight: '600',
-      textTransform: 'uppercase',
-      letterSpacing: 0.6,
-      marginBottom: 8,
-      marginTop: 24,
-      marginLeft: 4,
-    },
-    card: {
-      backgroundColor: c.surface,
-      borderRadius: 14,
-      overflow: 'hidden',
-    },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      minHeight: 56,
-    },
-    rowPressed: {
-      backgroundColor: c.surfaceAlt,
-    },
-    rowLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      flex: 1,
-    },
-    iconBubble: {
-      width: 30,
-      height: 30,
-      borderRadius: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    rowLabel: {
-      fontSize: 15,
-      color: c.textPrimary,
-      fontWeight: '500',
-      flexShrink: 1,
-    },
-    rowValue: {
-      fontSize: 14,
-      color: c.textSecondary,
-      flexShrink: 1,
-    },
-    premiumCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: c.surface,
-      borderRadius: 14,
-      borderWidth: 1.5,
-      borderColor: c.accent,
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      marginTop: 12,
-    },
-    premiumLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      flex: 1,
-    },
-    premiumIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: 10,
-      backgroundColor: c.accent,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    premiumTextWrap: {
-      flex: 1,
-    },
-    premiumTitle: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: c.accent,
-    },
-    premiumSub: {
-      fontSize: 12,
-      color: c.textSecondary,
-      marginTop: 2,
-    },
-    themeRowOuter: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      gap: 8,
-      minHeight: 56,
-    },
-    segment: {
-      flexDirection: 'row',
-      backgroundColor: c.surfaceAlt,
-      borderRadius: 9,
-      padding: 2,
-    },
-    segmentChip: {
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 7,
-      minWidth: 52,
-      alignItems: 'center',
-    },
-    segmentChipSelected: {
-      backgroundColor: c.accent,
-    },
-    segmentText: {
-      fontSize: 12,
-      color: c.textPrimary,
-      fontWeight: '600',
-    },
-    segmentTextSelected: {
-      color: '#fff',
-      fontWeight: '700',
-    },
-    logoutButton: {
-      paddingVertical: 16,
-      alignItems: 'center',
-      marginTop: 36,
-    },
-    logoutButtonPressed: {
-      opacity: 0.5,
-    },
-    logoutText: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: c.danger,
-    },
-  });
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* プロフィール行 */}
+        <TouchableOpacity
+          onPress={() => router.push('/profile-edit')}
+          activeOpacity={0.6}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            padding: 16,
+          }}
+        >
+          <Avatar
+            uri={profile?.avatar_url}
+            displayName={displayName}
+            size={48}
+            profile={profile}
+            showPremiumBadge={false}
+          />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '600',
+                color: c.textPrimary,
+              }}
+              numberOfLines={1}
+            >
+              {displayName}
+            </Text>
+            <Text
+              style={{ fontSize: 14, color: c.textSecondary }}
+              numberOfLines={1}
+            >
+              @{username}
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={c.textSecondary}
+          />
+        </TouchableOpacity>
+
+        <Divider />
+
+        <SectionTitle title="アカウント" />
+        <SettingRow
+          icon="person-outline"
+          label="プロフィールを編集"
+          onPress={() => router.push('/profile-edit')}
+        />
+        <SettingRow
+          icon="document-text-outline"
+          label="取引履歴"
+          onPress={() => router.push('/trade-history')}
+        />
+        <SettingRow
+          icon="bookmark-outline"
+          label="ブックマーク"
+          onPress={() => router.push('/bookmarks')}
+        />
+
+        <Divider />
+
+        <SectionTitle title="ツール" />
+        <SettingRow
+          icon="flag-outline"
+          label="月間目標"
+          onPress={() => router.push('/goal-edit')}
+        />
+        <SettingRow
+          icon="calculator-outline"
+          label="リスク計算機"
+          onPress={() => router.push('/risk-calculator')}
+        />
+        <SettingRow
+          icon="calendar-outline"
+          label="経済指標カレンダー"
+          onPress={() => router.push('/economic-calendar')}
+        />
+        <SettingRow
+          icon="book-outline"
+          label="用語集"
+          onPress={() => router.push('/glossary')}
+        />
+
+        <Divider />
+
+        <SectionTitle title="表示" />
+        <SettingRow
+          icon="color-palette-outline"
+          label="テーマ"
+          rightElement={
+            <View
+              style={{
+                flexDirection: 'row',
+                backgroundColor: c.surfaceAlt,
+                borderRadius: 9,
+                padding: 2,
+              }}
+            >
+              {themeOptions.map((opt) => {
+                const selected = mode === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => setMode(opt.value)}
+                    activeOpacity={0.7}
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 7,
+                      minWidth: 50,
+                      alignItems: 'center',
+                      backgroundColor: selected ? c.accent : 'transparent',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: selected ? '700' : '600',
+                        color: selected ? '#fff' : c.textPrimary,
+                      }}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          }
+        />
+        <SettingRow
+          icon="globe-outline"
+          label="言語"
+          onPress={() => router.push('/language-edit')}
+          rightElement={
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: c.textSecondary,
+                  marginRight: 6,
+                }}
+                numberOfLines={1}
+              >
+                {currentLocaleLabel}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={c.textSecondary}
+              />
+            </View>
+          }
+        />
+
+        <Divider />
+
+        <SectionTitle title="プランと課金" />
+        <SettingRow
+          icon="star-outline"
+          label="Premium プラン"
+          onPress={() => router.push('/premium')}
+        />
+
+        <Divider />
+
+        <SectionTitle title="プライバシーと安全" />
+        <SettingRow
+          icon="ban-outline"
+          label="ブロック中のユーザー"
+          onPress={() => router.push('/blocked-users')}
+        />
+        <SettingRow
+          icon="trash-outline"
+          label="アカウントを削除"
+          color="#FF3B30"
+          onPress={() => router.push('/account-delete')}
+          rightElement={null}
+        />
+
+        <Divider />
+
+        <SectionTitle title="法的事項" />
+        <SettingRow
+          icon="document-outline"
+          label="利用規約"
+          onPress={() => router.push('/terms')}
+        />
+        <SettingRow
+          icon="shield-checkmark-outline"
+          label="プライバシーポリシー"
+          onPress={() => router.push('/privacy')}
+        />
+
+        <Divider />
+
+        {/* ログアウト */}
+        <TouchableOpacity
+          onPress={handleLogout}
+          activeOpacity={0.6}
+          style={{ paddingVertical: 20, alignItems: 'center' }}
+        >
+          <Text style={{ fontSize: 16, color: '#FF3B30' }}>ログアウト</Text>
+        </TouchableOpacity>
+
+        {/* バージョン */}
+        <Text
+          style={{
+            textAlign: 'center',
+            fontSize: 13,
+            color: '#8E8E93',
+            paddingBottom: 40,
+          }}
+        >
+          TradeLog v1.0.0
+        </Text>
+      </ScrollView>
+    </SafeAreaView>
+  );
 }

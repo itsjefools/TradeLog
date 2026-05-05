@@ -100,7 +100,17 @@ function ThemedRoot() {
         <RevenueCatProvider>
         <UnreadCountsProvider>
         <ToastProvider>
-          <Stack screenOptions={{ animation: 'none' }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'none',
+              animationDuration: 0,
+              animationTypeForReplace: 'pop',
+              gestureEnabled: false,
+              freezeOnBlur: true,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -110,6 +120,14 @@ function ThemedRoot() {
             />
             <Stack.Screen
               name="settings"
+              options={{
+                headerShown: false,
+                presentation: 'fullScreenModal',
+                animation: 'none',
+              }}
+            />
+            <Stack.Screen
+              name="settings-privacy"
               options={{ headerShown: false }}
             />
             <Stack.Screen

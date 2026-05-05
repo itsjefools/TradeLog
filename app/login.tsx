@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -39,22 +41,30 @@ export default function LoginScreen() {
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [tradeStyle, setTradeStyle] = useState<TradeStyle | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!email.trim() || !password) {
-      Alert.alert('入力エラー', 'メールアドレスとパスワードを入力してください。');
+    setErrorMessage('');
+
+    if (!email.trim()) {
+      setErrorMessage('メールアドレスを入力してください');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('パスワードを入力してください');
       return;
     }
     if (mode === 'signUp') {
       const passwordError = validatePassword(password);
       if (passwordError) {
-        Alert.alert('入力エラー', passwordError);
+        setErrorMessage(passwordError);
         return;
       }
       if (!tradeStyle) {
-        Alert.alert('入力エラー', 'トレードスタイルを選択してください。');
+        setErrorMessage('トレードスタイルを選択してください');
         return;
       }
     }
@@ -67,7 +77,15 @@ export default function LoginScreen() {
           password,
         });
         if (error) {
-          Alert.alert('ログイン失敗', error.message);
+          if (error.message.includes('Invalid login credentials')) {
+            setErrorMessage('メールアドレスまたはパスワードが正しくありません');
+          } else if (error.message.includes('Email not confirmed')) {
+            setErrorMessage(
+              'メールアドレスが確認されていません。メールをご確認ください',
+            );
+          } else {
+            setErrorMessage('ログインに失敗しました。もう一度お試しください');
+          }
         }
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -78,7 +96,11 @@ export default function LoginScreen() {
           },
         });
         if (error) {
-          Alert.alert('登録失敗', error.message);
+          if (error.message.includes('already registered')) {
+            setErrorMessage('このメールアドレスは既に登録されています');
+          } else {
+            setErrorMessage('登録に失敗しました。もう一度お試しください');
+          }
         } else if (!data.session) {
           Alert.alert(
             '確認メールを送信しました',
@@ -86,6 +108,8 @@ export default function LoginScreen() {
           );
         }
       }
+    } catch {
+      setErrorMessage('通信エラーが発生しました。もう一度お試しください');
     } finally {
       setLoading(false);
     }
@@ -114,6 +138,7 @@ export default function LoginScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          bounces={false}
         >
           <View style={styles.header}>
             <Text style={styles.logo}>
@@ -129,9 +154,15 @@ export default function LoginScreen() {
             <View style={styles.field}>
               <Text style={styles.label}>メールアドレス</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  !!errorMessage && styles.inputError,
+                ]}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setErrorMessage('');
+                }}
                 placeholder="you@example.com"
                 placeholderTextColor={c.textSecondary}
                 autoCapitalize="none"
@@ -143,17 +174,43 @@ export default function LoginScreen() {
 
             <View style={styles.field}>
               <Text style={styles.label}>パスワード</Text>
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder={isSignIn ? 'パスワード' : '8文字以上、数字または記号を含む'}
-                placeholderTextColor={c.textSecondary}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
+              <View
+                style={[
+                  styles.passwordWrap,
+                  !!errorMessage && styles.inputError,
+                ]}
+              >
+                <TextInput
+                  style={styles.passwordInput}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setErrorMessage('');
+                  }}
+                  placeholder={
+                    isSignIn ? 'パスワード' : '8文字以上、数字または記号を含む'
+                  }
+                  placeholderTextColor={c.textSecondary}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  hitSlop={10}
+                  style={styles.eyeButton}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={22}
+                    color={c.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+              {errorMessage !== '' && (
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              )}
             </View>
 
             {!isSignIn && (
@@ -272,6 +329,34 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
     paddingVertical: 14,
     fontSize: 16,
     color: c.textPrimary,
+  },
+  inputError: {
+    borderColor: '#FF3B30',
+  },
+  passwordWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: c.textPrimary,
+  },
+  eyeButton: {
+    paddingLeft: 12,
+    paddingVertical: 4,
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 13,
+    marginTop: 6,
+    marginLeft: 4,
   },
   primaryButton: {
     backgroundColor: c.accent,

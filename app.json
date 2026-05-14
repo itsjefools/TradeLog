@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tradelog.app",
+      "bundleIdentifier": "com.kingjay.tradelog",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -19,7 +19,7 @@
       }
     },
     "android": {
-      "package": "com.tradelog.app",
+      "package": "com.kingjay.tradelog",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",

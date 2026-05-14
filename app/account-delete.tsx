@@ -44,6 +44,11 @@ export default function AccountDeleteScreen() {
   const canDelete = confirmText.trim() === CONFIRM_PHRASE && !deleting;
 
   const handleDelete = () => {
+    // 二重ガード: disabled をバイパスされた場合の安全策
+    if (confirmText.trim() !== CONFIRM_PHRASE || deleting) {
+      return;
+    }
+
     Alert.alert(
       '本当に削除しますか？',
       'この操作は取り消せません。\n全てのデータが完全に削除されます。',
@@ -53,6 +58,8 @@ export default function AccountDeleteScreen() {
           text: '削除する',
           style: 'destructive',
           onPress: async () => {
+            // 三重ガード: ダイアログ表示中に値が変わった場合の保険
+            if (confirmText.trim() !== CONFIRM_PHRASE) return;
             setDeleting(true);
             try {
               const { error } = await supabase.rpc('delete_my_account');
@@ -130,7 +137,10 @@ export default function AccountDeleteScreen() {
           確認のため「{CONFIRM_PHRASE}」と入力してください
         </Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            canDelete && styles.inputMatched,
+          ]}
           value={confirmText}
           onChangeText={setConfirmText}
           placeholder={CONFIRM_PHRASE}
@@ -274,6 +284,10 @@ function makeStyles(c: ThemeColors) {
       fontSize: 16,
       color: c.textPrimary,
     },
+    inputMatched: {
+      borderColor: c.danger,
+      borderWidth: 2,
+    },
     deleteButton: {
       backgroundColor: c.danger,
       borderRadius: 12,
@@ -284,7 +298,8 @@ function makeStyles(c: ThemeColors) {
       minHeight: 52,
     },
     deleteButtonDisabled: {
-      opacity: 0.4,
+      backgroundColor: '#FFB3B0',
+      opacity: 0.5,
     },
     deleteButtonPressed: {
       opacity: 0.85,

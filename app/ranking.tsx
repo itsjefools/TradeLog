@@ -56,17 +56,21 @@ export default function RankingScreen() {
   const load = useCallback(async () => {
     setError(null);
     setLoading(true);
-    const { data, error: rpcError } = await supabase.rpc('get_monthly_ranking', {
-      top_n: 50,
-      category,
-    });
-    if (rpcError) {
-      setError(rpcError.message);
+    try {
+      const { data, error: rpcError } = await supabase.rpc(
+        'get_monthly_ranking',
+        { top_n: 50, category },
+      );
+      if (rpcError) {
+        setError(rpcError.message);
+        return;
+      }
+      setRows((data ?? []) as RankingRow[]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
       setLoading(false);
-      return;
     }
-    setRows((data ?? []) as RankingRow[]);
-    setLoading(false);
   }, [category]);
 
   useFocusEffect(

@@ -112,47 +112,56 @@ export default function UserProfileScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!targetId) return;
+    if (!targetId) {
+      setError('ユーザー ID が指定されていません');
+      setLoading(false);
+      return;
+    }
     setError(null);
 
-    const [profileRes, followerRes, followingRes, tradesRes, isFollowingRes] =
-      await Promise.all([
-        supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', targetId).maybeSingle(),
-        supabase
-          .from('follows')
-          .select('*', { count: 'exact', head: true })
-          .eq('following_id', targetId),
-        supabase
-          .from('follows')
-          .select('*', { count: 'exact', head: true })
-          .eq('follower_id', targetId),
-        supabase
-          .from('trades')
-          .select('*')
-          .eq('user_id', targetId)
-          .eq('is_shared', true)
-          .order('traded_at', { ascending: false })
-          .limit(20),
-        myId && !isMyself
-          ? supabase
-              .from('follows')
-              .select('follower_id')
-              .eq('follower_id', myId)
-              .eq('following_id', targetId)
-              .maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
-      ]);
+    try {
+      const [profileRes, followerRes, followingRes, tradesRes, isFollowingRes] =
+        await Promise.all([
+          supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', targetId).maybeSingle(),
+          supabase
+            .from('follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('following_id', targetId),
+          supabase
+            .from('follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('follower_id', targetId),
+          supabase
+            .from('trades')
+            .select('*')
+            .eq('user_id', targetId)
+            .eq('is_shared', true)
+            .order('traded_at', { ascending: false })
+            .limit(20),
+          myId && !isMyself
+            ? supabase
+                .from('follows')
+                .select('follower_id')
+                .eq('follower_id', myId)
+                .eq('following_id', targetId)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+        ]);
 
-    if (profileRes.error) {
-      setError(profileRes.error.message);
-    } else {
-      setProfile((profileRes.data ?? null) as Profile | null);
+      if (profileRes.error) {
+        setError(profileRes.error.message);
+      } else {
+        setProfile((profileRes.data ?? null) as Profile | null);
+      }
+      setFollowerCount(followerRes.count ?? 0);
+      setFollowingCount(followingRes.count ?? 0);
+      setTrades((tradesRes.data ?? []) as Trade[]);
+      setIsFollowing(!!isFollowingRes.data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
     }
-    setFollowerCount(followerRes.count ?? 0);
-    setFollowingCount(followingRes.count ?? 0);
-    setTrades((tradesRes.data ?? []) as Trade[]);
-    setIsFollowing(!!isFollowingRes.data);
-    setLoading(false);
   }, [targetId, myId, isMyself]);
 
   useFocusEffect(
@@ -195,7 +204,7 @@ export default function UserProfileScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
-            <Text style={styles.headerLink}>← 戻る</Text>
+            <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
           </Pressable>
           <View style={styles.headerSpacer} />
         </View>
@@ -211,7 +220,7 @@ export default function UserProfileScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
-            <Text style={styles.headerLink}>← 戻る</Text>
+            <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
           </Pressable>
           <View style={styles.headerSpacer} />
         </View>

@@ -47,7 +47,11 @@ export default function FollowListScreen() {
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       // followers: 自分(=userId) を following している人 → follower_id を取得

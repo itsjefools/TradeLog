@@ -54,42 +54,47 @@ export default function SearchScreen() {
     setLoading(true);
     setError(null);
     const timer = setTimeout(async () => {
-      if (mode === 'users') {
-        const pattern = `%${trimmed}%`;
-        const { data, error: fetchError } = await supabase
-          .from('profiles')
-          .select(PROFILE_COLUMNS)
-          .or(`username.ilike.${pattern},display_name.ilike.${pattern}`)
-          .limit(30);
-        if (fetchError) setError(fetchError.message);
-        else
-          setUserResults(
-            ((data ?? []) as Profile[]).filter((p) => !isBlocked(p.id)),
-          );
-      } else {
-        const tag = trimmed.replace(/^#/, '').toLowerCase();
-        const { data, error: rpcError } = await supabase
-          .from('posts')
-          .select(
-            `*,
-            trade:trades!posts_trade_id_fkey (*),
-            profile:profiles!posts_user_id_fkey (
-              id, email, username, display_name, avatar_url, bio,
-              trade_style, language, is_premium, nationality, is_verified, created_at
-            )`,
-          )
-          .contains('hashtags', [tag])
-          .order('created_at', { ascending: false })
-          .limit(50);
-        if (rpcError) setError(rpcError.message);
-        else
-          setTagResults(
-            ((data ?? []) as TagPost[]).filter(
-              (p) => !isBlocked(p.user_id),
-            ),
-          );
+      try {
+        if (mode === 'users') {
+          const pattern = `%${trimmed}%`;
+          const { data, error: fetchError } = await supabase
+            .from('profiles')
+            .select(PROFILE_COLUMNS)
+            .or(`username.ilike.${pattern},display_name.ilike.${pattern}`)
+            .limit(30);
+          if (fetchError) setError(fetchError.message);
+          else
+            setUserResults(
+              ((data ?? []) as Profile[]).filter((p) => !isBlocked(p.id)),
+            );
+        } else {
+          const tag = trimmed.replace(/^#/, '').toLowerCase();
+          const { data, error: rpcError } = await supabase
+            .from('posts')
+            .select(
+              `*,
+              trade:trades!posts_trade_id_fkey (*),
+              profile:profiles!posts_user_id_fkey (
+                id, email, username, display_name, avatar_url, bio,
+                trade_style, language, is_premium, nationality, is_verified, created_at
+              )`,
+            )
+            .contains('hashtags', [tag])
+            .order('created_at', { ascending: false })
+            .limit(50);
+          if (rpcError) setError(rpcError.message);
+          else
+            setTagResults(
+              ((data ?? []) as TagPost[]).filter(
+                (p) => !isBlocked(p.user_id),
+              ),
+            );
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }, 300);
 
     return () => clearTimeout(timer);

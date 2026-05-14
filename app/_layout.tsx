@@ -122,8 +122,8 @@ function ThemedRoot() {
               name="settings"
               options={{
                 headerShown: false,
-                presentation: 'fullScreenModal',
-                animation: 'none',
+                animation: 'slide_from_right',
+                gestureEnabled: true,
               }}
             />
             <Stack.Screen

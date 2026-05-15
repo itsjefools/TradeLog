@@ -29,22 +29,23 @@ export type ThemeColors = {
 };
 
 // アクセント・ステータス色（モード非依存）
-// アクセント = ブランドカラーのグリーン
-const ACCENT = '#10B981';
+// 近未来的ミニマリスト = シアンアクセント。
+// FX セマンティクスの緑/赤は維持。
+const ACCENT = '#00D9FF';
 const WIN = '#10B981';
 const LOSS = '#EF4444';
 const STAR = '#F59E0B';
-const VERIFIED = '#3B82F6';
+const VERIFIED = '#00D9FF';
 const DANGER = '#EF4444';
-const ON_ACCENT = '#FFFFFF';
+const ON_ACCENT = '#000000';
 
 export const darkColors: ThemeColors = {
-  background: '#0F172A',
-  surface: '#1E293B',
-  surfaceAlt: '#273449',
-  border: '#334155',
-  textPrimary: '#F1F5F9',
-  textSecondary: '#94A3B8',
+  background: '#000000',
+  surface: '#0A0A0A',
+  surfaceAlt: '#141414',
+  border: 'rgba(255,255,255,0.06)',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#8B8D91',
   accent: ACCENT,
   win: WIN,
   loss: LOSS,
@@ -91,6 +92,41 @@ export const Colors = {
     tabIconSelected: ACCENT,
   },
 };
+
+// デザイントークン: 角丸・間隔・フォントウェイト
+// ミニマリストデザインなので半径は控えめ。
+export const Radius = {
+  none: 0,
+  sm: 4,
+  md: 8,
+  lg: 12,
+  pill: 999,
+} as const;
+
+export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+} as const;
+
+// 数字をモノスペース + 等幅(tabular figures)で表示するためのスタイル。
+// FXの価格・損益・pipsなどの並びを揃えるのに使用する。
+export const MonoNumber = Platform.select({
+  ios: {
+    fontFamily: 'ui-monospace',
+    fontVariant: ['tabular-nums' as const],
+  },
+  android: {
+    fontFamily: 'monospace',
+    fontVariant: ['tabular-nums' as const],
+  },
+  default: {
+    fontVariant: ['tabular-nums' as const],
+  },
+});
 
 export const Fonts = Platform.select({
   ios: {

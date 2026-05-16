@@ -146,7 +146,7 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: 12,
+      borderRadius: 6,
       paddingHorizontal: 14,
       paddingVertical: 10,
       fontSize: 14,
@@ -180,7 +180,7 @@ function makeStyles(c: ThemeColors) {
     },
     termCard: {
       backgroundColor: c.surface,
-      borderRadius: 12,
+      borderRadius: 6,
       padding: 14,
       gap: 6,
     },

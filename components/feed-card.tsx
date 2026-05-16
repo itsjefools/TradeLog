@@ -167,6 +167,220 @@ export function FeedCard({
     item.liked_by?.username?.trim() ||
     null;
 
+  const renderMenu = () => (
+    <Modal
+      visible={menuVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setMenuVisible(false)}
+    >
+      <Pressable
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'flex-end',
+        }}
+        onPress={() => setMenuVisible(false)}
+      >
+        <Pressable
+          style={{
+            backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
+            borderTopLeftRadius: 14,
+            borderTopRightRadius: 14,
+            paddingBottom: 34,
+            paddingTop: 8,
+          }}
+          onPress={(e) => e.stopPropagation()}
+        >
+          <View
+            style={{
+              width: 36,
+              height: 5,
+              borderRadius: 3,
+              backgroundColor: isDark ? '#48484A' : '#D1D1D6',
+              alignSelf: 'center',
+              marginBottom: 16,
+            }}
+          />
+          {isMyPost ? (
+            <>
+              <TouchableOpacity
+                onPress={() => {
+                  setMenuVisible(false);
+                  handleEdit();
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 16,
+                  paddingHorizontal: 20,
+                }}
+              >
+                <Ionicons
+                  name="create-outline"
+                  size={22}
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                />
+                <Text
+                  style={{
+                    marginLeft: 16,
+                    fontSize: 17,
+                    color: isDark ? '#FFFFFF' : '#000000',
+                  }}
+                >
+                  編集
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setMenuVisible(false);
+                  handleDelete();
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 16,
+                  paddingHorizontal: 20,
+                }}
+              >
+                <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+                <Text
+                  style={{
+                    marginLeft: 16,
+                    fontSize: 17,
+                    color: '#FF3B30',
+                  }}
+                >
+                  削除
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity
+              onPress={() => {
+                setMenuVisible(false);
+                setReportVisible(true);
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 16,
+                paddingHorizontal: 20,
+              }}
+            >
+              <Ionicons name="flag-outline" size={22} color="#FF3B30" />
+              <Text style={{ marginLeft: 16, fontSize: 17, color: '#FF3B30' }}>
+                通報
+              </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={() => setMenuVisible(false)}
+            style={{
+              alignItems: 'center',
+              paddingVertical: 16,
+              marginTop: 8,
+              marginHorizontal: 16,
+              borderRadius: 6,
+              backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 17,
+                fontWeight: '600',
+                color: isDark ? '#FFFFFF' : '#007AFF',
+              }}
+            >
+              キャンセル
+            </Text>
+          </TouchableOpacity>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+
+  // 取引結果のみ(本文・画像なし)はTradingView風コンパクト1行レイアウト
+  const isCompactTradeOnly =
+    item.post_type === 'trade_result' &&
+    !!trade &&
+    (!item.content || item.content.trim() === '') &&
+    (!item.image_urls || item.image_urls.length === 0);
+
+  if (isCompactTradeOnly && trade) {
+    const dirShort = trade.direction === 'long' ? 'L' : 'S';
+    const dirColor = trade.direction === 'long' ? c.win : c.loss;
+    const priceFlow =
+      trade.entry_price != null && trade.exit_price != null
+        ? `${trade.entry_price} → ${trade.exit_price}`
+        : '—';
+    return (
+      <View style={styles.compactCard}>
+        <View style={styles.compactRow1}>
+          <Text style={styles.compactTime}>{dateStr}</Text>
+          <Text style={styles.compactPair}>{trade.currency_pair}</Text>
+          <Text style={[styles.compactDir, { color: dirColor }]}>{dirShort}</Text>
+          <Text style={styles.compactPriceFlow}>{priceFlow}</Text>
+          <TouchableOpacity onPress={handleMenu} hitSlop={8} style={{ padding: 4 }}>
+            <Ionicons
+              name="ellipsis-horizontal"
+              size={14}
+              color={c.textSecondary}
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.compactRow2}>
+          <Text style={[styles.compactPnl, pnlColor(trade.pnl, c)]}>
+            {trade.pnl !== null ? formatPnl(trade.pnl) : '—'}
+          </Text>
+          {trade.pnl_pips !== null && (
+            <Text style={[styles.compactPips, pnlColor(trade.pnl_pips, c)]}>
+              {formatPips(trade.pnl_pips)}
+            </Text>
+          )}
+        </View>
+        <View style={styles.compactRow3}>
+          <Pressable onPress={() => router.push(`/user/${userId}`)} hitSlop={6}>
+            <Text style={styles.compactUser}>@{username}</Text>
+          </Pressable>
+          <View style={styles.compactActions}>
+            <Pressable
+              onPress={() => onToggleLike(item)}
+              hitSlop={8}
+              style={styles.compactActionItem}
+            >
+              <Ionicons
+                name={item.is_liked ? 'heart' : 'heart-outline'}
+                size={14}
+                color={item.is_liked ? c.loss : c.textSecondary}
+              />
+              <Text style={styles.compactActionCount}>{item.likes_count}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push(`/comments?postId=${item.id}`)}
+              hitSlop={8}
+              style={styles.compactActionItem}
+            >
+              <Ionicons
+                name="chatbubble-outline"
+                size={13}
+                color={c.textSecondary}
+              />
+              <Text style={styles.compactActionCount}>{item.comments_count}</Text>
+            </Pressable>
+          </View>
+        </View>
+        <ReportModal
+          visible={reportVisible}
+          onClose={() => setReportVisible(false)}
+          targetType="post"
+          targetId={item.id}
+        />
+        {renderMenu()}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.card}>
       {repostByName && (
@@ -400,151 +614,7 @@ export function FeedCard({
         <Text style={styles.date}>{dateStr}</Text>
       </View>
 
-      <Modal
-        visible={menuVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <Pressable
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            justifyContent: 'flex-end',
-          }}
-          onPress={() => setMenuVisible(false)}
-        >
-          <Pressable
-            style={{
-              backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
-              borderTopLeftRadius: 14,
-              borderTopRightRadius: 14,
-              paddingBottom: 34,
-              paddingTop: 8,
-            }}
-            onPress={(e) => e.stopPropagation()}
-          >
-            {/* ハンドルバー */}
-            <View
-              style={{
-                width: 36,
-                height: 5,
-                borderRadius: 3,
-                backgroundColor: isDark ? '#48484A' : '#D1D1D6',
-                alignSelf: 'center',
-                marginBottom: 16,
-              }}
-            />
-
-            {isMyPost ? (
-              <>
-                <TouchableOpacity
-                  onPress={() => {
-                    setMenuVisible(false);
-                    handleEdit();
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 16,
-                    paddingHorizontal: 20,
-                  }}
-                >
-                  <Ionicons
-                    name="create-outline"
-                    size={22}
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                  />
-                  <Text
-                    style={{
-                      marginLeft: 16,
-                      fontSize: 17,
-                      color: isDark ? '#FFFFFF' : '#000000',
-                    }}
-                  >
-                    編集
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => {
-                    setMenuVisible(false);
-                    handleDelete();
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 16,
-                    paddingHorizontal: 20,
-                  }}
-                >
-                  <Ionicons
-                    name="trash-outline"
-                    size={22}
-                    color="#FF3B30"
-                  />
-                  <Text
-                    style={{
-                      marginLeft: 16,
-                      fontSize: 17,
-                      color: '#FF3B30',
-                    }}
-                  >
-                    削除
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  setMenuVisible(false);
-                  setReportVisible(true);
-                }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingVertical: 16,
-                  paddingHorizontal: 20,
-                }}
-              >
-                <Ionicons name="flag-outline" size={22} color="#FF3B30" />
-                <Text
-                  style={{
-                    marginLeft: 16,
-                    fontSize: 17,
-                    color: '#FF3B30',
-                  }}
-                >
-                  通報
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {/* キャンセルボタン */}
-            <TouchableOpacity
-              onPress={() => setMenuVisible(false)}
-              style={{
-                alignItems: 'center',
-                paddingVertical: 16,
-                marginTop: 8,
-                marginHorizontal: 16,
-                borderRadius: 12,
-                backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 17,
-                  fontWeight: '600',
-                  color: isDark ? '#FFFFFF' : '#007AFF',
-                }}
-              >
-                キャンセル
-              </Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {renderMenu()}
     </View>
   );
 }
@@ -714,7 +784,7 @@ function makeMediaStyles(c: ThemeColors, height: number) {
       marginTop: 10,
       width: CARD_INNER,
       height,
-      borderRadius: 12,
+      borderRadius: 6,
       overflow: 'hidden',
       backgroundColor: c.surfaceAlt,
       position: 'relative',
@@ -822,9 +892,92 @@ function pnlColor(n: number | null, c: ThemeColors): TextStyle | undefined {
 function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
     card: {
-      backgroundColor: c.surface,
-      borderRadius: 14,
-      padding: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    compactCard: {
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+      gap: 2,
+    },
+    compactRow1: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    compactTime: {
+      fontSize: 11,
+      color: c.textSecondary,
+      fontVariant: ['tabular-nums'],
+      width: 40,
+    },
+    compactPair: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.textPrimary,
+      letterSpacing: 0.3,
+    },
+    compactDir: {
+      fontSize: 12,
+      fontWeight: '800',
+      letterSpacing: 1,
+      width: 14,
+    },
+    compactPriceFlow: {
+      fontSize: 12,
+      color: c.textSecondary,
+      fontVariant: ['tabular-nums'],
+      flex: 1,
+    },
+    compactRow2: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 12,
+      marginLeft: 48,
+    },
+    compactPnl: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: c.textPrimary,
+      fontVariant: ['tabular-nums'],
+      letterSpacing: -0.5,
+    },
+    compactPips: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: c.textSecondary,
+      fontVariant: ['tabular-nums'],
+    },
+    compactRow3: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginLeft: 48,
+      marginTop: 2,
+    },
+    compactUser: {
+      fontSize: 12,
+      color: c.textSecondary,
+    },
+    compactActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    compactActionItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+    },
+    compactActionCount: {
+      fontSize: 11,
+      color: c.textSecondary,
+      fontVariant: ['tabular-nums'],
+      minWidth: 12,
     },
     likedByRow: {
       flexDirection: 'row',
@@ -873,7 +1026,7 @@ function makeStyles(c: ThemeColors) {
     verifiedBadge: {
       width: 16,
       height: 16,
-      borderRadius: 8,
+      borderRadius: 4,
       backgroundColor: c.verified,
       alignItems: 'center',
       justifyContent: 'center',
@@ -905,10 +1058,12 @@ function makeStyles(c: ThemeColors) {
       color: c.textSecondary,
     },
     tradeBlock: {
-      backgroundColor: c.background,
-      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      borderRadius: 4,
       padding: 12,
       gap: 6,
+      marginTop: 6,
     },
     tradeHead: {
       flexDirection: 'row',
@@ -949,11 +1104,13 @@ function makeStyles(c: ThemeColors) {
       fontSize: 18,
       fontWeight: '700',
       color: c.textPrimary,
+      fontVariant: ['tabular-nums'],
     },
     tradePips: {
       fontSize: 13,
       fontWeight: '500',
       color: c.textSecondary,
+      fontVariant: ['tabular-nums'],
     },
     memo: {
       fontSize: 13,
@@ -1000,6 +1157,7 @@ function makeStyles(c: ThemeColors) {
       color: c.textSecondary,
       fontWeight: '500',
       minWidth: 18,
+      fontVariant: ['tabular-nums'],
     },
     date: {
       fontSize: 11,

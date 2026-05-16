@@ -198,7 +198,7 @@ function makeStyles(c: ThemeColors) {
     },
     eventCard: {
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 4,
       padding: 12,
       gap: 4,
     },

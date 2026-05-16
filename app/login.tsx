@@ -324,7 +324,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
     backgroundColor: c.surface,
     borderWidth: 1,
     borderColor: c.border,
-    borderRadius: 12,
+    borderRadius: 6,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
@@ -339,7 +339,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
     backgroundColor: c.surface,
     borderWidth: 1,
     borderColor: c.border,
-    borderRadius: 12,
+    borderRadius: 6,
     paddingHorizontal: 16,
   },
   passwordInput: {
@@ -360,7 +360,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
   },
   primaryButton: {
     backgroundColor: c.accent,
-    borderRadius: 12,
+    borderRadius: 6,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',

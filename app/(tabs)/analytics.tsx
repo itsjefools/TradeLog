@@ -211,15 +211,40 @@ export default function AnalyticsScreen() {
             />
           )}
 
-          <Text style={styles.sectionLabel}>KPI</Text>
+          {/* メインKPI: 月間P&L を大きく表示 */}
+          <View style={styles.primaryKpi}>
+            <Text style={styles.primaryKpiLabel}>月間 P&L</Text>
+            <Text style={[styles.primaryKpiValue, stats.pnlStyle]}>
+              {stats.pnlDisplay}
+            </Text>
+          </View>
 
-          <View style={styles.kpiGrid}>
-            <KpiCard label="月間P&L" value={stats.pnlDisplay} valueStyle={stats.pnlStyle} />
-            <KpiCard label="勝率" value={stats.winRateDisplay} />
-            <KpiCard label="取引回数" value={`${stats.tradeCount}回`} />
-            <KpiCard label="平均P&L" value={stats.avgPnlDisplay} valueStyle={stats.avgPnlStyle} />
-            <KpiCard label="RR比" value={stats.rrDisplay} />
-            <KpiCard label="平均pips" value={stats.avgPipsDisplay} valueStyle={stats.avgPipsStyle} />
+          {/* サブKPI: テーブル形式 */}
+          <View style={styles.secondaryKpiList}>
+            <View style={styles.kpiRow}>
+              <Text style={styles.kpiRowLabel}>勝率</Text>
+              <Text style={styles.kpiRowValue}>{stats.winRateDisplay}</Text>
+            </View>
+            <View style={styles.kpiRow}>
+              <Text style={styles.kpiRowLabel}>取引回数</Text>
+              <Text style={styles.kpiRowValue}>{stats.tradeCount}回</Text>
+            </View>
+            <View style={styles.kpiRow}>
+              <Text style={styles.kpiRowLabel}>平均P&L</Text>
+              <Text style={[styles.kpiRowValue, stats.avgPnlStyle]}>
+                {stats.avgPnlDisplay}
+              </Text>
+            </View>
+            <View style={styles.kpiRow}>
+              <Text style={styles.kpiRowLabel}>RR比</Text>
+              <Text style={styles.kpiRowValue}>{stats.rrDisplay}</Text>
+            </View>
+            <View style={styles.kpiRow}>
+              <Text style={styles.kpiRowLabel}>平均pips</Text>
+              <Text style={[styles.kpiRowValue, stats.avgPipsStyle]}>
+                {stats.avgPipsDisplay}
+              </Text>
+            </View>
           </View>
 
           {monthlyTrades.length > 0 ? (
@@ -1122,16 +1147,16 @@ function makeStyles(c: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: c.surface,
-      borderRadius: 10,
       paddingVertical: 8,
-      paddingHorizontal: 16,
+      paddingHorizontal: 0,
       marginBottom: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
     },
     monthArrow: {
       width: 32,
       height: 32,
-      borderRadius: 16,
+      borderRadius: 6,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: c.surfaceAlt,
@@ -1141,7 +1166,7 @@ function makeStyles(c: ThemeColors) {
     monthLabel: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
     goalCard: {
       backgroundColor: c.surface,
-      borderRadius: 12,
+      borderRadius: 6,
       padding: 14,
       marginBottom: 16,
     },
@@ -1152,7 +1177,7 @@ function makeStyles(c: ThemeColors) {
       marginBottom: 8,
     },
     goalTitle: { fontSize: 13, fontWeight: '700', color: c.textPrimary },
-    goalPct: { fontSize: 18, fontWeight: '800', color: c.accent },
+    goalPct: { fontSize: 18, fontWeight: '800', color: c.accent, fontVariant: ['tabular-nums'] },
     goalBarBg: {
       height: 8,
       backgroundColor: c.surfaceAlt,
@@ -1178,18 +1203,59 @@ function makeStyles(c: ThemeColors) {
       width: '32%',
       flexGrow: 1,
       backgroundColor: c.surface,
-      borderRadius: 12,
+      borderRadius: 6,
       padding: 12,
     },
     kpiLabel: { fontSize: 11, color: c.textSecondary, marginBottom: 4 },
-    kpiValue: { fontSize: 17, fontWeight: '700', color: c.textPrimary },
+    kpiValue: { fontSize: 17, fontWeight: '700', color: c.textPrimary, fontVariant: ['tabular-nums'] },
+    primaryKpi: {
+      paddingTop: 8,
+      paddingBottom: 24,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    primaryKpiLabel: {
+      fontSize: 11,
+      color: c.textSecondary,
+      fontWeight: '600',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      marginBottom: 6,
+    },
+    primaryKpiValue: {
+      fontSize: 48,
+      fontWeight: '800',
+      color: c.textPrimary,
+      fontVariant: ['tabular-nums'],
+      letterSpacing: -1.5,
+    },
+    secondaryKpiList: {
+      paddingBottom: 8,
+    },
+    kpiRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    kpiRowLabel: {
+      fontSize: 13,
+      color: c.textSecondary,
+    },
+    kpiRowValue: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.textPrimary,
+      fontVariant: ['tabular-nums'],
+    },
     chartCard: {
-      backgroundColor: c.surface,
-      borderRadius: 12,
-      padding: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 0,
       alignItems: 'center',
     },
-    chart: { borderRadius: 8 },
+    chart: { borderRadius: 4 },
     heatmapWrap: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -1222,7 +1288,7 @@ function makeStyles(c: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: c.surfaceAlt,
-      borderRadius: 8,
+      borderRadius: 4,
       paddingHorizontal: 12,
       paddingVertical: 8,
     },
@@ -1240,6 +1306,7 @@ function makeStyles(c: ThemeColors) {
       fontSize: 14,
       fontWeight: '700',
       color: c.textPrimary,
+      fontVariant: ['tabular-nums'],
     },
     weekdaySub: {
       fontSize: 11,
@@ -1280,10 +1347,11 @@ function makeStyles(c: ThemeColors) {
       fontWeight: '700',
       color: c.textPrimary,
       marginTop: 1,
+      fontVariant: ['tabular-nums'],
     },
     dayDetailCard: {
       backgroundColor: c.surface,
-      borderRadius: 12,
+      borderRadius: 6,
       padding: 14,
       marginTop: 12,
     },
@@ -1307,7 +1375,7 @@ function makeStyles(c: ThemeColors) {
     dayDetailSummaryItem: {
       flex: 1,
       backgroundColor: c.surfaceAlt,
-      borderRadius: 10,
+      borderRadius: 4,
       padding: 10,
     },
     dayDetailSummaryLabel: {
@@ -1327,7 +1395,7 @@ function makeStyles(c: ThemeColors) {
     },
     dayTradeCard: {
       backgroundColor: c.surfaceAlt,
-      borderRadius: 10,
+      borderRadius: 4,
       padding: 12,
       gap: 6,
     },
@@ -1373,13 +1441,13 @@ function makeStyles(c: ThemeColors) {
     errorBox: {
       backgroundColor: '#7F1D1D',
       padding: 12,
-      borderRadius: 8,
+      borderRadius: 4,
       marginBottom: 12,
     },
     errorText: { color: '#FECACA', fontSize: 13 },
     emptyBox: {
       backgroundColor: c.surface,
-      borderRadius: 12,
+      borderRadius: 6,
       padding: 24,
       alignItems: 'center',
       borderWidth: 1,
@@ -1395,12 +1463,12 @@ function makeStyles(c: ThemeColors) {
     lockedWrap: {
       position: 'relative',
       marginTop: 12,
-      borderRadius: 16,
+      borderRadius: 6,
       overflow: 'hidden',
     },
     lockedBlur: {
       ...StyleSheet.absoluteFillObject,
-      borderRadius: 16,
+      borderRadius: 6,
       overflow: 'hidden',
       alignItems: 'center',
       justifyContent: 'flex-start',
@@ -1417,7 +1485,7 @@ function makeStyles(c: ThemeColors) {
     lockedIcon: {
       width: 56,
       height: 56,
-      borderRadius: 16,
+      borderRadius: 6,
       backgroundColor: c.accent,
       alignItems: 'center',
       justifyContent: 'center',
@@ -1466,7 +1534,7 @@ function makeStyles(c: ThemeColors) {
     },
     tradeRow: {
       backgroundColor: c.surface,
-      borderRadius: 12,
+      borderRadius: 6,
       padding: 14,
       marginBottom: 8,
     },
@@ -1490,7 +1558,7 @@ function makeStyles(c: ThemeColors) {
     deleteButton: {
       width: 28,
       height: 28,
-      borderRadius: 14,
+      borderRadius: 6,
       alignItems: 'center',
       justifyContent: 'center',
       marginLeft: 4,
@@ -1503,7 +1571,7 @@ function makeStyles(c: ThemeColors) {
       lineHeight: 18,
     },
     tradeRowMid: { flexDirection: 'row', alignItems: 'baseline', gap: 12 },
-    tradePnl: { fontSize: 18, fontWeight: '700', color: c.textPrimary },
-    tradePips: { fontSize: 13, fontWeight: '500', color: c.textSecondary },
+    tradePnl: { fontSize: 18, fontWeight: '700', color: c.textPrimary, fontVariant: ['tabular-nums'] },
+    tradePips: { fontSize: 13, fontWeight: '500', color: c.textSecondary, fontVariant: ['tabular-nums'] },
   });
 }

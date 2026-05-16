@@ -439,8 +439,6 @@ function makeStyles(c: ThemeColors) {
     headerButton: {
       width: 38,
       height: 38,
-      borderRadius: 19,
-      backgroundColor: c.surface,
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
@@ -466,10 +464,10 @@ function makeStyles(c: ThemeColors) {
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: '#10B981',
+      backgroundColor: c.accent,
       alignItems: 'center',
       justifyContent: 'center',
-      shadowColor: '#10B981',
+      shadowColor: c.accent,
       shadowOpacity: 0.4,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 6 },
@@ -491,15 +489,12 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
     },
     body: {
-      paddingHorizontal: 12,
-      paddingTop: 8,
       paddingBottom: 40,
-      gap: 10,
     },
     errorBox: {
       backgroundColor: '#7F1D1D',
       padding: 12,
-      borderRadius: 8,
+      borderRadius: 4,
     },
     errorText: {
       color: '#FECACA',
@@ -507,7 +502,7 @@ function makeStyles(c: ThemeColors) {
     },
     emptyBox: {
       backgroundColor: c.surface,
-      borderRadius: 16,
+      borderRadius: 6,
       padding: 32,
       alignItems: 'center',
       marginTop: 24,

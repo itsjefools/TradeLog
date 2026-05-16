@@ -260,7 +260,7 @@ function makeStyles(c: ThemeColors) {
     },
     emptyBox: {
       backgroundColor: c.surface,
-      borderRadius: 16,
+      borderRadius: 6,
       padding: 32,
       alignItems: 'center',
       marginTop: 24,
@@ -274,7 +274,7 @@ function makeStyles(c: ThemeColors) {
     },
     row: {
       backgroundColor: c.surface,
-      borderRadius: 12,
+      borderRadius: 6,
       padding: 14,
     },
     rowPressed: {

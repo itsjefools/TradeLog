@@ -197,11 +197,11 @@ function makeStyles(c: ThemeColors) {
     headerSpacer: { width: 40 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     body: { padding: 16, gap: 8 },
-    errorBox: { backgroundColor: '#7F1D1D', padding: 12, borderRadius: 8 },
+    errorBox: { backgroundColor: '#7F1D1D', padding: 12, borderRadius: 4 },
     errorText: { color: '#FECACA', fontSize: 13 },
     emptyBox: {
       backgroundColor: c.surface,
-      borderRadius: 16,
+      borderRadius: 6,
       padding: 32,
       alignItems: 'center',
       marginTop: 24,
@@ -221,7 +221,7 @@ function makeStyles(c: ThemeColors) {
     },
     card: {
       backgroundColor: c.surface,
-      borderRadius: 12,
+      borderRadius: 6,
       padding: 12,
       gap: 8,
     },

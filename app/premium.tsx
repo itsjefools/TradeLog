@@ -307,7 +307,7 @@ function makeStyles(c: ThemeColors) {
     },
     featuresCard: {
       backgroundColor: c.surface,
-      borderRadius: 16,
+      borderRadius: 6,
       paddingHorizontal: 16,
       paddingVertical: 4,
     },
@@ -336,7 +336,7 @@ function makeStyles(c: ThemeColors) {
       flexDirection: 'row',
       gap: 10,
       backgroundColor: c.surfaceAlt,
-      borderRadius: 12,
+      borderRadius: 6,
       padding: 14,
       alignItems: 'flex-start',
     },
@@ -351,7 +351,7 @@ function makeStyles(c: ThemeColors) {
     },
     planCard: {
       backgroundColor: c.surface,
-      borderRadius: 16,
+      borderRadius: 6,
       padding: 18,
       borderWidth: 1.5,
       borderColor: c.border,

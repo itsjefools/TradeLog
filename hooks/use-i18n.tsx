@@ -14,7 +14,6 @@ import en from '@/lib/translations/en';
 import es from '@/lib/translations/es';
 import ja from '@/lib/translations/ja';
 import pt from '@/lib/translations/pt';
-import zh from '@/lib/translations/zh';
 
 import { useProfile } from './use-profile';
 
@@ -24,25 +23,18 @@ export const SUPPORTED_LOCALES = [
   { code: 'ja', label: '日本語' },
   { code: 'en', label: 'English' },
   { code: 'pt', label: 'Português' },
-  { code: 'zh', label: '中文' },
   { code: 'es', label: 'Español' },
 ] as const;
 
 export type LocaleCode = (typeof SUPPORTED_LOCALES)[number]['code'];
 
-const i18n = new I18n({ ja, en, pt, zh, es });
+const i18n = new I18n({ ja, en, pt, es });
 i18n.defaultLocale = 'ja';
 i18n.enableFallback = true;
 
 function detectInitial(): LocaleCode {
   const sys = Localization.getLocales()[0]?.languageCode ?? 'ja';
-  if (
-    sys === 'ja' ||
-    sys === 'en' ||
-    sys === 'pt' ||
-    sys === 'zh' ||
-    sys === 'es'
-  ) {
+  if (sys === 'ja' || sys === 'en' || sys === 'pt' || sys === 'es') {
     return sys;
   }
   return 'ja';
@@ -67,7 +59,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         stored === 'ja' ||
         stored === 'en' ||
         stored === 'pt' ||
-        stored === 'zh' ||
         stored === 'es'
       ) {
         setLocaleState(stored);
@@ -78,13 +69,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   // profile.language が設定されてたらそれを優先
   useEffect(() => {
     const lang = profile?.language;
-    if (
-      lang === 'ja' ||
-      lang === 'en' ||
-      lang === 'pt' ||
-      lang === 'zh' ||
-      lang === 'es'
-    ) {
+    if (lang === 'ja' || lang === 'en' || lang === 'pt' || lang === 'es') {
       setLocaleState(lang);
     }
   }, [profile?.language]);

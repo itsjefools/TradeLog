@@ -34,7 +34,7 @@ export function SkeletonBlock({
   return (
     <Animated.View
       style={[
-        { backgroundColor: c.surfaceAlt, borderRadius: 8 },
+        { backgroundColor: c.surfaceAlt, borderRadius: 4 },
         style,
         animStyle,
       ]}
@@ -75,7 +75,7 @@ function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
     card: {
       backgroundColor: c.surface,
-      borderRadius: 14,
+      borderRadius: 6,
       padding: 14,
       gap: 12,
     },
@@ -96,6 +96,6 @@ function makeStyles(c: ThemeColors) {
     lineXshort: { height: 10, width: '30%' },
     lineShort: { height: 12, width: '55%' },
     line: { height: 14, width: '90%' },
-    tradeBlock: { height: 56, width: '100%', borderRadius: 10 },
+    tradeBlock: { height: 56, width: '100%', borderRadius: 4 },
   });
 }

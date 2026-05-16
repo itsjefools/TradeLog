@@ -140,7 +140,7 @@ function Section({
       <View
         style={{
           backgroundColor: c.surface,
-          borderRadius: 14,
+          borderRadius: 6,
           overflow: 'hidden',
         }}
       >

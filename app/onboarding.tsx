@@ -240,7 +240,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
     },
     nextButton: {
       backgroundColor: c.accent,
-      borderRadius: 16,
+      borderRadius: 6,
       paddingVertical: 18,
       alignItems: 'center',
       justifyContent: 'center',

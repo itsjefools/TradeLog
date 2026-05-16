@@ -196,7 +196,7 @@ function makeStyles(c: ThemeColors) {
     body: { padding: 20, paddingBottom: 60 },
     warningCard: {
       backgroundColor: c.surface,
-      borderRadius: 16,
+      borderRadius: 6,
       padding: 24,
       alignItems: 'center',
       borderWidth: 1.5,
@@ -206,7 +206,7 @@ function makeStyles(c: ThemeColors) {
     warningIcon: {
       width: 56,
       height: 56,
-      borderRadius: 16,
+      borderRadius: 6,
       backgroundColor: c.danger,
       alignItems: 'center',
       justifyContent: 'center',
@@ -239,7 +239,7 @@ function makeStyles(c: ThemeColors) {
     },
     itemsCard: {
       backgroundColor: c.surface,
-      borderRadius: 14,
+      borderRadius: 6,
       paddingHorizontal: 14,
     },
     itemRow: {
@@ -263,7 +263,7 @@ function makeStyles(c: ThemeColors) {
       flexDirection: 'row',
       gap: 10,
       backgroundColor: c.surfaceAlt,
-      borderRadius: 12,
+      borderRadius: 6,
       padding: 14,
       marginTop: 16,
       alignItems: 'flex-start',
@@ -278,7 +278,7 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: 12,
+      borderRadius: 6,
       paddingHorizontal: 14,
       paddingVertical: 14,
       fontSize: 16,
@@ -290,7 +290,7 @@ function makeStyles(c: ThemeColors) {
     },
     deleteButton: {
       backgroundColor: c.danger,
-      borderRadius: 12,
+      borderRadius: 6,
       paddingVertical: 16,
       alignItems: 'center',
       justifyContent: 'center',

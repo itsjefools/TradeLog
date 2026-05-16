@@ -171,7 +171,7 @@ function makeStyles(c: ThemeColors) {
     verifiedBadge: {
       width: 20,
       height: 20,
-      borderRadius: 10,
+      borderRadius: 4,
       backgroundColor: c.verified,
       alignItems: 'center',
       justifyContent: 'center',

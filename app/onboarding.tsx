@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-i18n';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
 
@@ -25,31 +26,34 @@ type Page = {
   body: string;
 };
 
-const PAGES: Page[] = [
-  {
-    icon: 'trending-up',
-    title: '取引を、もっとスマートに',
-    body: 'FXトレーダーのための記録・分析・コミュニティを、ひとつのアプリで。',
-  },
-  {
-    icon: 'create-outline',
-    title: '詳細な取引記録',
-    body: '通貨ペア・損益・チャート画像・3段階メモまで。あなたのトレードを完璧に残せます。',
-  },
-  {
-    icon: 'stats-chart',
-    title: '強力な分析',
-    body: '月間KPI・勝率・通貨ペア別損益・カレンダー。データで自分の成長を可視化しましょう。',
-  },
-  {
-    icon: 'people',
-    title: 'トレーダーとつながる',
-    body: '他の投資家の戦略から学び、いいねやコメントで交流。世界中のトレーダーと一緒に成長できます。',
-  },
-];
-
 export default function OnboardingScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
+  const PAGES: Page[] = useMemo(
+    () => [
+      {
+        icon: 'trending-up',
+        title: t('onboarding.page1Title'),
+        body: t('onboarding.page1Body'),
+      },
+      {
+        icon: 'create-outline',
+        title: t('onboarding.page2Title'),
+        body: t('onboarding.page2Body'),
+      },
+      {
+        icon: 'stats-chart',
+        title: t('onboarding.page3Title'),
+        body: t('onboarding.page3Body'),
+      },
+      {
+        icon: 'people',
+        title: t('onboarding.page4Title'),
+        body: t('onboarding.page4Body'),
+      },
+    ],
+    [t],
+  );
   const { resolved } = useTheme();
   const isDark = resolved === 'dark';
   const styles = useMemo(() => makeStyles(c, isDark), [c, isDark]);
@@ -92,7 +96,7 @@ export default function OnboardingScreen() {
         </View>
         {!isLast && (
           <Pressable onPress={handleSkip} hitSlop={12}>
-            <Text style={styles.skipText}>スキップ</Text>
+            <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
           </Pressable>
         )}
       </View>
@@ -135,7 +139,7 @@ export default function OnboardingScreen() {
           ]}
         >
           <Text style={styles.nextButtonText}>
-            {isLast ? '始める' : '次へ'}
+            {isLast ? t('onboarding.start') : t('onboarding.next')}
           </Text>
         </Pressable>
       </View>

@@ -17,24 +17,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { ThemeColors } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-i18n';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { TRADE_STYLE_OPTIONS, TradeStyle } from '@/lib/types';
 
 type Mode = 'signIn' | 'signUp';
 
-function validatePassword(password: string): string | null {
-  if (password.length < 8) {
-    return 'パスワードは8文字以上で入力してください。';
-  }
-  if (!/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password)) {
-    return 'パスワードには数字または記号を最低1つ含めてください。';
-  }
-  return null;
-}
-
 export default function LoginScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const { resolved } = useTheme();
   const isDark = resolved === 'dark';
   const styles = useMemo(() => makeStyles(c, isDark), [c, isDark]);
@@ -46,15 +38,25 @@ export default function LoginScreen() {
   const [tradeStyle, setTradeStyle] = useState<TradeStyle | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) {
+      return t('auth.validationPasswordLength');
+    }
+    if (!/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password)) {
+      return t('auth.validationPasswordChars');
+    }
+    return null;
+  };
+
   const handleSubmit = async () => {
     setErrorMessage('');
 
     if (!email.trim()) {
-      setErrorMessage('メールアドレスを入力してください');
+      setErrorMessage(t('auth.validationEmail'));
       return;
     }
     if (!password) {
-      setErrorMessage('パスワードを入力してください');
+      setErrorMessage(t('auth.validationPassword'));
       return;
     }
     if (mode === 'signUp') {
@@ -64,7 +66,7 @@ export default function LoginScreen() {
         return;
       }
       if (!tradeStyle) {
-        setErrorMessage('トレードスタイルを選択してください');
+        setErrorMessage(t('auth.validationTradeStyle'));
         return;
       }
     }
@@ -78,13 +80,11 @@ export default function LoginScreen() {
         });
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
-            setErrorMessage('メールアドレスまたはパスワードが正しくありません');
+            setErrorMessage(t('auth.errorInvalidCredentials'));
           } else if (error.message.includes('Email not confirmed')) {
-            setErrorMessage(
-              'メールアドレスが確認されていません。メールをご確認ください',
-            );
+            setErrorMessage(t('auth.errorEmailNotConfirmed'));
           } else {
-            setErrorMessage('ログインに失敗しました。もう一度お試しください');
+            setErrorMessage(t('auth.errorSignInFailed'));
           }
         }
       } else {
@@ -97,19 +97,19 @@ export default function LoginScreen() {
         });
         if (error) {
           if (error.message.includes('already registered')) {
-            setErrorMessage('このメールアドレスは既に登録されています');
+            setErrorMessage(t('auth.errorAlreadyRegistered'));
           } else {
-            setErrorMessage('登録に失敗しました。もう一度お試しください');
+            setErrorMessage(t('auth.errorSignUpFailed'));
           }
         } else if (!data.session) {
           Alert.alert(
-            '確認メールを送信しました',
-            '登録されたメールアドレスに届いた確認リンクをクリックしてください。',
+            t('auth.confirmationEmailTitle'),
+            t('auth.confirmationEmailBody'),
           );
         }
       }
     } catch {
-      setErrorMessage('通信エラーが発生しました。もう一度お試しください');
+      setErrorMessage(t('auth.errorNetwork'));
     } finally {
       setLoading(false);
     }
@@ -146,13 +146,13 @@ export default function LoginScreen() {
               <Text style={styles.logoLog}>Log</Text>
             </Text>
             <Text style={styles.tagline}>
-              {isSignIn ? 'おかえりなさい' : 'アカウントを作成しましょう'}
+              {isSignIn ? t('auth.welcomeBack') : t('auth.welcomeNew')}
             </Text>
           </View>
 
           <View style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>メールアドレス</Text>
+              <Text style={styles.label}>{t('auth.email')}</Text>
               <TextInput
                 style={[
                   styles.input,
@@ -173,7 +173,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>パスワード</Text>
+              <Text style={styles.label}>{t('auth.password')}</Text>
               <View
                 style={[
                   styles.passwordWrap,
@@ -188,7 +188,9 @@ export default function LoginScreen() {
                     setErrorMessage('');
                   }}
                   placeholder={
-                    isSignIn ? 'パスワード' : '8文字以上、数字または記号を含む'
+                    isSignIn
+                      ? t('auth.passwordPlaceholder')
+                      : t('auth.passwordHint')
                   }
                   placeholderTextColor={c.textSecondary}
                   secureTextEntry={!showPassword}
@@ -215,7 +217,7 @@ export default function LoginScreen() {
 
             {!isSignIn && (
               <View style={styles.field}>
-                <Text style={styles.label}>トレードスタイル</Text>
+                <Text style={styles.label}>{t('auth.tradeStyle')}</Text>
                 <View style={styles.chipsRow}>
                   {TRADE_STYLE_OPTIONS.map((opt) => {
                     const selected = tradeStyle === opt.value;
@@ -254,16 +256,16 @@ export default function LoginScreen() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.primaryButtonText}>
-                  {isSignIn ? 'ログイン' : 'アカウントを作成'}
+                  {isSignIn ? t('auth.login') : t('auth.signUp')}
                 </Text>
               )}
             </Pressable>
 
             <Pressable onPress={toggleMode} disabled={loading} style={styles.switchButton}>
               <Text style={styles.switchText}>
-                {isSignIn ? 'アカウントをお持ちでない方は ' : 'すでにアカウントをお持ちの方は '}
+                {isSignIn ? t('auth.noAccount') : t('auth.haveAccount')}
                 <Text style={styles.switchTextAccent}>
-                  {isSignIn ? '新規登録' : 'ログイン'}
+                  {isSignIn ? t('auth.signUpLink') : t('auth.signInLink')}
                 </Text>
               </Text>
             </Pressable>

@@ -23,6 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 
 import { useFavoritePairs } from '@/hooks/use-favorite-pairs';
+import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
@@ -72,6 +73,7 @@ function formatTradedDate(date: Date): string {
 
 export default function RecordScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const params = useLocalSearchParams<{ date?: string }>();
   const [form, setForm] = useState(initialState);
@@ -127,7 +129,7 @@ export default function RecordScreen() {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('画像追加に失敗', msg);
+      Alert.alert(t('record.addImageFail'), msg);
     } finally {
       setUploadingImage(false);
     }
@@ -181,11 +183,11 @@ export default function RecordScreen() {
     const pnlPips = applySignToNum(parseNum(form.pnlPips), form.result);
 
     if (!form.currencyPair.trim()) {
-      Alert.alert('入力エラー', '通貨ペアを入力してください。');
+      Alert.alert(t('record.inputErrorTitle'), t('record.inputErrorPair'));
       return;
     }
     if (lotSize === null || lotSize <= 0) {
-      Alert.alert('入力エラー', 'ロットサイズを正しく入力してください。');
+      Alert.alert(t('record.inputErrorTitle'), t('record.inputErrorLot'));
       return;
     }
     if (isOverFreeLimit) {
@@ -251,7 +253,7 @@ export default function RecordScreen() {
       }
 
       notifySuccess();
-      toast.success('取引を記録しました');
+      toast.success(t('record.saveSuccess'));
       resetForm();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
@@ -285,8 +287,8 @@ export default function RecordScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>取引記録</Text>
-        <Text style={styles.subtitle}>今日のトレードを記録しましょう</Text>
+        <Text style={styles.title}>{t('record.title')}</Text>
+        <Text style={styles.subtitle}>{t('record.subtitle')}</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -301,7 +303,7 @@ export default function RecordScreen() {
           bounces={false}
         >
           <View style={styles.section}>
-            <Text style={styles.label}>取引日</Text>
+            <Text style={styles.label}>{t('record.dateLabel')}</Text>
             <Pressable
               onPress={() => setShowDatePicker(true)}
               disabled={loading}
@@ -335,7 +337,7 @@ export default function RecordScreen() {
               <View style={styles.datePickerSheet}>
                 <View style={styles.datePickerHeader}>
                   <Pressable onPress={() => setShowDatePicker(false)} hitSlop={12}>
-                    <Text style={styles.datePickerDone}>完了</Text>
+                    <Text style={styles.datePickerDone}>{t('record.doneButton')}</Text>
                   </Pressable>
                 </View>
                 <DateTimePicker
@@ -366,12 +368,12 @@ export default function RecordScreen() {
           )}
 
           <View style={styles.section}>
-            <Text style={styles.label}>通貨ペア</Text>
+            <Text style={styles.label}>{t('record.pairLabel')}</Text>
             <TextInput
               style={styles.input}
               value={pairSearch}
               onChangeText={setPairSearch}
-              placeholder="検索（例: USD, JPY, EUR）"
+              placeholder={t('record.pairSearchPlaceholder')}
               placeholderTextColor={c.textSecondary}
               autoCapitalize="characters"
               autoCorrect={false}
@@ -383,14 +385,14 @@ export default function RecordScreen() {
               </Text>
             )}
             {!isSearching && favorites.length > 0 && (
-              <Text style={styles.favHeader}>★ お気に入り</Text>
+              <Text style={styles.favHeader}>{t('record.favHeader')}</Text>
             )}
             <View style={[styles.chipsRow, styles.chipsRowMt]}>
               {visiblePairs.length === 0 ? (
                 <Text style={styles.noMatchText}>
                   {isSearching
-                    ? '該当する通貨ペアがありません'
-                    : '検索欄に通貨を入力してください\n（★でお気に入り登録できます）'}
+                    ? t('record.noMatchingPair')
+                    : t('record.pairSearchHint')}
                 </Text>
               ) : (
                 visiblePairs.map((pair) => {
@@ -429,7 +431,7 @@ export default function RecordScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>方向</Text>
+            <Text style={styles.label}>{t('record.directionLabel')}</Text>
             <View style={styles.segment}>
               <Pressable
                 style={[
@@ -445,7 +447,7 @@ export default function RecordScreen() {
                     form.direction === 'long' && styles.segmentTextActive,
                   ]}
                 >
-                  ロング（買い）
+                  {t('record.long')}
                 </Text>
               </Pressable>
               <Pressable
@@ -462,14 +464,14 @@ export default function RecordScreen() {
                     form.direction === 'short' && styles.segmentTextActive,
                   ]}
                 >
-                  ショート（売り）
+                  {t('record.short')}
                 </Text>
               </Pressable>
             </View>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>結果</Text>
+            <Text style={styles.label}>{t('record.resultLabel')}</Text>
             <View style={styles.resultRow}>
               <Pressable
                 style={[
@@ -487,7 +489,7 @@ export default function RecordScreen() {
                     form.result === 'win' && styles.resultButtonTextSelected,
                   ]}
                 >
-                  利確
+                  {t('record.win')}
                 </Text>
               </Pressable>
               <Pressable
@@ -506,7 +508,7 @@ export default function RecordScreen() {
                     form.result === 'loss' && styles.resultButtonTextSelected,
                   ]}
                 >
-                  損切り
+                  {t('record.loss')}
                 </Text>
               </Pressable>
             </View>
@@ -514,13 +516,13 @@ export default function RecordScreen() {
 
           <View style={styles.row}>
             <View style={[styles.section, styles.flex]}>
-              <Text style={styles.label}>エントリー価格（任意）</Text>
+              <Text style={styles.label}>{t('record.entryPriceLabel')}</Text>
               <TextInput
                 ref={entryPriceRef}
                 style={styles.input}
                 value={form.entryPrice}
                 onChangeText={(t) => updatePriceField('entryPrice', t)}
-                placeholder="例: 148.250"
+                placeholder={t('record.entryPriceExample')}
                 placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
                 returnKeyType="next"
@@ -529,13 +531,13 @@ export default function RecordScreen() {
               />
             </View>
             <View style={[styles.section, styles.flex]}>
-              <Text style={styles.label}>エグジット価格（任意）</Text>
+              <Text style={styles.label}>{t('record.exitPriceLabel')}</Text>
               <TextInput
                 ref={exitPriceRef}
                 style={styles.input}
                 value={form.exitPrice}
                 onChangeText={(t) => updatePriceField('exitPrice', t)}
-                placeholder="例: 148.800"
+                placeholder={t('record.exitPriceExample')}
                 placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
                 returnKeyType="next"
@@ -546,13 +548,13 @@ export default function RecordScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>ロットサイズ</Text>
+            <Text style={styles.label}>{t('record.lotLabel')}</Text>
             <TextInput
               ref={lotSizeRef}
               style={styles.input}
               value={form.lotSize}
               onChangeText={(t) => setField('lotSize', t)}
-              placeholder="例: 0.1"
+              placeholder={t('record.lotExample')}
               placeholderTextColor={c.textSecondary}
               keyboardType="decimal-pad"
               returnKeyType="next"
@@ -563,13 +565,13 @@ export default function RecordScreen() {
 
           <View style={styles.row}>
             <View style={[styles.section, styles.flex]}>
-              <Text style={styles.label}>損益（円）</Text>
+              <Text style={styles.label}>{t('record.pnlLabel')}</Text>
               <TextInput
                 ref={pnlRef}
                 style={styles.input}
                 value={form.pnl}
                 onChangeText={(t) => setField('pnl', t)}
-                placeholder="例: 5500"
+                placeholder={t('record.pnlExample')}
                 placeholderTextColor={c.textSecondary}
                 keyboardType="numbers-and-punctuation"
                 returnKeyType="next"
@@ -578,13 +580,13 @@ export default function RecordScreen() {
               />
             </View>
             <View style={[styles.section, styles.flex]}>
-              <Text style={styles.label}>損益 pips</Text>
+              <Text style={styles.label}>{t('record.pipsLabel')}</Text>
               <TextInput
                 ref={pnlPipsRef}
                 style={styles.input}
                 value={form.pnlPips}
                 onChangeText={(t) => setField('pnlPips', t)}
-                placeholder="例: 55"
+                placeholder={t('record.pipsExample')}
                 placeholderTextColor={c.textSecondary}
                 keyboardType="numbers-and-punctuation"
                 returnKeyType="done"
@@ -594,12 +596,12 @@ export default function RecordScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>メモ（任意）</Text>
+            <Text style={styles.label}>{t('record.memoLabel')}</Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
               value={form.memo}
               onChangeText={(t) => setField('memo', t)}
-              placeholder="取引の根拠、感想、振り返りなどを自由に記録"
+              placeholder={t('record.memoPlaceholder')}
               placeholderTextColor={c.textSecondary}
               multiline
               maxLength={1000}
@@ -608,7 +610,7 @@ export default function RecordScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>チャート画像（任意・最大4枚）</Text>
+            <Text style={styles.label}>{t('record.imagesLabel')}</Text>
             <View style={styles.imageRow}>
               {form.imageUrls.map((uri, i) => (
                 <View key={uri} style={styles.imageThumb}>
@@ -644,8 +646,8 @@ export default function RecordScreen() {
 
           <View style={[styles.section, styles.switchRow]}>
             <View style={styles.flex}>
-              <Text style={styles.label}>フィードに共有</Text>
-              <Text style={styles.helperText}>オンにするとタイムラインに表示されます</Text>
+              <Text style={styles.label}>{t('record.shareFeedLabel')}</Text>
+              <Text style={styles.helperText}>{t('record.shareFeedHelp')}</Text>
             </View>
             <Switch
               value={form.isShared}
@@ -668,7 +670,7 @@ export default function RecordScreen() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.submitButtonText}>保存</Text>
+              <Text style={styles.submitButtonText}>{t('record.save')}</Text>
             )}
           </Pressable>
         </ScrollView>

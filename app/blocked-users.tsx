@@ -15,14 +15,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
-import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { PROFILE_COLUMNS, Profile } from '@/lib/types';
 
 export default function BlockedUsersScreen() {
   const c = useThemeColors();
-  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { blockedIds, unblock, refresh: refreshBlocks } = useBlocks();
@@ -51,12 +49,12 @@ export default function BlockedUsersScreen() {
 
   const handleUnblock = (target: Profile) => {
     Alert.alert(
-      t('blockedUsers.unblockTitle'),
-      `${target.display_name?.trim() || target.username || t('blockedUsers.unknownUser')}${t('blockedUsers.unblockBodySuffix')}`,
+      'ブロックを解除',
+      `${target.display_name?.trim() || target.username || 'このユーザー'} のブロックを解除しますか？`,
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: 'キャンセル', style: 'cancel' },
         {
-          text: t('blockedUsers.unblockButton'),
+          text: '解除',
           onPress: async () => {
             try {
               await unblock(target.id);
@@ -64,7 +62,7 @@ export default function BlockedUsersScreen() {
               setProfiles((prev) => prev.filter((p) => p.id !== target.id));
             } catch (e) {
               Alert.alert(
-                t('common.error'),
+                'エラー',
                 e instanceof Error ? e.message : String(e),
               );
             }
@@ -80,7 +78,7 @@ export default function BlockedUsersScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('blockedUsers.title')}</Text>
+        <Text style={styles.headerTitle}>ブロック中のユーザー</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -95,7 +93,7 @@ export default function BlockedUsersScreen() {
             size={36}
             color={c.textSecondary}
           />
-          <Text style={styles.emptyTitle}>{t('blockedUsers.empty')}</Text>
+          <Text style={styles.emptyTitle}>ブロック中のユーザーはいません</Text>
           <Text style={styles.emptyText}>
             ユーザープロフィールの「⋯」メニューから{'\n'}ブロックできます。
           </Text>
@@ -103,7 +101,7 @@ export default function BlockedUsersScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.body}>
           {profiles.map((p) => {
-            const fallbackName = p.email?.split('@')[0] ?? t('profile.defaultName');
+            const fallbackName = p.email?.split('@')[0] ?? 'ユーザー';
             const displayName =
               p.display_name?.trim() || p.username?.trim() || fallbackName;
             const username = p.username?.trim() || fallbackName;
@@ -126,7 +124,7 @@ export default function BlockedUsersScreen() {
                   ]}
                   hitSlop={6}
                 >
-                  <Text style={styles.unblockText}>{t('blockedUsers.unblockButton')}</Text>
+                  <Text style={styles.unblockText}>解除</Text>
                 </Pressable>
               </View>
             );

@@ -20,6 +20,7 @@ import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
@@ -27,6 +28,7 @@ import { PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
 export default function UserProfileScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { id: targetId } = useLocalSearchParams<{ id: string }>();
@@ -45,19 +47,19 @@ export default function UserProfileScreen() {
         return;
       }
       Alert.alert(
-        'ブロックしますか？',
-        'このユーザーの投稿・コメントが表示されなくなります。',
+        t('user.confirmBlockTitle'),
+        t('user.confirmBlockBody'),
         [
-          { text: 'キャンセル', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'ブロック',
+            text: t('user.block'),
             style: 'destructive',
             onPress: async () => {
               try {
                 await block(targetId);
               } catch (e) {
                 Alert.alert(
-                  'エラー',
+                  t('common.error'),
                   e instanceof Error ? e.message : String(e),
                 );
               }
@@ -66,17 +68,17 @@ export default function UserProfileScreen() {
         ],
       );
     } catch (e) {
-      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
     }
   };
 
   const handleMenuOpen = () => {
     if (!targetId || isMyself) return;
-    const blockLabel = blocked ? 'ブロックを解除' : 'ブロック';
+    const blockLabel = blocked ? t('user.unblock') : t('user.block');
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['キャンセル', blockLabel, '通報'],
+          options: [t('common.cancel'), blockLabel, t('user.report')],
           destructiveButtonIndex: blocked ? 2 : [1, 2],
           cancelButtonIndex: 0,
         },
@@ -87,18 +89,18 @@ export default function UserProfileScreen() {
       );
       return;
     }
-    Alert.alert('オプション', undefined, [
+    Alert.alert(t('user.options'), undefined, [
       {
         text: blockLabel,
         style: blocked ? 'default' : 'destructive',
         onPress: performBlockToggle,
       },
       {
-        text: '通報',
+        text: t('user.report'),
         style: 'destructive',
         onPress: () => setReportVisible(true),
       },
-      { text: 'キャンセル', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -113,7 +115,7 @@ export default function UserProfileScreen() {
 
   const load = useCallback(async () => {
     if (!targetId) {
-      setError('ユーザー ID が指定されていません');
+      setError(t('user.idNotSpecified'));
       setLoading(false);
       return;
     }
@@ -193,7 +195,7 @@ export default function UserProfileScreen() {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('エラー', msg);
+      Alert.alert(t('common.error'), msg);
     } finally {
       setActionLoading(false);
     }
@@ -226,14 +228,14 @@ export default function UserProfileScreen() {
         </View>
         <View style={styles.center}>
           <Text style={styles.errorText}>
-            {error ?? 'ユーザーが見つかりません'}
+            {error ?? t('user.notFound')}
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const fallbackName = profile.email?.split('@')[0] ?? 'ユーザー';
+  const fallbackName = profile.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName =
     profile.display_name?.trim() ||
     profile.username?.trim() ||
@@ -336,7 +338,7 @@ export default function UserProfileScreen() {
                       isFollowing && styles.followButtonTextActive,
                     ]}
                   >
-                    {isFollowing ? 'フォロー中' : '+ フォロー'}
+                    {isFollowing ? t('user.followingBtn') : t('user.followBtn')}
                   </Text>
                 )}
               </Pressable>
@@ -347,7 +349,7 @@ export default function UserProfileScreen() {
                   pressed && styles.messageButtonPressed,
                 ]}
               >
-                <Text style={styles.messageButtonText}>メッセージ</Text>
+                <Text style={styles.messageButtonText}>{t('user.message')}</Text>
               </Pressable>
             </View>
           )}
@@ -356,7 +358,7 @@ export default function UserProfileScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{trades.length}</Text>
-            <Text style={styles.statLabel}>共有取引</Text>
+            <Text style={styles.statLabel}>{t('profile.sharedTrades')}</Text>
           </View>
           <View style={styles.statDivider} />
           <Pressable
@@ -370,7 +372,7 @@ export default function UserProfileScreen() {
             }
           >
             <Text style={styles.statValue}>{followerCount}</Text>
-            <Text style={styles.statLabel}>フォロワー</Text>
+            <Text style={styles.statLabel}>{t('profile.followers')}</Text>
           </Pressable>
           <View style={styles.statDivider} />
           <Pressable
@@ -384,11 +386,11 @@ export default function UserProfileScreen() {
             }
           >
             <Text style={styles.statValue}>{followingCount}</Text>
-            <Text style={styles.statLabel}>フォロー中</Text>
+            <Text style={styles.statLabel}>{t('profile.following')}</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.sectionLabel}>共有された取引</Text>
+        <Text style={styles.sectionLabel}>{t('user.sharedTradesTitle')}</Text>
 
         {trades.length === 0 ? (
           <View style={styles.emptyBox}>
@@ -406,10 +408,11 @@ export default function UserProfileScreen() {
 
 function TradeCard({ trade }: { trade: Trade }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const directionLabel = trade.direction === 'long' ? 'ロング' : 'ショート';
+  const directionLabel = trade.direction === 'long' ? t('common.long') : t('common.short');
   const resultLabel =
-    trade.result === 'win' ? '利確' : trade.result === 'loss' ? '損切り' : null;
+    trade.result === 'win' ? t('common.win') : trade.result === 'loss' ? t('common.loss') : null;
   const date = new Date(trade.traded_at);
   const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 

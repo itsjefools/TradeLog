@@ -493,7 +493,7 @@ function makeStyles(c: ThemeColors) {
     errorBox: {
       backgroundColor: '#7F1D1D',
       padding: 12,
-      borderRadius: 4,
+      borderRadius: 8,
     },
     errorText: {
       color: '#FECACA',
@@ -501,7 +501,7 @@ function makeStyles(c: ThemeColors) {
     },
     emptyBox: {
       backgroundColor: c.surface,
-      borderRadius: 6,
+      borderRadius: 10,
       padding: 32,
       alignItems: 'center',
       marginTop: 24,

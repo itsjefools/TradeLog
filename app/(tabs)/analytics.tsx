@@ -1187,7 +1187,7 @@ function makeStyles(c: ThemeColors) {
     monthArrow: {
       width: 32,
       height: 32,
-      borderRadius: 6,
+      borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: c.surfaceAlt,
@@ -1197,7 +1197,7 @@ function makeStyles(c: ThemeColors) {
     monthLabel: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
     goalCard: {
       backgroundColor: c.surface,
-      borderRadius: 6,
+      borderRadius: 10,
       padding: 14,
       marginBottom: 16,
     },
@@ -1212,12 +1212,12 @@ function makeStyles(c: ThemeColors) {
     goalBarBg: {
       height: 8,
       backgroundColor: c.surfaceAlt,
-      borderRadius: 4,
+      borderRadius: 8,
       overflow: 'hidden',
     },
     goalBar: {
       height: '100%',
-      borderRadius: 4,
+      borderRadius: 8,
     },
     goalRow: {
       flexDirection: 'row',
@@ -1234,7 +1234,7 @@ function makeStyles(c: ThemeColors) {
       width: '32%',
       flexGrow: 1,
       backgroundColor: c.surface,
-      borderRadius: 6,
+      borderRadius: 10,
       padding: 12,
     },
     kpiLabel: { fontSize: 11, color: c.textSecondary, marginBottom: 4 },
@@ -1286,7 +1286,7 @@ function makeStyles(c: ThemeColors) {
       paddingHorizontal: 0,
       alignItems: 'center',
     },
-    chart: { borderRadius: 4 },
+    chart: { borderRadius: 8 },
     heatmapWrap: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -1296,7 +1296,7 @@ function makeStyles(c: ThemeColors) {
     heatmapCell: {
       width: '12%',
       aspectRatio: 1,
-      borderRadius: 4,
+      borderRadius: 8,
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 2,
@@ -1319,7 +1319,7 @@ function makeStyles(c: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: c.surfaceAlt,
-      borderRadius: 4,
+      borderRadius: 8,
       paddingHorizontal: 12,
       paddingVertical: 8,
     },
@@ -1357,7 +1357,7 @@ function makeStyles(c: ThemeColors) {
       flex: 1,
       aspectRatio: 1,
       backgroundColor: c.surfaceAlt,
-      borderRadius: 6,
+      borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 2,
@@ -1382,7 +1382,7 @@ function makeStyles(c: ThemeColors) {
     },
     dayDetailCard: {
       backgroundColor: c.surface,
-      borderRadius: 6,
+      borderRadius: 10,
       padding: 14,
       marginTop: 12,
     },
@@ -1406,7 +1406,7 @@ function makeStyles(c: ThemeColors) {
     dayDetailSummaryItem: {
       flex: 1,
       backgroundColor: c.surfaceAlt,
-      borderRadius: 4,
+      borderRadius: 8,
       padding: 10,
     },
     dayDetailSummaryLabel: {
@@ -1426,7 +1426,7 @@ function makeStyles(c: ThemeColors) {
     },
     dayTradeCard: {
       backgroundColor: c.surfaceAlt,
-      borderRadius: 4,
+      borderRadius: 8,
       padding: 12,
       gap: 6,
     },
@@ -1472,13 +1472,13 @@ function makeStyles(c: ThemeColors) {
     errorBox: {
       backgroundColor: '#7F1D1D',
       padding: 12,
-      borderRadius: 4,
+      borderRadius: 8,
       marginBottom: 12,
     },
     errorText: { color: '#FECACA', fontSize: 13 },
     emptyBox: {
       backgroundColor: c.surface,
-      borderRadius: 6,
+      borderRadius: 10,
       padding: 24,
       alignItems: 'center',
       borderWidth: 1,
@@ -1494,12 +1494,12 @@ function makeStyles(c: ThemeColors) {
     lockedWrap: {
       position: 'relative',
       marginTop: 12,
-      borderRadius: 6,
+      borderRadius: 10,
       overflow: 'hidden',
     },
     lockedBlur: {
       ...StyleSheet.absoluteFillObject,
-      borderRadius: 6,
+      borderRadius: 10,
       overflow: 'hidden',
       alignItems: 'center',
       justifyContent: 'flex-start',
@@ -1516,7 +1516,7 @@ function makeStyles(c: ThemeColors) {
     lockedIcon: {
       width: 56,
       height: 56,
-      borderRadius: 6,
+      borderRadius: 10,
       backgroundColor: c.accent,
       alignItems: 'center',
       justifyContent: 'center',
@@ -1565,7 +1565,7 @@ function makeStyles(c: ThemeColors) {
     },
     tradeRow: {
       backgroundColor: c.surface,
-      borderRadius: 6,
+      borderRadius: 10,
       padding: 14,
       marginBottom: 8,
     },
@@ -1577,7 +1577,7 @@ function makeStyles(c: ThemeColors) {
     },
     tradePair: { fontSize: 15, fontWeight: '700', color: c.textPrimary },
     tradeDirection: { fontSize: 13, color: c.textSecondary },
-    resultBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+    resultBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
     resultBadgeWin: { backgroundColor: c.win },
     resultBadgeLoss: { backgroundColor: c.loss },
     resultBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
@@ -1589,7 +1589,7 @@ function makeStyles(c: ThemeColors) {
     deleteButton: {
       width: 28,
       height: 28,
-      borderRadius: 6,
+      borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
       marginLeft: 4,

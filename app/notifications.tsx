@@ -289,7 +289,7 @@ function makeStyles(c: ThemeColors) {
     errorBox: {
       backgroundColor: '#7F1D1D',
       padding: 12,
-      borderRadius: 4,
+      borderRadius: 8,
     },
     errorText: {
       color: '#FECACA',
@@ -297,7 +297,7 @@ function makeStyles(c: ThemeColors) {
     },
     emptyBox: {
       backgroundColor: c.surface,
-      borderRadius: 6,
+      borderRadius: 10,
       padding: 32,
       alignItems: 'center',
       marginTop: 24,
@@ -330,7 +330,7 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       gap: 12,
       backgroundColor: c.surface,
-      borderRadius: 6,
+      borderRadius: 10,
       padding: 12,
     },
     rowUnread: {
@@ -361,7 +361,7 @@ function makeStyles(c: ThemeColors) {
     unreadDot: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: 8,
       backgroundColor: c.accent,
     },
   });

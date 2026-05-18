@@ -21,6 +21,7 @@ import { Avatar } from '@/components/avatar';
 import { FeedCard, FeedCardItem } from '@/components/feed-card';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
@@ -38,6 +39,7 @@ type RawPost = Post & {
 
 export default function ProfileScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const { session } = useAuth();
   const { profile, loading, refresh } = useProfile();
@@ -195,7 +197,7 @@ export default function ProfileScreen() {
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        Alert.alert('読み込み失敗', msg);
+        Alert.alert(t('profile.loadFail'), msg);
       } finally {
         setTabLoading(false);
       }
@@ -253,7 +255,7 @@ export default function ProfileScreen() {
             : p,
         ),
       );
-      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -283,7 +285,7 @@ export default function ProfileScreen() {
           p.id === item.id ? { ...p, is_bookmarked: was } : p,
         ),
       );
-      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -293,11 +295,11 @@ export default function ProfileScreen() {
     if (!was) {
       const ok = await new Promise<boolean>((resolve) => {
         Alert.alert(
-          'リポストしますか？',
-          'フォロワーのフィードに表示されます。',
+          t('feed.confirmRepostTitle'),
+          t('feed.confirmRepostBody'),
           [
-            { text: 'キャンセル', style: 'cancel', onPress: () => resolve(false) },
-            { text: 'リポスト', onPress: () => resolve(true) },
+            { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+            { text: t('feed.repost'), onPress: () => resolve(true) },
           ],
         );
       });
@@ -326,7 +328,7 @@ export default function ProfileScreen() {
           p.id === item.id ? { ...p, is_reposted: was } : p,
         ),
       );
-      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -335,7 +337,7 @@ export default function ProfileScreen() {
     profile?.display_name?.trim() ||
     profile?.username?.trim() ||
     email.split('@')[0] ||
-    'ユーザー';
+    t('profile.defaultName');
   const username = profile?.username?.trim() || email.split('@')[0] || 'user';
 
   const country = findCountry(profile?.nationality ?? null);
@@ -343,22 +345,22 @@ export default function ProfileScreen() {
   const styleText = tradeStyleLabel(profile?.trade_style);
 
   const tabs: { key: TabKey; icon: React.ComponentProps<typeof Ionicons>['name']; label: string }[] = [
-    { key: 'posts', icon: 'grid-outline', label: '投稿' },
-    { key: 'likes', icon: 'heart-outline', label: 'いいね' },
-    { key: 'reposts', icon: 'repeat', label: 'リポスト' },
+    { key: 'posts', icon: 'grid-outline', label: t('profile.tabPosts') },
+    { key: 'likes', icon: 'heart-outline', label: t('profile.tabLikes') },
+    { key: 'reposts', icon: 'repeat', label: t('profile.tabReposts') },
   ];
 
   const emptyMessage =
     tab === 'posts'
-      ? 'まだ投稿がありません'
+      ? t('profile.emptyPosts')
       : tab === 'likes'
-        ? 'いいねした投稿はまだありません'
-        : 'リポストした投稿はまだありません';
+        ? t('profile.emptyLikes')
+        : t('profile.emptyReposts');
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>プロフィール</Text>
+        <Text style={styles.title}>{t('profile.title')}</Text>
         <Link href="/settings" asChild>
           <Pressable
             style={styles.settingsButton}
@@ -465,7 +467,7 @@ export default function ProfileScreen() {
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{tradeCount}</Text>
-              <Text style={styles.statLabel}>共有取引</Text>
+              <Text style={styles.statLabel}>{t('profile.sharedTrades')}</Text>
             </View>
             <View style={styles.statDivider} />
             <Pressable
@@ -479,7 +481,7 @@ export default function ProfileScreen() {
               }
             >
               <Text style={styles.statValue}>{followerCount}</Text>
-              <Text style={styles.statLabel}>フォロワー</Text>
+              <Text style={styles.statLabel}>{t('profile.followers')}</Text>
             </Pressable>
             <View style={styles.statDivider} />
             <Pressable
@@ -493,13 +495,13 @@ export default function ProfileScreen() {
               }
             >
               <Text style={styles.statValue}>{followingCount}</Text>
-              <Text style={styles.statLabel}>フォロー中</Text>
+              <Text style={styles.statLabel}>{t('profile.following')}</Text>
             </Pressable>
           </View>
 
           {!loading && !profile && (
             <Pressable onPress={refresh} style={styles.retryButton}>
-              <Text style={styles.retryText}>プロフィールを再読み込み</Text>
+              <Text style={styles.retryText}>{t('profile.retry')}</Text>
             </Pressable>
           )}
         </View>

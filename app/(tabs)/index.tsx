@@ -18,6 +18,7 @@ import { FeedSkeletonList } from '@/components/skeleton';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { Post, PROFILE_COLUMNS, Profile, Trade } from '@/lib/types';
@@ -26,6 +27,7 @@ type FeedItem = FeedCardItem;
 
 export default function FeedScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const { session } = useAuth();
   const { isBlocked } = useBlocks();
@@ -145,7 +147,7 @@ export default function FeedScreen() {
 
   const toggleBookmark = async (item: FeedItem) => {
     if (!myId) {
-      Alert.alert('ログインが必要です');
+      Alert.alert(t('feed.loginRequired'));
       return;
     }
     const was = item.is_bookmarked;
@@ -175,7 +177,7 @@ export default function FeedScreen() {
         ),
       );
       Alert.alert(
-        'エラー',
+        t('common.error'),
         e instanceof Error ? e.message : String(e),
       );
     }
@@ -183,7 +185,7 @@ export default function FeedScreen() {
 
   const toggleRepost = async (item: FeedItem) => {
     if (!myId) {
-      Alert.alert('ログインが必要です');
+      Alert.alert(t('feed.loginRequired'));
       return;
     }
     const was = item.is_reposted;
@@ -191,11 +193,11 @@ export default function FeedScreen() {
       // confirm before reposting
       const ok = await new Promise<boolean>((resolve) => {
         Alert.alert(
-          'リポストしますか？',
-          'フォロワーのフィードに表示されます。',
+          t('feed.confirmRepostTitle'),
+          t('feed.confirmRepostBody'),
           [
-            { text: 'キャンセル', style: 'cancel', onPress: () => resolve(false) },
-            { text: 'リポスト', onPress: () => resolve(true) },
+            { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+            { text: t('feed.repost'), onPress: () => resolve(true) },
           ],
         );
       });
@@ -227,7 +229,7 @@ export default function FeedScreen() {
         ),
       );
       Alert.alert(
-        'エラー',
+        t('common.error'),
         e instanceof Error ? e.message : String(e),
       );
     }
@@ -235,7 +237,7 @@ export default function FeedScreen() {
 
   const toggleLike = async (item: FeedItem) => {
     if (!myId) {
-      Alert.alert('ログインが必要です');
+      Alert.alert(t('feed.loginRequired'));
       return;
     }
     const wasLiked = item.is_liked;
@@ -279,7 +281,7 @@ export default function FeedScreen() {
         ),
       );
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('いいね失敗', msg);
+      Alert.alert(t('feed.likeFailed'), msg);
     }
   };
 
@@ -288,7 +290,7 @@ export default function FeedScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
-            <Text style={styles.title}>フィード</Text>
+            <Text style={styles.title}>{t('feed.title')}</Text>
           </View>
           <View style={styles.headerActions}>
             <Link href="/search" asChild>
@@ -375,17 +377,14 @@ export default function FeedScreen() {
           ListHeaderComponent={
             error ? (
               <View style={styles.errorBox}>
-                <Text style={styles.errorText}>エラー: {error}</Text>
+                <Text style={styles.errorText}>{t('feed.errorPrefix')}{error}</Text>
               </View>
             ) : null
           }
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyTitle}>まだ投稿がありません</Text>
-              <Text style={styles.emptyText}>
-                記録タブで「フィードに共有」をオンにして{'\n'}
-                取引を保存すると、ここに表示されます。
-              </Text>
+              <Text style={styles.emptyTitle}>{t('feed.emptyTitle')}</Text>
+              <Text style={styles.emptyText}>{t('feed.emptyText')}</Text>
             </View>
           }
           windowSize={7}

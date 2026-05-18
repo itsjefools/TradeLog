@@ -4,11 +4,13 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useUnreadCounts } from '@/hooks/use-unread-counts';
 
 export default function TabLayout() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const inactive = c.textSecondary;
   const { notifications } = useUnreadCounts();
   const badge = notifications > 0 ? notifications : undefined;
@@ -35,7 +37,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'フィード',
+          title: t('tabs.feed'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
           tabBarBadge: badge,
         }}
@@ -43,7 +45,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="record"
         options={{
-          title: '記録',
+          title: t('tabs.record'),
           tabBarIcon: ({ color }) => (
             <Ionicons size={26} name="create-outline" color={color} />
           ),
@@ -52,14 +54,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="analytics"
         options={{
-          title: '分析',
+          title: t('tabs.analytics'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'プロフィール',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
         }}
       />

@@ -79,21 +79,21 @@ export default function AnalyticsScreen() {
   };
 
   const handleDelete = (trade: Trade) => {
-    const directionLabel = trade.direction === 'long' ? 'ロング' : 'ショート';
+    const directionLabel = trade.direction === 'long' ? t('common.long') : t('common.short');
     Alert.alert(
-      '取引を削除しますか？',
-      `${trade.currency_pair} - ${directionLabel}\nこの操作は元に戻せません。`,
+      t('analytics.confirmDeleteTitle'),
+      `${trade.currency_pair} - ${directionLabel}\n${t('analytics.confirmDeleteBody')}`,
       [
-        { text: 'キャンセル', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '削除',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteTrade(trade.id);
             } catch (e) {
               const msg = e instanceof Error ? e.message : String(e);
-              Alert.alert('削除失敗', msg);
+              Alert.alert(t('analytics.deleteFail'), msg);
             }
           },
         },
@@ -124,8 +124,14 @@ export default function AnalyticsScreen() {
   const pairData = useMemo(() => buildPairPnl(monthlyTrades), [monthlyTrades]);
 
   const winLossData = useMemo(
-    () => buildWinLossDistribution(monthlyTrades, c),
-    [monthlyTrades, c],
+    () =>
+      buildWinLossDistribution(monthlyTrades, c, {
+        win: t('analytics.winLabel'),
+        loss: t('analytics.lossLabel'),
+        unset: t('analytics.unsetLabel'),
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [monthlyTrades, c, t],
   );
 
   const chartConfig = useMemo(
@@ -146,8 +152,8 @@ export default function AnalyticsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>分析</Text>
-        <Text style={styles.subtitle}>あなたのトレード成績</Text>
+        <Text style={styles.title}>{t('analytics.title')}</Text>
+        <Text style={styles.subtitle}>{t('analytics.subtitle')}</Text>
       </View>
 
       {loading ? (
@@ -168,7 +174,7 @@ export default function AnalyticsScreen() {
         >
           {error && (
             <View style={styles.errorBox}>
-              <Text style={styles.errorText}>エラー: {error}</Text>
+              <Text style={styles.errorText}>{t('analytics.errorPrefix')}{error}</Text>
             </View>
           )}
 
@@ -213,7 +219,7 @@ export default function AnalyticsScreen() {
 
           {/* メインKPI: 月間P&L を大きく表示 */}
           <View style={styles.primaryKpi}>
-            <Text style={styles.primaryKpiLabel}>月間 P&L</Text>
+            <Text style={styles.primaryKpiLabel}>{t('analytics.kpiMonthlyPnl')}</Text>
             <Text style={[styles.primaryKpiValue, stats.pnlStyle]}>
               {stats.pnlDisplay}
             </Text>
@@ -222,25 +228,25 @@ export default function AnalyticsScreen() {
           {/* サブKPI: テーブル形式 */}
           <View style={styles.secondaryKpiList}>
             <View style={styles.kpiRow}>
-              <Text style={styles.kpiRowLabel}>勝率</Text>
+              <Text style={styles.kpiRowLabel}>{t('analytics.winRate')}</Text>
               <Text style={styles.kpiRowValue}>{stats.winRateDisplay}</Text>
             </View>
             <View style={styles.kpiRow}>
-              <Text style={styles.kpiRowLabel}>取引回数</Text>
-              <Text style={styles.kpiRowValue}>{stats.tradeCount}回</Text>
+              <Text style={styles.kpiRowLabel}>{t('analytics.tradeCount')}</Text>
+              <Text style={styles.kpiRowValue}>{stats.tradeCount}{t('analytics.tradeCountUnit')}</Text>
             </View>
             <View style={styles.kpiRow}>
-              <Text style={styles.kpiRowLabel}>平均P&L</Text>
+              <Text style={styles.kpiRowLabel}>{t('analytics.avgPnl')}</Text>
               <Text style={[styles.kpiRowValue, stats.avgPnlStyle]}>
                 {stats.avgPnlDisplay}
               </Text>
             </View>
             <View style={styles.kpiRow}>
-              <Text style={styles.kpiRowLabel}>RR比</Text>
+              <Text style={styles.kpiRowLabel}>{t('analytics.rrRatio')}</Text>
               <Text style={styles.kpiRowValue}>{stats.rrDisplay}</Text>
             </View>
             <View style={styles.kpiRow}>
-              <Text style={styles.kpiRowLabel}>平均pips</Text>
+              <Text style={styles.kpiRowLabel}>{t('analytics.avgPips')}</Text>
               <Text style={[styles.kpiRowValue, stats.avgPipsStyle]}>
                 {stats.avgPipsDisplay}
               </Text>
@@ -250,7 +256,7 @@ export default function AnalyticsScreen() {
           {monthlyTrades.length > 0 ? (
             <>
               <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                カレンダー
+                {t('analytics.calendar')}
               </Text>
               <View style={styles.chartCard}>
                 <CalendarView
@@ -292,7 +298,7 @@ export default function AnalyticsScreen() {
               <View style={styles.lockedWrap}>
                 <View pointerEvents={isPremium ? 'auto' : 'none'}>
                   <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                    日別P&L推移
+                    {t('analytics.dailyPnl')}
                   </Text>
                   <View style={styles.chartCard}>
                     <BarChart
@@ -312,7 +318,7 @@ export default function AnalyticsScreen() {
                   {pairData.labels.length > 0 && (
                     <>
                       <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                        通貨ペア別損益
+                        {t('analytics.pairBreakdown')}
                       </Text>
                       <View style={styles.chartCard}>
                         <BarChart
@@ -333,7 +339,7 @@ export default function AnalyticsScreen() {
                   {winLossData.length > 0 && (
                     <>
                       <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                        勝敗比率
+                        {t('analytics.winLossRatio')}
                       </Text>
                       <View style={styles.chartCard}>
                         <PieChart
@@ -351,14 +357,14 @@ export default function AnalyticsScreen() {
                   )}
 
                   <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                    時間帯別パフォーマンス
+                    {t('analytics.hourlyPerf')}
                   </Text>
                   <View style={styles.chartCard}>
                     <HourlyHeatmap trades={monthlyTrades} />
                   </View>
 
                   <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                    曜日別パフォーマンス
+                    {t('analytics.weekdayPerf')}
                   </Text>
                   <View style={styles.chartCard}>
                     <WeekdayPerf trades={monthlyTrades} />
@@ -412,18 +418,18 @@ export default function AnalyticsScreen() {
           ) : (
             <View style={[styles.emptyBox, styles.sectionLabelMt]}>
               <Text style={styles.emptyText}>
-                この月の取引はまだありません。
+                {t('analytics.noTradesThisMonth')}
               </Text>
             </View>
           )}
 
           <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-            直近の取引
+            {t('analytics.recentTrades')}
           </Text>
 
           {monthlyTrades.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyText}>取引がありません</Text>
+              <Text style={styles.emptyText}>{t('analytics.noTrades')}</Text>
             </View>
           ) : (
             monthlyTrades.slice(0, 20).map((trade) => (
@@ -444,6 +450,7 @@ function GoalProgress({
   actual: number;
 }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const pct = goal > 0 ? Math.max(0, Math.min(100, (actual / goal) * 100)) : 0;
   const achieved = actual >= goal;
@@ -452,7 +459,7 @@ function GoalProgress({
   return (
     <View style={styles.goalCard}>
       <View style={styles.goalHead}>
-        <Text style={styles.goalTitle}>月間目標</Text>
+        <Text style={styles.goalTitle}>{t('analytics.monthlyGoal')}</Text>
         <Text style={styles.goalPct}>{pct.toFixed(0)}%</Text>
       </View>
       <View style={styles.goalBarBg}>
@@ -468,10 +475,10 @@ function GoalProgress({
       </View>
       <View style={styles.goalRow}>
         <Text style={styles.goalSub}>
-          現在: {Math.round(actual).toLocaleString('ja-JP')}円
+          {t('analytics.current')}: {Math.round(actual).toLocaleString('ja-JP')}円
         </Text>
         <Text style={styles.goalSub}>
-          目標: {Math.round(goal).toLocaleString('ja-JP')}円
+          {t('analytics.goal')}: {Math.round(goal).toLocaleString('ja-JP')}円
         </Text>
       </View>
     </View>
@@ -534,8 +541,17 @@ function HourlyHeatmap({ trades }: { trades: Trade[] }) {
 
 function WeekdayPerf({ trades }: { trades: Trade[] }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const labels = ['日', '月', '火', '水', '木', '金', '土'];
+  const labels = [
+    t('record.daySun'),
+    t('record.dayMon'),
+    t('record.dayTue'),
+    t('record.dayWed'),
+    t('record.dayThu'),
+    t('record.dayFri'),
+    t('record.daySat'),
+  ];
 
   const weekly = useMemo(() => {
     const arr = labels.map(() => ({ pnl: 0, count: 0, win: 0, loss: 0 }));
@@ -594,6 +610,7 @@ function CalendarView({
   onSelectDay: (day: number | null) => void;
 }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
 
   // 日別 PnL 集計
@@ -622,7 +639,15 @@ function CalendarView({
   const rows: (number | null)[][] = [];
   for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
 
-  const weekLabels = ['日', '月', '火', '水', '木', '金', '土'];
+  const weekLabels = [
+    t('record.daySun'),
+    t('record.dayMon'),
+    t('record.dayTue'),
+    t('record.dayWed'),
+    t('record.dayThu'),
+    t('record.dayFri'),
+    t('record.daySat'),
+  ];
 
   return (
     <View style={styles.calendarWrap}>
@@ -710,6 +735,7 @@ function DayDetail({
   onClose: () => void;
 }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
 
   const stats = useMemo(() => {
@@ -741,11 +767,11 @@ function DayDetail({
         <>
           <View style={styles.dayDetailSummary}>
             <View style={styles.dayDetailSummaryItem}>
-              <Text style={styles.dayDetailSummaryLabel}>取引数</Text>
-              <Text style={styles.dayDetailSummaryValue}>{stats.count}回</Text>
+              <Text style={styles.dayDetailSummaryLabel}>{t('analytics.tradeCountShort')}</Text>
+              <Text style={styles.dayDetailSummaryValue}>{stats.count}{t('analytics.tradeCountUnit')}</Text>
             </View>
             <View style={styles.dayDetailSummaryItem}>
-              <Text style={styles.dayDetailSummaryLabel}>損益合計</Text>
+              <Text style={styles.dayDetailSummaryLabel}>{t('analytics.pnlTotal')}</Text>
               <Text
                 style={[
                   styles.dayDetailSummaryValue,
@@ -757,7 +783,7 @@ function DayDetail({
             </View>
             {stats.winRate !== null && (
               <View style={styles.dayDetailSummaryItem}>
-                <Text style={styles.dayDetailSummaryLabel}>勝率</Text>
+                <Text style={styles.dayDetailSummaryLabel}>{t('analytics.winRate')}</Text>
                 <Text style={styles.dayDetailSummaryValue}>
                   {stats.winRate}%
                 </Text>
@@ -780,7 +806,7 @@ function DayDetail({
                 <View style={styles.dayTradeHead}>
                   <Text style={styles.tradePair}>{trade.currency_pair}</Text>
                   <Text style={styles.tradeDirection}>
-                    {trade.direction === 'long' ? 'ロング' : 'ショート'}
+                    {trade.direction === 'long' ? t('common.long') : t('common.short')}
                   </Text>
                   {trade.result && (
                     <View
@@ -792,7 +818,7 @@ function DayDetail({
                       ]}
                     >
                       <Text style={styles.resultBadgeText}>
-                        {trade.result === 'win' ? '利確' : '損切り'}
+                        {trade.result === 'win' ? t('common.win') : t('common.loss')}
                       </Text>
                     </View>
                   )}
@@ -820,7 +846,7 @@ function DayDetail({
         </>
       ) : (
         <View style={styles.dayEmptyWrap}>
-          <Text style={styles.dayEmptyText}>この日の取引はありません</Text>
+          <Text style={styles.dayEmptyText}>{t('analytics.noTradesToday')}</Text>
           <Pressable
             onPress={onRecordPress}
             style={({ pressed }) => [
@@ -829,7 +855,7 @@ function DayDetail({
             ]}
           >
             <Ionicons name="add" size={16} color="#fff" />
-            <Text style={styles.dayEmptyCtaText}>取引を記録する</Text>
+            <Text style={styles.dayEmptyCtaText}>{t('analytics.recordTrade')}</Text>
           </Pressable>
         </View>
       )}
@@ -877,10 +903,11 @@ function TradeRow({
   onDelete: (trade: Trade) => void;
 }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const directionLabel = trade.direction === 'long' ? 'ロング' : 'ショート';
+  const directionLabel = trade.direction === 'long' ? t('common.long') : t('common.short');
   const resultLabel =
-    trade.result === 'win' ? '利確' : trade.result === 'loss' ? '損切り' : null;
+    trade.result === 'win' ? t('common.win') : trade.result === 'loss' ? t('common.loss') : null;
   const date = new Date(trade.traded_at);
   const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
@@ -1036,7 +1063,11 @@ function buildPairPnl(monthly: Trade[]) {
   };
 }
 
-function buildWinLossDistribution(monthly: Trade[], c: ThemeColors) {
+function buildWinLossDistribution(
+  monthly: Trade[],
+  c: ThemeColors,
+  labels: { win: string; loss: string; unset: string },
+) {
   let wins = 0;
   let losses = 0;
   let neutral = 0;
@@ -1056,7 +1087,7 @@ function buildWinLossDistribution(monthly: Trade[], c: ThemeColors) {
   }[] = [];
   if (wins > 0) {
     result.push({
-      name: '勝ち',
+      name: labels.win,
       population: wins,
       color: c.win,
       legendFontColor: c.textPrimary,
@@ -1065,7 +1096,7 @@ function buildWinLossDistribution(monthly: Trade[], c: ThemeColors) {
   }
   if (losses > 0) {
     result.push({
-      name: '負け',
+      name: labels.loss,
       population: losses,
       color: c.loss,
       legendFontColor: c.textPrimary,
@@ -1074,7 +1105,7 @@ function buildWinLossDistribution(monthly: Trade[], c: ThemeColors) {
   }
   if (neutral > 0) {
     result.push({
-      name: '未設定',
+      name: labels.unset,
       population: neutral,
       color: c.textSecondary,
       legendFontColor: c.textPrimary,

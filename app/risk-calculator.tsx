@@ -14,10 +14,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 
 export default function RiskCalculatorScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
 
@@ -53,7 +55,7 @@ export default function RiskCalculatorScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>リスク計算機</Text>
+        <Text style={styles.headerTitle}>{t('riskCalc.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -66,54 +68,52 @@ export default function RiskCalculatorScreen() {
           keyboardShouldPersistTaps="handled"
           bounces={false}
         >
-          <Text style={styles.intro}>
-            残高・リスク%・損切り幅から、適正なロットサイズを計算します。
-          </Text>
+          <Text style={styles.intro}>{t('riskCalc.intro')}</Text>
 
           <View style={styles.section}>
-            <Text style={styles.label}>口座残高（円）</Text>
+            <Text style={styles.label}>{t('riskCalc.balanceLabel')}</Text>
             <TextInput
               style={styles.input}
               value={balance}
               onChangeText={setBalance}
               keyboardType="numbers-and-punctuation"
-              placeholder="例: 1000000"
+              placeholder={t('riskCalc.balanceExample')}
               placeholderTextColor={c.textSecondary}
             />
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>リスク (%)</Text>
+            <Text style={styles.label}>{t('riskCalc.riskLabel')}</Text>
             <TextInput
               style={styles.input}
               value={riskPct}
               onChangeText={setRiskPct}
               keyboardType="decimal-pad"
-              placeholder="例: 2"
+              placeholder={t('riskCalc.riskExample')}
               placeholderTextColor={c.textSecondary}
             />
-            <Text style={styles.helper}>1取引あたり許容できる損失の割合（推奨1〜2%）</Text>
+            <Text style={styles.helper}>{t('riskCalc.riskHelper')}</Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>損切り幅（pips）</Text>
+            <Text style={styles.label}>{t('riskCalc.stopLabel')}</Text>
             <TextInput
               style={styles.input}
               value={stopPips}
               onChangeText={setStopPips}
               keyboardType="decimal-pad"
-              placeholder="例: 30"
+              placeholder={t('riskCalc.stopExample')}
               placeholderTextColor={c.textSecondary}
             />
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>1ロットあたり1pipの円換算</Text>
+            <Text style={styles.label}>{t('riskCalc.pipValueLabel')}</Text>
             <View style={styles.presetRow}>
               {[
-                { label: 'JPY建て (例: USD/JPY)', value: '1000' },
-                { label: 'USD建て (約)', value: '1500' },
-                { label: 'カスタム', value: '' },
+                { label: t('riskCalc.pipValueJpy'), value: '1000' },
+                { label: t('riskCalc.pipValueUsd'), value: '1500' },
+                { label: t('riskCalc.pipValueCustom'), value: '' },
               ].map((p) => (
                 <Pressable
                   key={p.label}
@@ -139,32 +139,29 @@ export default function RiskCalculatorScreen() {
               value={pipValue}
               onChangeText={setPipValue}
               keyboardType="decimal-pad"
-              placeholder="例: 1000"
+              placeholder={t('riskCalc.pipValueExample')}
               placeholderTextColor={c.textSecondary}
             />
-            <Text style={styles.helper}>
-              1ロット (10万通貨) で1pipの値動き時の円損益。{'\n'}
-              JPY建てペア（USD/JPY等）は約1000円。USD建て（EUR/USD等）はUSD/JPY×10で換算。
-            </Text>
+            <Text style={styles.helper}>{t('riskCalc.pipValueHelper')}</Text>
           </View>
 
           {result && (
             <View style={styles.resultCard}>
               <View style={styles.resultRow}>
-                <Text style={styles.resultLabel}>リスク許容額</Text>
+                <Text style={styles.resultLabel}>{t('riskCalc.riskAllowed')}</Text>
                 <Text style={styles.resultValue}>
                   {Math.round(result.riskAmount).toLocaleString('ja-JP')} 円
                 </Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.resultRow}>
-                <Text style={styles.resultLabel}>適正ロット数</Text>
+                <Text style={styles.resultLabel}>{t('riskCalc.suggestedLot')}</Text>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={[styles.resultValue, styles.resultValueLarge]}>
-                    {result.fineLots.toFixed(2)} ロット
+                    {result.fineLots.toFixed(2)} {t('riskCalc.lotUnit')}
                   </Text>
                   <Text style={styles.resultSub}>
-                    （約 {Math.round(result.tenK)} 万通貨）
+                    ({t('riskCalc.aboutPrefix')} {Math.round(result.tenK)} {t('riskCalc.tenKUnit')})
                   </Text>
                 </View>
               </View>
@@ -179,7 +176,7 @@ export default function RiskCalculatorScreen() {
             />
             <Text style={styles.noteText}>
               {' '}
-              小数点ロットに対応していない業者では、計算結果以下の値で発注してください（リスクが想定を超えないため）。
+              {t('riskCalc.smallLotNote')}
             </Text>
           </View>
         </ScrollView>

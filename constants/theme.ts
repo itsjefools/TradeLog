@@ -57,11 +57,11 @@ export const darkColors: ThemeColors = {
 
 export const lightColors: ThemeColors = {
   background: '#FFFFFF',
-  surface: '#F9FAFB',
-  surfaceAlt: '#F3F4F6',
-  border: '#E5E7EB',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
+  surface: '#FAFAFA',
+  surfaceAlt: '#F2F2F4',
+  border: 'rgba(0,0,0,0.08)',
+  textPrimary: '#0A0A0A',
+  textSecondary: '#71767B',
   accent: ACCENT,
   win: WIN,
   loss: LOSS,

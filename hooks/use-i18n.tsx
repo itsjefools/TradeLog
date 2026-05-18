@@ -50,9 +50,10 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<LocaleCode>(detectInitial());
-  const { profile } = useProfile();
+  const [hydrated, setHydrated] = useState(false);
+  const { profile, updateProfile } = useProfile();
 
-  // 起動時: AsyncStorage から復元
+  // 起動時: AsyncStorage から復元(最優先のソース)
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
       if (
@@ -63,27 +64,45 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       ) {
         setLocaleState(stored);
       }
+      setHydrated(true);
     });
   }, []);
 
-  // profile.language が設定されてたらそれを優先
+  // profile.language は AsyncStorage に値がない初回のみ反映
+  // 一度ユーザーがアプリ内で変更したら AsyncStorage が source of truth
   useEffect(() => {
+    if (!hydrated) return;
     const lang = profile?.language;
-    if (lang === 'ja' || lang === 'en' || lang === 'pt' || lang === 'es') {
-      setLocaleState(lang);
+    if (lang !== 'ja' && lang !== 'en' && lang !== 'pt' && lang !== 'es') {
+      return;
     }
-  }, [profile?.language]);
+    AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
+      if (!stored) {
+        setLocaleState(lang);
+        AsyncStorage.setItem(STORAGE_KEY, lang).catch(() => {});
+      }
+    });
+  }, [profile?.language, hydrated]);
 
   i18n.locale = locale;
 
-  const setLocale = useCallback(async (l: LocaleCode) => {
-    setLocaleState(l);
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, l);
-    } catch {
-      // ignore
-    }
-  }, []);
+  const setLocale = useCallback(
+    async (l: LocaleCode) => {
+      setLocaleState(l);
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY, l);
+      } catch {
+        // ignore
+      }
+      // Supabase 側のプロフィールにも同期(失敗しても UI は反映済み)
+      if (profile && profile.language !== l) {
+        updateProfile({ language: l }).catch(() => {
+          // ignore - AsyncStorage は更新済みなので次回起動時も維持される
+        });
+      }
+    },
+    [profile, updateProfile],
+  );
 
   const t = useCallback(
     (key: string, options?: Record<string, unknown>) =>

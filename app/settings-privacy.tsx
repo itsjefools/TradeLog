@@ -21,16 +21,17 @@ export default function SettingsPrivacyScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { mode, setMode } = useTheme();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
 
   const themeOptions: { value: ThemeMode; label: string }[] = [
-    { value: 'system', label: 'システム' },
-    { value: 'light', label: 'ライト' },
-    { value: 'dark', label: 'ダーク' },
+    { value: 'system', label: t('settings.themeShort') },
+    { value: 'light', label: t('settings.themeLight') },
+    { value: 'dark', label: t('settings.themeDark') },
   ];
 
   const currentLocaleLabel =
-    SUPPORTED_LOCALES.find((l) => l.code === locale)?.label ?? '日本語';
+    SUPPORTED_LOCALES.find((l) => l.code === locale)?.label ??
+    t('settings.defaultLanguageLabel');
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -38,7 +39,7 @@ export default function SettingsPrivacyScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>設定とプライバシー</Text>
+        <Text style={styles.headerTitle}>{t('settingsPrivacy.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -46,7 +47,7 @@ export default function SettingsPrivacyScreen() {
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
-        <Section label="表示" c={c}>
+        <Section label={t('settings.display')} c={c}>
           <View style={styles.themeRow}>
             <View style={styles.rowLeft}>
               <Ionicons
@@ -54,7 +55,7 @@ export default function SettingsPrivacyScreen() {
                 size={20}
                 color={c.textSecondary}
               />
-              <Text style={styles.rowLabel}>テーマ</Text>
+              <Text style={styles.rowLabel}>{t('settings.theme')}</Text>
             </View>
             <View style={styles.segment}>
               {themeOptions.map((opt) => {
@@ -86,24 +87,24 @@ export default function SettingsPrivacyScreen() {
           <Row
             href="/language-edit"
             icon="language-outline"
-            label="言語"
+            label={t('settings.language')}
             value={currentLocaleLabel}
             c={c}
           />
         </Section>
 
-        <Section label="プライバシーと安全" c={c}>
+        <Section label={t('settings.privacyAndSafety')} c={c}>
           <Row
             href="/blocked-users"
             icon="ban-outline"
-            label="ブロック中のユーザー"
+            label={t('settings.blockedUsers')}
             c={c}
           />
           <Divider c={c} />
           <Row
             href="/account-delete"
             icon="trash-outline"
-            label="アカウントを削除"
+            label={t('settings.deleteAccount')}
             c={c}
             danger
           />

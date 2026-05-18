@@ -27,37 +27,36 @@ export default function SettingsScreen() {
   const { session } = useAuth();
   const { profile } = useProfile();
   const { mode, setMode } = useTheme();
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
 
   const email = session?.user.email ?? '';
-  const fallbackName = email.split('@')[0] || t('settings.defaultName');
+  const fallbackName = email.split('@')[0] || 'ユーザー';
   const displayName =
     profile?.display_name?.trim() || profile?.username?.trim() || fallbackName;
   const username = profile?.username?.trim() || fallbackName;
 
   const themeOptions: { value: ThemeMode; label: string }[] = useMemo(
     () => [
-      { value: 'system', label: t('settings.themeShort') },
-      { value: 'light', label: t('settings.themeLight') },
-      { value: 'dark', label: t('settings.themeDark') },
+      { value: 'system', label: 'システム' },
+      { value: 'light', label: 'ライト' },
+      { value: 'dark', label: 'ダーク' },
     ],
-    [t],
+    [],
   );
 
   const currentLocaleLabel =
-    SUPPORTED_LOCALES.find((l) => l.code === locale)?.label ??
-    t('settings.defaultLanguageLabel');
+    SUPPORTED_LOCALES.find((l) => l.code === locale)?.label ?? '日本語';
 
   const handleLogout = () => {
-    Alert.alert(t('settings.logoutConfirmTitle'), t('settings.logoutConfirmBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
+    Alert.alert('ログアウト', '本当にログアウトしますか？', [
+      { text: 'キャンセル', style: 'cancel' },
       {
-        text: t('settings.logout'),
+        text: 'ログアウト',
         style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.auth.signOut();
           if (error) {
-            Alert.alert(t('common.error'), error.message);
+            Alert.alert('エラー', error.message);
             return;
           }
           router.replace('/login');
@@ -172,7 +171,7 @@ export default function SettingsScreen() {
             color: c.textPrimary,
           }}
         >
-          {t('settings.headerTitle')}
+          設定とアクティビティ
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -222,53 +221,53 @@ export default function SettingsScreen() {
 
         <Divider />
 
-        <SectionTitle title={t('settings.account')} />
+        <SectionTitle title="アカウント" />
         <SettingRow
           icon="person-outline"
-          label={t('settings.editProfile')}
+          label="プロフィールを編集"
           onPress={() => router.push('/profile-edit')}
         />
         <SettingRow
           icon="document-text-outline"
-          label={t('settings.tradeHistory')}
+          label="取引履歴"
           onPress={() => router.push('/trade-history')}
         />
         <SettingRow
           icon="bookmark-outline"
-          label={t('settings.bookmarks')}
+          label="ブックマーク"
           onPress={() => router.push('/bookmarks')}
         />
 
         <Divider />
 
-        <SectionTitle title={t('settings.tools')} />
+        <SectionTitle title="ツール" />
         <SettingRow
           icon="flag-outline"
-          label={t('settings.monthlyGoal')}
+          label="月間目標"
           onPress={() => router.push('/goal-edit')}
         />
         <SettingRow
           icon="calculator-outline"
-          label={t('settings.riskCalculator')}
+          label="リスク計算機"
           onPress={() => router.push('/risk-calculator')}
         />
         <SettingRow
           icon="calendar-outline"
-          label={t('settings.economicCalendar')}
+          label="経済指標カレンダー"
           onPress={() => router.push('/economic-calendar')}
         />
         <SettingRow
           icon="book-outline"
-          label={t('settings.glossary')}
+          label="用語集"
           onPress={() => router.push('/glossary')}
         />
 
         <Divider />
 
-        <SectionTitle title={t('settings.display')} />
+        <SectionTitle title="表示" />
         <SettingRow
           icon="color-palette-outline"
-          label={t('settings.theme')}
+          label="テーマ"
           rightElement={
             <View
               style={{
@@ -311,7 +310,7 @@ export default function SettingsScreen() {
         />
         <SettingRow
           icon="globe-outline"
-          label={t('settings.language')}
+          label="言語"
           onPress={() => router.push('/language-edit')}
           rightElement={
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -336,24 +335,24 @@ export default function SettingsScreen() {
 
         <Divider />
 
-        <SectionTitle title={t('settings.planAndBilling')} />
+        <SectionTitle title="プランと課金" />
         <SettingRow
           icon="star-outline"
-          label={t('settings.premiumPlan')}
+          label="Premium プラン"
           onPress={() => router.push('/premium')}
         />
 
         <Divider />
 
-        <SectionTitle title={t('settings.privacyAndSafety')} />
+        <SectionTitle title="プライバシーと安全" />
         <SettingRow
           icon="ban-outline"
-          label={t('settings.blockedUsers')}
+          label="ブロック中のユーザー"
           onPress={() => router.push('/blocked-users')}
         />
         <SettingRow
           icon="trash-outline"
-          label={t('settings.deleteAccount')}
+          label="アカウントを削除"
           color="#FF3B30"
           onPress={() => router.push('/account-delete')}
           rightElement={null}
@@ -361,15 +360,15 @@ export default function SettingsScreen() {
 
         <Divider />
 
-        <SectionTitle title={t('settings.legal')} />
+        <SectionTitle title="法的事項" />
         <SettingRow
           icon="document-outline"
-          label={t('settings.terms')}
+          label="利用規約"
           onPress={() => router.push('/terms')}
         />
         <SettingRow
           icon="shield-checkmark-outline"
-          label={t('settings.privacy')}
+          label="プライバシーポリシー"
           onPress={() => router.push('/privacy')}
         />
 
@@ -381,7 +380,7 @@ export default function SettingsScreen() {
           activeOpacity={0.6}
           style={{ paddingVertical: 20, alignItems: 'center' }}
         >
-          <Text style={{ fontSize: 16, color: '#FF3B30' }}>{t('settings.logout')}</Text>
+          <Text style={{ fontSize: 16, color: '#FF3B30' }}>ログアウト</Text>
         </TouchableOpacity>
 
         {/* バージョン */}

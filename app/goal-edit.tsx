@@ -160,7 +160,7 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: 10,
+      borderRadius: 6,
       paddingHorizontal: 14,
       paddingVertical: 14,
       fontSize: 18,
@@ -175,7 +175,7 @@ function makeStyles(c: ThemeColors) {
     clearButton: {
       paddingVertical: 12,
       alignItems: 'center',
-      borderRadius: 10,
+      borderRadius: 6,
       borderWidth: 1,
       borderColor: c.danger,
     },

@@ -40,14 +40,11 @@ const ON_ACCENT = '#000000';
 
 export const darkColors: ThemeColors = {
   background: '#000000',
-  // 真っ黒の上に乗せるカード/入力欄。背景との差はごく僅か。
-  surface: '#0E0E10',
-  surfaceAlt: '#16161A',
-  // ヘアラインだが薄すぎず、構造が見えるレベル
-  border: 'rgba(255,255,255,0.09)',
+  surface: '#0A0A0A',
+  surfaceAlt: '#141414',
+  border: 'rgba(255,255,255,0.06)',
   textPrimary: '#FFFFFF',
-  // 二次テキストは少し柔らかく(視認性向上)
-  textSecondary: '#9CA0A6',
+  textSecondary: '#8B8D91',
   accent: ACCENT,
   win: WIN,
   loss: LOSS,
@@ -61,9 +58,9 @@ export const lightColors: ThemeColors = {
   background: '#FFFFFF',
   surface: '#FAFAFA',
   surfaceAlt: '#F2F2F4',
-  border: 'rgba(0,0,0,0.10)',
+  border: 'rgba(0,0,0,0.08)',
   textPrimary: '#0A0A0A',
-  textSecondary: '#6B7178',
+  textSecondary: '#71767B',
   accent: ACCENT,
   win: WIN,
   loss: LOSS,

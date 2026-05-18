@@ -424,7 +424,7 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       gap: 8,
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       paddingHorizontal: 12,
       paddingVertical: 8,
       marginHorizontal: 16,
@@ -464,7 +464,7 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       gap: 12,
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       padding: 12,
     },
     rowPressed: {

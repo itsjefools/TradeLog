@@ -231,7 +231,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
     dot: {
       width: 8,
       height: 8,
-      borderRadius: 8,
+      borderRadius: 4,
       backgroundColor: c.border,
     },
     dotActive: {
@@ -244,7 +244,7 @@ function makeStyles(c: ThemeColors, isDark: boolean) {
     },
     nextButton: {
       backgroundColor: c.accent,
-      borderRadius: 10,
+      borderRadius: 6,
       paddingVertical: 18,
       alignItems: 'center',
       justifyContent: 'center',

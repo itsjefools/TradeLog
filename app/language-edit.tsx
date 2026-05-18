@@ -107,7 +107,7 @@ function makeStyles(c: ThemeColors) {
     },
     card: {
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       overflow: 'hidden',
     },
     row: {

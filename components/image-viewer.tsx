@@ -295,7 +295,7 @@ function makeStyles() {
       elevation: 100,
       width: 36,
       height: 36,
-      borderRadius: 10,
+      borderRadius: 6,
       backgroundColor: 'rgba(0,0,0,0.6)',
       alignItems: 'center',
       justifyContent: 'center',

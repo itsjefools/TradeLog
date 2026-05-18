@@ -516,7 +516,7 @@ function makeStyles(c: ThemeColors) {
     },
     profileCard: {
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       padding: 24,
       alignItems: 'center',
     },
@@ -534,7 +534,7 @@ function makeStyles(c: ThemeColors) {
     verifiedBadge: {
       width: 20,
       height: 20,
-      borderRadius: 8,
+      borderRadius: 4,
       backgroundColor: c.verified,
       alignItems: 'center',
       justifyContent: 'center',
@@ -635,7 +635,7 @@ function makeStyles(c: ThemeColors) {
     statsRow: {
       flexDirection: 'row',
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       paddingVertical: 16,
     },
     statItem: {
@@ -668,7 +668,7 @@ function makeStyles(c: ThemeColors) {
     },
     emptyBox: {
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       padding: 24,
       alignItems: 'center',
     },
@@ -678,7 +678,7 @@ function makeStyles(c: ThemeColors) {
     },
     tradeCard: {
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       padding: 14,
       gap: 6,
     },
@@ -699,7 +699,7 @@ function makeStyles(c: ThemeColors) {
     resultBadge: {
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 10,
+      borderRadius: 6,
     },
     resultBadgeWin: {
       backgroundColor: c.win,

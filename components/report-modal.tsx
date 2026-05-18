@@ -226,7 +226,7 @@ function makeStyles(c: ThemeColors) {
     },
     card: {
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       overflow: 'hidden',
     },
     row: {
@@ -254,7 +254,7 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: 10,
+      borderRadius: 6,
       paddingHorizontal: 14,
       paddingVertical: 12,
       fontSize: 14,

@@ -577,7 +577,7 @@ function makeStyles(c: ThemeColors) {
     settingsButton: {
       width: 38,
       height: 38,
-      borderRadius: 10,
+      borderRadius: 6,
       backgroundColor: c.surface,
       alignItems: 'center',
       justifyContent: 'center',
@@ -601,7 +601,7 @@ function makeStyles(c: ThemeColors) {
     },
     profileCard: {
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       padding: 22,
       alignItems: 'center',
     },
@@ -621,7 +621,7 @@ function makeStyles(c: ThemeColors) {
     verifiedBadge: {
       width: 20,
       height: 20,
-      borderRadius: 8,
+      borderRadius: 4,
       backgroundColor: c.verified,
       alignItems: 'center',
       justifyContent: 'center',
@@ -684,7 +684,7 @@ function makeStyles(c: ThemeColors) {
     statsRow: {
       flexDirection: 'row',
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       paddingVertical: 16,
     },
     statItem: {

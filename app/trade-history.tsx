@@ -261,7 +261,7 @@ function makeStyles(c: ThemeColors) {
     },
     emptyBox: {
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       padding: 32,
       alignItems: 'center',
       marginTop: 24,
@@ -275,7 +275,7 @@ function makeStyles(c: ThemeColors) {
     },
     row: {
       backgroundColor: c.surface,
-      borderRadius: 10,
+      borderRadius: 6,
       padding: 14,
     },
     rowPressed: {
@@ -299,7 +299,7 @@ function makeStyles(c: ThemeColors) {
     resultBadge: {
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 10,
+      borderRadius: 6,
     },
     resultBadgeWin: {
       backgroundColor: c.win,

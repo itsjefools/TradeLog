@@ -13,7 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
-import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
@@ -32,7 +31,6 @@ type Conversation = {
 
 export default function MessagesScreen() {
   const c = useThemeColors();
-  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [convs, setConvs] = useState<Conversation[]>([]);
@@ -63,7 +61,7 @@ export default function MessagesScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('messages.title')}</Text>
+        <Text style={styles.headerTitle}>メッセージ</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -86,7 +84,7 @@ export default function MessagesScreen() {
                 size={48}
                 color={c.textSecondary}
               />
-              <Text style={styles.emptyTitle}>{t('messages.empty')}</Text>
+              <Text style={styles.emptyTitle}>メッセージがありません</Text>
               <Text style={styles.emptyText}>
                 ユーザーのプロフィールから{'\n'}
                 メッセージを送信できます。
@@ -115,9 +113,8 @@ function ConversationRow({
   onPress: () => void;
 }) {
   const c = useThemeColors();
-  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const fallbackName = t('profile.defaultName');
+  const fallbackName = 'ユーザー';
   const displayName =
     conv.partner_display_name?.trim() ||
     conv.partner_username?.trim() ||

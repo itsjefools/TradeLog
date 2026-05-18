@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
@@ -29,6 +30,7 @@ type TagPost = Post & {
 
 export default function SearchScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const params = useLocalSearchParams<{ tag?: string }>();
@@ -106,7 +108,7 @@ export default function SearchScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>検索</Text>
+        <Text style={styles.headerTitle}>{t('search.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -140,8 +142,8 @@ export default function SearchScreen() {
           onChangeText={setQuery}
           placeholder={
             mode === 'users'
-              ? 'ユーザー名・表示名で検索'
-              : 'ハッシュタグで検索（例: USDJPY）'
+              ? t('search.placeholderUser')
+              : t('search.placeholderHashtag')
           }
           placeholderTextColor={c.textSecondary}
           autoCapitalize="none"
@@ -169,15 +171,15 @@ export default function SearchScreen() {
         {!loading && query.trim() === '' && (
           <Text style={styles.hint}>
             {mode === 'users'
-              ? 'ユーザーを検索しましょう'
-              : '#ハッシュタグで投稿を検索しましょう'}
+              ? t('search.emptyUserHint')
+              : t('search.emptyHashtagHint')}
           </Text>
         )}
 
         {!loading && query.trim() !== '' && (
           <>
             {mode === 'users' && userResults.length === 0 && !error && (
-              <Text style={styles.hint}>該当するユーザーが見つかりません</Text>
+              <Text style={styles.hint}>{t('search.noUserFound')}</Text>
             )}
             {mode === 'users' &&
               userResults.map((p) => (
@@ -185,7 +187,7 @@ export default function SearchScreen() {
               ))}
 
             {mode === 'tags' && tagResults.length === 0 && !error && (
-              <Text style={styles.hint}>該当する投稿が見つかりません</Text>
+              <Text style={styles.hint}>{t('search.noPostFound')}</Text>
             )}
             {mode === 'tags' &&
               tagResults.map((p) => (
@@ -206,8 +208,9 @@ function UserRow({
   router: Router;
 }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const fallbackName = profile.email?.split('@')[0] ?? 'ユーザー';
+  const fallbackName = profile.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName =
     profile.display_name?.trim() ||
     profile.username?.trim() ||
@@ -263,10 +266,11 @@ function UserRow({
 
 function TagPostRow({ post, router }: { post: TagPost; router: Router }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const profile = post.profile;
   const trade = post.trade;
-  const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
+  const fallbackName = profile?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName =
     profile?.display_name?.trim() ||
     profile?.username?.trim() ||
@@ -297,7 +301,7 @@ function TagPostRow({ post, router }: { post: TagPost; router: Router }) {
         <View style={styles.tagPostTrade}>
           <Text style={styles.tagPostPair}>{trade.currency_pair}</Text>
           <Text style={styles.tagPostDir}>
-            {trade.direction === 'long' ? 'ロング' : 'ショート'}
+            {trade.direction === 'long' ? t('common.long') : t('common.short')}
           </Text>
         </View>
       )}

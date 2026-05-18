@@ -14,14 +14,27 @@ import { PurchasesPackage } from 'react-native-purchases';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useRevenueCat } from '@/hooks/use-revenue-cat';
 import { useThemeColors } from '@/hooks/use-theme';
-import { getPlan, planLabel, PREMIUM_FEATURES } from '@/lib/premium';
+import { getPlan, planLabel } from '@/lib/premium';
 
 export default function PremiumScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
+  const PREMIUM_FEATURES = useMemo(
+    () => [
+      t('premium.feature1'),
+      t('premium.feature2'),
+      t('premium.feature3'),
+      t('premium.feature4'),
+      t('premium.feature5'),
+      t('premium.feature6'),
+    ],
+    [t],
+  );
   const router = useRouter();
   const { profile } = useProfile();
   const {
@@ -48,14 +61,14 @@ export default function PremiumScreen() {
       const ok = await purchase(pkg);
       if (ok) {
         Alert.alert(
-          'ありがとうございます！',
-          'Premium へのアップグレードが完了しました。',
+          t('premium.thanksTitle'),
+          t('premium.thanksBody'),
           [{ text: 'OK', onPress: () => router.back() }],
         );
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('購入に失敗しました', msg);
+      Alert.alert(t('premium.purchaseFail'), msg);
     }
   };
 
@@ -63,14 +76,14 @@ export default function PremiumScreen() {
     try {
       const restored = await restore();
       Alert.alert(
-        restored ? '復元しました' : '購入履歴がありません',
+        restored ? t('premium.restoredTitle') : t('premium.noPurchasesTitle'),
         restored
-          ? '以前の購入を復元しました。'
-          : 'このアカウントに有効な購入が見つかりませんでした。',
+          ? t('premium.restoredBody')
+          : t('premium.noPurchasesBody'),
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('復元に失敗しました', msg);
+      Alert.alert(t('premium.restoreFail'), msg);
     }
   };
 
@@ -98,7 +111,7 @@ export default function PremiumScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>Premium で得られる体験</Text>
+        <Text style={styles.sectionLabel}>{t('premium.sectionLabel')}</Text>
 
         <View style={styles.featuresCard}>
           {PREMIUM_FEATURES.map((feature, i) => (
@@ -147,8 +160,8 @@ export default function PremiumScreen() {
               styles={styles}
               c={c}
               pkg={monthlyPkg ?? fallbackPkg}
-              label="月額プラン"
-              priceSuffix="/月"
+              label={t('premium.monthlyLabel')}
+              priceSuffix={t('premium.monthlyPriceSuffix')}
               recommended={false}
               busy={purchasing}
               disabled={isPremium}
@@ -158,10 +171,10 @@ export default function PremiumScreen() {
               styles={styles}
               c={c}
               pkg={annualPkg}
-              label="年額プラン"
-              priceSuffix="/年"
+              label={t('premium.yearlyLabel')}
+              priceSuffix={t('premium.yearlyPriceSuffix')}
               recommended={true}
-              recommendedNote="2ヶ月分お得"
+              recommendedNote={t('premium.yearlyNote')}
               busy={purchasing}
               disabled={isPremium}
               onPress={handlePurchase}
@@ -182,14 +195,11 @@ export default function PremiumScreen() {
           {refreshing ? (
             <ActivityIndicator color={c.accent} />
           ) : (
-            <Text style={styles.restoreText}>購入を復元</Text>
+            <Text style={styles.restoreText}>{t('premium.restore')}</Text>
           )}
         </Pressable>
 
-        <Text style={styles.disclaimer}>
-          サブスクリプションは購入時に自動更新されます。{'\n'}
-          解約は App Store / Google Play の設定からいつでも可能です。
-        </Text>
+        <Text style={styles.disclaimer}>{t('premium.disclaimer')}</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -218,6 +228,7 @@ function PlanCard({
   disabled: boolean;
   onPress: (pkg: PurchasesPackage) => void;
 }) {
+  const { t } = useI18n();
   if (!pkg) return null;
   const product = pkg.product;
 
@@ -249,7 +260,7 @@ function PlanCard({
         <ActivityIndicator color={c.accent} />
       ) : (
         <Text style={styles.planCta}>
-          {disabled ? '利用中' : 'このプランを選ぶ'}
+          {disabled ? t('premium.inUse') : t('premium.selectPlan')}
         </Text>
       )}
     </Pressable>

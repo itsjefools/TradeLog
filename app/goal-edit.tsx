@@ -16,11 +16,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 
 export default function GoalEditScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
@@ -34,14 +36,14 @@ export default function GoalEditScreen() {
     try {
       const goal = value.trim() === '' ? null : Number(value);
       if (goal !== null && !Number.isFinite(goal)) {
-        Alert.alert('入力エラー', '数値を入力してください。');
+        Alert.alert(t('goalEdit.inputErrorTitle'), t('goalEdit.inputErrorBody'));
         return;
       }
       await updateProfile({ monthly_pnl_goal: goal });
       router.back();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('保存失敗', msg);
+      Alert.alert(t('goalEdit.saveFail'), msg);
     } finally {
       setSaving(false);
     }
@@ -54,7 +56,7 @@ export default function GoalEditScreen() {
       router.back();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('削除失敗', msg);
+      Alert.alert(t('goalEdit.deleteFail'), msg);
     } finally {
       setSaving(false);
     }
@@ -66,12 +68,12 @@ export default function GoalEditScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>月間目標</Text>
+        <Text style={styles.headerTitle}>{t('goalEdit.title')}</Text>
         <Pressable onPress={handleSave} disabled={saving} hitSlop={8}>
           {saving ? (
             <ActivityIndicator color={c.accent} />
           ) : (
-            <Text style={[styles.headerLink, styles.saveLink]}>保存</Text>
+            <Text style={[styles.headerLink, styles.saveLink]}>{t('goalEdit.save')}</Text>
           )}
         </Pressable>
       </View>
@@ -91,13 +93,13 @@ export default function GoalEditScreen() {
           </Text>
 
           <View style={styles.section}>
-            <Text style={styles.label}>目標金額（円）</Text>
+            <Text style={styles.label}>{t('goalEdit.amountLabel')}</Text>
             <TextInput
               style={styles.input}
               value={value}
               onChangeText={setValue}
               keyboardType="numbers-and-punctuation"
-              placeholder="例: 100000"
+              placeholder={t('goalEdit.amountExample')}
               placeholderTextColor={c.textSecondary}
               editable={!saving}
             />
@@ -115,7 +117,7 @@ export default function GoalEditScreen() {
                 pressed && styles.clearButtonPressed,
               ]}
             >
-              <Text style={styles.clearText}>目標を削除</Text>
+              <Text style={styles.clearText}>{t('goalEdit.clearGoal')}</Text>
             </Pressable>
           )}
         </ScrollView>

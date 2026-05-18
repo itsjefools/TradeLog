@@ -54,6 +54,10 @@ export default {
     confirmationEmailTitle: 'Email de confirmação enviado',
     confirmationEmailBody:
       'Por favor, clique no link de confirmação enviado para seu email.',
+    styleScalping: 'Scalping',
+    styleDayTrading: 'Day Trade',
+    styleSwing: 'Swing Trade',
+    stylePosition: 'Position Trade',
   },
   record: {
     title: 'Nova operação',

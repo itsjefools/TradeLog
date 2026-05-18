@@ -52,6 +52,10 @@ export default {
     errorNetwork: '通信エラーが発生しました。もう一度お試しください',
     confirmationEmailTitle: '確認メールを送信しました',
     confirmationEmailBody: '登録されたメールアドレスに届いた確認リンクをクリックしてください。',
+    styleScalping: 'スキャルピング',
+    styleDayTrading: 'デイトレード',
+    styleSwing: 'スイング',
+    stylePosition: 'ポジショントレード',
   },
   settings: {
     title: '設定',

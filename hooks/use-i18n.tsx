@@ -32,12 +32,14 @@ const i18n = new I18n({ ja, en, pt, es });
 i18n.defaultLocale = 'ja';
 i18n.enableFallback = true;
 
-function detectInitial(): LocaleCode {
-  const sys = Localization.getLocales()[0]?.languageCode ?? 'ja';
-  if (sys === 'ja' || sys === 'en' || sys === 'pt' || sys === 'es') {
-    return sys;
-  }
-  return 'ja';
+function isSupportedLocale(value: unknown): value is LocaleCode {
+  return value === 'ja' || value === 'en' || value === 'pt' || value === 'es';
+}
+
+// デバイスロケールを安全に取得して、対応している言語コードだけ返す。
+function detectDeviceLocale(): LocaleCode | null {
+  const code = Localization.getLocales()[0]?.languageCode ?? null;
+  return isSupportedLocale(code) ? code : null;
 }
 
 type I18nContextValue = {
@@ -49,33 +51,51 @@ type I18nContextValue = {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<LocaleCode>(detectInitial());
+  // 初期状態は 'ja' で開始し、AsyncStorage / デバイスロケールを非同期で確認する
+  const [locale, setLocaleState] = useState<LocaleCode>('ja');
   const [hydrated, setHydrated] = useState(false);
   const { profile, updateProfile } = useProfile();
 
-  // 起動時: AsyncStorage から復元(最優先のソース)
+  // 起動時のロケール決定
+  // 優先順位:
+  //   1. AsyncStorage に保存されたユーザー選択 (最優先)
+  //   2. デバイスロケール (サポート言語のみ)
+  //   3. 'ja' フォールバック
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
-      if (
-        stored === 'ja' ||
-        stored === 'en' ||
-        stored === 'pt' ||
-        stored === 'es'
-      ) {
-        setLocaleState(stored);
+    let cancelled = false;
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        if (cancelled) return;
+        if (isSupportedLocale(stored)) {
+          setLocaleState(stored);
+          setHydrated(true);
+          return;
+        }
+        const device = detectDeviceLocale();
+        if (device) {
+          setLocaleState(device);
+          setHydrated(true);
+          return;
+        }
+        setLocaleState('ja');
+        setHydrated(true);
+      } catch {
+        setLocaleState('ja');
+        setHydrated(true);
       }
-      setHydrated(true);
-    });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // profile.language は AsyncStorage に値がない初回のみ反映
-  // 一度ユーザーがアプリ内で変更したら AsyncStorage が source of truth
+  // profile.language は AsyncStorage が空の初回起動時のみ反映
+  // 一度ユーザーがアプリ内で言語を変えたら AsyncStorage が source of truth
   useEffect(() => {
     if (!hydrated) return;
     const lang = profile?.language;
-    if (lang !== 'ja' && lang !== 'en' && lang !== 'pt' && lang !== 'es') {
-      return;
-    }
+    if (!isSupportedLocale(lang)) return;
     AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
       if (!stored) {
         setLocaleState(lang);
@@ -92,7 +112,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       try {
         await AsyncStorage.setItem(STORAGE_KEY, l);
       } catch {
-        // ignore
+        // ignore - 失敗してもメモリ上の locale は反映済み
       }
       // Supabase 側のプロフィールにも同期(失敗しても UI は反映済み)
       if (profile && profile.language !== l) {

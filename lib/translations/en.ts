@@ -52,6 +52,10 @@ export default {
     errorNetwork: 'A network error occurred. Please try again',
     confirmationEmailTitle: 'Confirmation email sent',
     confirmationEmailBody: 'Please click the confirmation link sent to your email.',
+    styleScalping: 'Scalping',
+    styleDayTrading: 'Day Trading',
+    styleSwing: 'Swing Trading',
+    stylePosition: 'Position Trading',
   },
   record: {
     title: 'New Trade',

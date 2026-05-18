@@ -5,7 +5,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +22,21 @@ import { supabase } from '@/lib/supabase';
 import { TRADE_STYLE_OPTIONS, TradeStyle } from '@/lib/types';
 
 type Mode = 'signIn' | 'signUp';
+
+const ACCENT = '#10B981';
+
+function tradeStyleI18nKey(value: TradeStyle): string {
+  switch (value) {
+    case 'scalping':
+      return 'auth.styleScalping';
+    case 'day_trading':
+      return 'auth.styleDayTrading';
+    case 'swing':
+      return 'auth.styleSwing';
+    case 'position':
+      return 'auth.stylePosition';
+  }
+}
 
 export default function LoginScreen() {
   const c = useThemeColors();
@@ -118,6 +132,7 @@ export default function LoginScreen() {
   const toggleMode = () => {
     setMode((prev) => (prev === 'signIn' ? 'signUp' : 'signIn'));
     setTradeStyle(null);
+    setErrorMessage('');
   };
 
   const toggleTradeStyle = (value: TradeStyle) => {
@@ -125,6 +140,19 @@ export default function LoginScreen() {
   };
 
   const isSignIn = mode === 'signIn';
+  const hasError = errorMessage !== '';
+
+  const inputBorderColor = hasError
+    ? '#EF4444'
+    : isDark
+      ? 'rgba(255,255,255,0.12)'
+      : '#E5E7EB';
+  const inputBgColor = isDark ? 'rgba(255,255,255,0.04)' : '#F9FAFB';
+  const placeholderColor = isDark ? '#3B3B3B' : '#9CA3AF';
+  const chipBorderIdle = isDark ? 'rgba(255,255,255,0.12)' : '#E5E7EB';
+  const chipBgSelected = isDark
+    ? 'rgba(16,185,129,0.08)'
+    : 'rgba(16,185,129,0.05)';
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -150,125 +178,134 @@ export default function LoginScreen() {
             </Text>
           </View>
 
-          <View style={styles.form}>
-            <View style={styles.field}>
-              <Text style={styles.label}>{t('auth.email')}</Text>
+          {/* メールアドレス */}
+          <View
+            style={[
+              styles.inputBox,
+              { borderColor: inputBorderColor, backgroundColor: inputBgColor },
+            ]}
+          >
+            <Text style={styles.inputLabel}>{t('auth.email')}</Text>
+            <TextInput
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setErrorMessage('');
+              }}
+              placeholder="you@example.com"
+              placeholderTextColor={placeholderColor}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!loading}
+              style={styles.inputControl}
+            />
+          </View>
+
+          {/* パスワード */}
+          <View
+            style={[
+              styles.inputBoxRow,
+              { borderColor: inputBorderColor, backgroundColor: inputBgColor },
+            ]}
+          >
+            <View style={styles.flex}>
+              <Text style={styles.inputLabel}>{t('auth.password')}</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  !!errorMessage && styles.inputError,
-                ]}
-                value={email}
+                value={password}
                 onChangeText={(text) => {
-                  setEmail(text);
+                  setPassword(text);
                   setErrorMessage('');
                 }}
-                placeholder="you@example.com"
-                placeholderTextColor={c.textSecondary}
+                placeholder={
+                  isSignIn
+                    ? t('auth.passwordPlaceholder')
+                    : t('auth.passwordHint')
+                }
+                placeholderTextColor={placeholderColor}
+                secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
-                keyboardType="email-address"
                 editable={!loading}
+                style={styles.inputControl}
               />
             </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>{t('auth.password')}</Text>
-              <View
-                style={[
-                  styles.passwordWrap,
-                  !!errorMessage && styles.inputError,
-                ]}
-              >
-                <TextInput
-                  style={styles.passwordInput}
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    setErrorMessage('');
-                  }}
-                  placeholder={
-                    isSignIn
-                      ? t('auth.passwordPlaceholder')
-                      : t('auth.passwordHint')
-                  }
-                  placeholderTextColor={c.textSecondary}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!loading}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword((prev) => !prev)}
-                  hitSlop={10}
-                  style={styles.eyeButton}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={22}
-                    color={c.textSecondary}
-                  />
-                </TouchableOpacity>
-              </View>
-              {errorMessage !== '' && (
-                <Text style={styles.errorText}>{errorMessage}</Text>
-              )}
-            </View>
-
-            {!isSignIn && (
-              <View style={styles.field}>
-                <Text style={styles.label}>{t('auth.tradeStyle')}</Text>
-                <View style={styles.chipsRow}>
-                  {TRADE_STYLE_OPTIONS.map((opt) => {
-                    const selected = tradeStyle === opt.value;
-                    return (
-                      <Pressable
-                        key={opt.value}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => toggleTradeStyle(opt.value)}
-                        disabled={loading}
-                      >
-                        <Text
-                          style={[
-                            styles.chipText,
-                            selected && styles.chipTextSelected,
-                          ]}
-                        >
-                          {opt.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.primaryButton,
-                loading && styles.buttonDisabled,
-                pressed && !loading && styles.buttonPressed,
-              ]}
-              onPress={handleSubmit}
-              disabled={loading}
+            <TouchableOpacity
+              onPress={() => setShowPassword((prev) => !prev)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.eyeButton}
             >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.primaryButtonText}>
-                  {isSignIn ? t('auth.login') : t('auth.signUp')}
-                </Text>
-              )}
-            </Pressable>
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color={c.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
 
-            <Pressable onPress={toggleMode} disabled={loading} style={styles.switchButton}>
-              <Text style={styles.switchText}>
-                {isSignIn ? t('auth.noAccount') : t('auth.haveAccount')}
-                <Text style={styles.switchTextAccent}>
-                  {isSignIn ? t('auth.signUpLink') : t('auth.signInLink')}
-                </Text>
+          {hasError && <Text style={styles.errorText}>{errorMessage}</Text>}
+
+          {!isSignIn && (
+            <View style={styles.tradeStyleBlock}>
+              <Text style={styles.sectionLabel}>{t('auth.tradeStyle')}</Text>
+              <View style={styles.chipsRow}>
+                {TRADE_STYLE_OPTIONS.map((opt) => {
+                  const selected = tradeStyle === opt.value;
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      onPress={() => toggleTradeStyle(opt.value)}
+                      disabled={loading}
+                      activeOpacity={0.8}
+                      style={[
+                        styles.chip,
+                        {
+                          borderColor: selected ? ACCENT : chipBorderIdle,
+                          backgroundColor: selected
+                            ? chipBgSelected
+                            : 'transparent',
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          selected && styles.chipTextSelected,
+                        ]}
+                      >
+                        {t(tradeStyleI18nKey(opt.value))}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={loading}
+            activeOpacity={0.8}
+            style={[styles.primaryButton, loading && styles.buttonDisabled]}
+          >
+            {loading ? (
+              <ActivityIndicator color={isDark ? '#000000' : '#FFFFFF'} />
+            ) : (
+              <Text style={styles.primaryButtonText}>
+                {isSignIn ? t('auth.login') : t('auth.signUp')}
               </Text>
-            </Pressable>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.switchRow}>
+            <Text style={styles.switchText}>
+              {isSignIn ? t('auth.noAccount') : t('auth.haveAccount')}
+            </Text>
+            <TouchableOpacity onPress={toggleMode} disabled={loading}>
+              <Text style={styles.switchLink}>
+                {isSignIn ? t('auth.signUpLink') : t('auth.signInLink')}
+              </Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -276,147 +313,140 @@ export default function LoginScreen() {
   );
 }
 
-function makeStyles(c: ThemeColors, isDark: boolean) {
+function makeStyles(c: ThemeColors, _isDark: boolean) {
   return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: c.background,
-  },
-  flex: {
-    flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  logo: {
-    fontSize: 40,
-    fontWeight: '800',
-    letterSpacing: -1,
-    marginBottom: 8,
-  },
-  logoTrade: {
-    color: isDark ? '#FFFFFF' : '#1E293B',
-  },
-  logoLog: {
-    color: c.accent,
-  },
-  tagline: {
-    fontSize: 16,
-    color: c.textSecondary,
-  },
-  form: {
-    gap: 16,
-  },
-  field: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 13,
-    color: c.textSecondary,
-    fontWeight: '500',
-  },
-  input: {
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderRadius: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: c.textPrimary,
-  },
-  inputError: {
-    borderColor: '#FF3B30',
-  },
-  passwordWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderRadius: 6,
-    paddingHorizontal: 16,
-  },
-  passwordInput: {
-    flex: 1,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: c.textPrimary,
-  },
-  eyeButton: {
-    paddingLeft: 12,
-    paddingVertical: 4,
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 13,
-    marginTop: 6,
-    marginLeft: 4,
-  },
-  primaryButton: {
-    backgroundColor: c.accent,
-    borderRadius: 6,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    minHeight: 52,
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  switchButton: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  switchText: {
-    fontSize: 14,
-    color: c.textSecondary,
-  },
-  switchTextAccent: {
-    color: c.accent,
-    fontWeight: '600',
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: c.border,
-  },
-  chipSelected: {
-    backgroundColor: c.accent,
-    borderColor: c.accent,
-  },
-  chipText: {
-    fontSize: 13,
-    color: '#1E293B',
-    fontWeight: '500',
-  },
-  chipTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
-  },
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    flex: {
+      flex: 1,
+    },
+    content: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 28,
+      paddingVertical: 40,
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 48,
+    },
+    logo: {
+      fontSize: 30,
+      fontWeight: '700',
+      marginBottom: 8,
+    },
+    logoTrade: {
+      color: c.textPrimary,
+    },
+    logoLog: {
+      color: ACCENT,
+    },
+    tagline: {
+      fontSize: 15,
+      color: c.textSecondary,
+      textAlign: 'center',
+    },
+    inputBox: {
+      borderWidth: 1,
+      borderRadius: 10,
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      paddingBottom: 8,
+      marginBottom: 14,
+    },
+    inputBoxRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderRadius: 10,
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      paddingBottom: 8,
+      marginBottom: 8,
+    },
+    inputLabel: {
+      fontSize: 12,
+      color: c.textSecondary,
+      marginBottom: 4,
+    },
+    inputControl: {
+      fontSize: 16,
+      color: c.textPrimary,
+      paddingVertical: 2,
+    },
+    eyeButton: {
+      paddingLeft: 12,
+    },
+    errorText: {
+      color: '#EF4444',
+      fontSize: 13,
+      marginBottom: 8,
+      paddingLeft: 4,
+    },
+    primaryButton: {
+      backgroundColor: _isDark ? '#FFFFFF' : '#111827',
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 8,
+      minHeight: 52,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    primaryButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: _isDark ? '#000000' : '#FFFFFF',
+    },
+    switchRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 24,
+    },
+    switchText: {
+      fontSize: 14,
+      color: c.textSecondary,
+    },
+    switchLink: {
+      fontSize: 14,
+      color: ACCENT,
+      fontWeight: '600',
+      marginLeft: 4,
+    },
+    tradeStyleBlock: {
+      marginTop: 8,
+      marginBottom: 8,
+    },
+    sectionLabel: {
+      fontSize: 13,
+      color: c.textSecondary,
+      fontWeight: '500',
+      marginBottom: 8,
+    },
+    chipsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    chip: {
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+      marginRight: 8,
+      marginBottom: 8,
+    },
+    chipText: {
+      fontSize: 14,
+      color: c.textSecondary,
+      fontWeight: '400',
+    },
+    chipTextSelected: {
+      color: ACCENT,
+      fontWeight: '600',
+    },
   });
 }

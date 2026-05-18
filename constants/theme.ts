@@ -29,13 +29,12 @@ export type ThemeColors = {
 };
 
 // アクセント・ステータス色（モード非依存）
-// 近未来的ミニマリスト = シアンアクセント。
-// FX セマンティクスの緑/赤は維持。
-const ACCENT = '#00D9FF';
+// FX セマンティクスの緑(利確) + 赤(損切)。アクセントもブランド緑で統一。
+const ACCENT = '#10B981';
 const WIN = '#10B981';
 const LOSS = '#EF4444';
 const STAR = '#F59E0B';
-const VERIFIED = '#00D9FF';
+const VERIFIED = '#10B981';
 const DANGER = '#EF4444';
 const ON_ACCENT = '#000000';
 

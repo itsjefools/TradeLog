@@ -30,6 +30,7 @@ import { ImageViewer } from '@/components/image-viewer';
 import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useI18n } from '@/hooks/use-i18n';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { formatRelativeTime } from '@/lib/format-time';
@@ -62,6 +63,7 @@ export function FeedCard({
   onDeleted?: (postId: string) => void;
 }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const { resolved } = useTheme();
   const isDark = resolved === 'dark';
   const styles = useMemo(() => makeStyles(c), [c]);
@@ -78,18 +80,18 @@ export function FeedCard({
     if (item.trade_id) {
       router.push(`/trade-edit?id=${item.trade_id}`);
     } else {
-      Alert.alert('編集できません', 'この投稿は編集できません。');
+      Alert.alert(t('feed.cantEditTitle'), t('feed.cantEditBody'));
     }
   };
 
   const handleDelete = () => {
     Alert.alert(
-      '投稿を削除',
-      'この投稿を削除しますか？この操作は取り消せません。',
+      t('feed.confirmDeletePostTitle'),
+      t('feed.confirmDeletePostBody'),
       [
-        { text: 'キャンセル', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '削除',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             const { error } = await supabase
@@ -97,7 +99,7 @@ export function FeedCard({
               .delete()
               .eq('id', item.id);
             if (error) {
-              Alert.alert('削除失敗', error.message);
+              Alert.alert(t('feed.deleteFailTitle'), error.message);
               return;
             }
             onDeleted?.(item.id);
@@ -113,9 +115,9 @@ export function FeedCard({
     const trade = item.trade;
     const tradeLine =
       trade && trade.pnl !== null
-        ? `${trade.currency_pair} ${trade.direction === 'long' ? 'ロング' : 'ショート'} ${trade.pnl > 0 ? '+' : ''}${Math.round(trade.pnl).toLocaleString('ja-JP')}円`
+        ? `${trade.currency_pair} ${trade.direction === 'long' ? t('common.long') : t('common.short')} ${trade.pnl > 0 ? '+' : ''}${Math.round(trade.pnl).toLocaleString()}`
         : '';
-    const message = [item.content ?? '', tradeLine, 'TradeLogで共有 #TradeLog']
+    const message = [item.content ?? '', tradeLine, t('feed.shareSignature')]
       .filter((s) => s.trim() !== '')
       .join('\n\n');
     try {
@@ -130,7 +132,7 @@ export function FeedCard({
   }, []);
   const profile = item.profile;
   const trade = item.trade;
-  const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
+  const fallbackName = profile?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName =
     profile?.display_name?.trim() ||
     profile?.username?.trim() ||
@@ -144,14 +146,14 @@ export function FeedCard({
 
   const directionLabel = trade
     ? trade.direction === 'long'
-      ? 'ロング'
-      : 'ショート'
+      ? t('common.long')
+      : t('common.short')
     : '';
   const resultLabel = trade
     ? trade.result === 'win'
-      ? '利確'
+      ? t('common.win')
       : trade.result === 'loss'
-        ? '損切り'
+        ? t('common.loss')
         : null
     : null;
   const dateStr = formatRelativeTime(trade?.traded_at ?? item.created_at);
@@ -228,7 +230,7 @@ export function FeedCard({
                     color: isDark ? '#FFFFFF' : '#000000',
                   }}
                 >
-                  編集
+                  {t('feed.menuEdit')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -251,7 +253,7 @@ export function FeedCard({
                     color: '#FF3B30',
                   }}
                 >
-                  削除
+                  {t('feed.menuDelete')}
                 </Text>
               </TouchableOpacity>
             </>
@@ -270,7 +272,7 @@ export function FeedCard({
             >
               <Ionicons name="flag-outline" size={22} color="#FF3B30" />
               <Text style={{ marginLeft: 16, fontSize: 17, color: '#FF3B30' }}>
-                通報
+                {t('feed.menuReport')}
               </Text>
             </TouchableOpacity>
           )}
@@ -292,7 +294,7 @@ export function FeedCard({
                 color: isDark ? '#FFFFFF' : '#007AFF',
               }}
             >
-              キャンセル
+              {t('feed.menuCancel')}
             </Text>
           </TouchableOpacity>
         </Pressable>
@@ -387,7 +389,7 @@ export function FeedCard({
         <View style={styles.likedByRow}>
           <Ionicons name="repeat" size={12} color={c.win} />
           <Text style={styles.likedByText}>
-            {repostByName} さんがリポストしました
+            {repostByName}{t('feed.repostedBy')}
           </Text>
         </View>
       )}
@@ -395,7 +397,7 @@ export function FeedCard({
         <View style={styles.likedByRow}>
           <Ionicons name="heart" size={12} color={c.loss} />
           <Text style={styles.likedByText}>
-            {likedByName} さんがいいねしました
+            {likedByName}{t('feed.likedBy')}
           </Text>
         </View>
       )}

@@ -14,7 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
-import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
@@ -38,19 +37,16 @@ type RankingRow = {
   overall_score: number | null;
 };
 
+const CATEGORIES: { value: Category; label: string }[] = [
+  { value: 'overall', label: '総合' },
+  { value: 'pnl', label: '利益' },
+  { value: 'pips', label: 'Pips' },
+  { value: 'winrate', label: '勝率' },
+];
+
 export default function RankingScreen() {
   const c = useThemeColors();
-  const { t, locale } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const CATEGORIES: { value: Category; label: string }[] = useMemo(
-    () => [
-      { value: 'overall', label: t('ranking.tabOverall') },
-      { value: 'pnl', label: t('ranking.tabPnl') },
-      { value: 'pips', label: t('ranking.tabPips') },
-      { value: 'winrate', label: t('ranking.tabWinrate') },
-    ],
-    [t],
-  );
   const router = useRouter();
   const [category, setCategory] = useState<Category>('overall');
   const [rows, setRows] = useState<RankingRow[]>([]);
@@ -85,29 +81,21 @@ export default function RankingScreen() {
 
   const monthLabel = useMemo(() => {
     const now = new Date();
-    try {
-      return new Intl.DateTimeFormat(locale, {
-        year: 'numeric',
-        month: 'long',
-      }).format(now);
-    } catch {
-      return `${now.getFullYear()}/${now.getMonth() + 1}`;
-    }
-  }, [locale]);
+    return `${now.getFullYear()}年${now.getMonth() + 1}月`;
+  }, []);
 
   const description = useMemo(() => {
     switch (category) {
       case 'pnl':
-        return t('ranking.descPnl');
+        return 'P&L 合計順 (上位50件)';
       case 'pips':
-        return t('ranking.descPips');
+        return '獲得pips合計順 (上位50件)';
       case 'winrate':
-        return t('ranking.descWinrate');
+        return '勝率順 (5取引以上、上位50件)';
       case 'overall':
-        return t('ranking.descOverall');
+        return '総合スコア順 (利益40% + pips30% + 勝率30%)';
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, t]);
+  }, [category]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -115,7 +103,7 @@ export default function RankingScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('ranking.title')}</Text>
+        <Text style={styles.headerTitle}>月間ランキング</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -193,9 +181,8 @@ function RankingRowItem({
   router: Router;
 }) {
   const c = useThemeColors();
-  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const fallbackName = t('profile.defaultName');
+  const fallbackName = 'ユーザー';
   const displayName =
     row.display_name?.trim() || row.username?.trim() || fallbackName;
   const username = row.username?.trim() || fallbackName;

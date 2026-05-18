@@ -21,7 +21,6 @@ import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useBlocks } from '@/hooks/use-blocks';
-import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { Comment, PROFILE_COLUMNS, Profile } from '@/lib/types';
@@ -33,7 +32,6 @@ type CommentItem = Comment & {
 
 export default function CommentsScreen() {
   const c = useThemeColors();
-  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { postId } = useLocalSearchParams<{ postId: string }>();
@@ -80,7 +78,7 @@ export default function CommentsScreen() {
 
   const handleSend = async () => {
     if (!myId || !postId) {
-      Alert.alert(t('comments.loginRequired'));
+      Alert.alert('ログインが必要です');
       return;
     }
     const content = text.trim();
@@ -106,7 +104,7 @@ export default function CommentsScreen() {
       setReplyTo(null);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert(t('comments.sendFail'), msg);
+      Alert.alert('送信失敗', msg);
     } finally {
       setPosting(false);
     }
@@ -129,7 +127,7 @@ export default function CommentsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('comments.title')}</Text>
+        <Text style={styles.headerTitle}>コメント</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -173,7 +171,7 @@ export default function CommentsScreen() {
         {replyTo && (
           <View style={styles.replyBanner}>
             <Text style={styles.replyBannerText} numberOfLines={1}>
-              {t('comments.replyToPrefix')}{replyTo.profile?.display_name ?? replyTo.profile?.username ?? t('profile.defaultName')}
+              返信先: {replyTo.profile?.display_name ?? replyTo.profile?.username ?? 'ユーザー'}
             </Text>
             <Pressable onPress={() => setReplyTo(null)} hitSlop={6}>
               <Text style={styles.replyCancel}>×</Text>
@@ -186,7 +184,7 @@ export default function CommentsScreen() {
             style={styles.input}
             value={text}
             onChangeText={setText}
-            placeholder={replyTo ? t('comments.replyPlaceholder') : t('comments.commentPlaceholder')}
+            placeholder={replyTo ? '返信を書く...' : 'コメントを書く...'}
             placeholderTextColor={c.textSecondary}
             multiline
             editable={!posting}
@@ -206,7 +204,7 @@ export default function CommentsScreen() {
             {posting ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.sendButtonText}>{t('comments.send')}</Text>
+              <Text style={styles.sendButtonText}>送信</Text>
             )}
           </Pressable>
         </View>
@@ -247,13 +245,12 @@ function CommentNode({
   onReply: (cm: CommentItem) => void;
 }) {
   const c = useThemeColors();
-  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [reportVisible, setReportVisible] = useState(false);
   const cm = node.comment;
   const profile = cm.profile;
-  const fallbackName = profile?.email?.split('@')[0] ?? t('profile.defaultName');
+  const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
   const displayName =
     profile?.display_name?.trim() ||
     profile?.username?.trim() ||
@@ -291,10 +288,10 @@ function CommentNode({
           <MentionText content={cm.content} style={styles.commentText} />
           <View style={styles.commentActions}>
             <Pressable onPress={() => onReply(cm)} hitSlop={6}>
-              <Text style={styles.replyLink}>{t('comments.reply')}</Text>
+              <Text style={styles.replyLink}>返信</Text>
             </Pressable>
             <Pressable onPress={() => setReportVisible(true)} hitSlop={6}>
-              <Text style={styles.reportLink}>{t('comments.report')}</Text>
+              <Text style={styles.reportLink}>通報</Text>
             </Pressable>
           </View>
         </View>

@@ -20,6 +20,7 @@ import { Avatar } from '@/components/avatar';
 import { useToast } from '@/components/toast';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { notifyError, notifySuccess, notifyWarning } from '@/lib/haptics';
@@ -44,6 +45,7 @@ function extractHashtags(text: string): string[] {
 
 export default function CreatePostScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const toast = useToast();
@@ -80,7 +82,7 @@ export default function CreatePostScreen() {
       .then(({ count }) => setMonthlyCount(count ?? 0));
   }, [myId]);
 
-  const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
+  const fallbackName = profile?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName =
     profile?.display_name?.trim() ||
     profile?.username?.trim() ||
@@ -96,7 +98,7 @@ export default function CreatePostScreen() {
         setMedia((prev) => [...prev, ...picked].slice(0, MAX_MEDIA));
       }
     } catch (e) {
-      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -106,7 +108,7 @@ export default function CreatePostScreen() {
       const photo = await takePhotoWithCamera();
       if (photo) setMedia((prev) => [...prev, photo].slice(0, MAX_MEDIA));
     } catch (e) {
-      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -116,7 +118,7 @@ export default function CreatePostScreen() {
       const video = await pickVideoFromLibrary();
       if (video) setMedia((prev) => [...prev, video].slice(0, MAX_MEDIA));
     } catch (e) {
-      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -133,12 +135,12 @@ export default function CreatePostScreen() {
     if (overLimit) {
       notifyWarning();
       Alert.alert(
-        'Free プランの上限',
+        t('createPost.freePlanLimit'),
         `Free プランでは月 ${FREE_LIMITS.monthlyPosts} 件まで投稿できます。Premium で無制限になります。`,
         [
-          { text: 'キャンセル', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Premium を見る',
+            text: t('createPost.seePremium'),
             onPress: () => router.push('/premium'),
           },
         ],
@@ -163,11 +165,11 @@ export default function CreatePostScreen() {
       if (error) throw new Error(error.message);
 
       notifySuccess();
-      toast.success('投稿しました');
+      toast.success(t('createPost.postSuccess'));
       router.back();
     } catch (e) {
       notifyError();
-      Alert.alert('投稿失敗', e instanceof Error ? e.message : String(e));
+      Alert.alert(t('createPost.postFail'), e instanceof Error ? e.message : String(e));
     } finally {
       setSubmitting(false);
     }
@@ -186,7 +188,7 @@ export default function CreatePostScreen() {
         >
           <Ionicons name="close" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>新規投稿</Text>
+        <Text style={styles.headerTitle}>{t('createPost.title')}</Text>
         <Pressable
           onPress={handleSubmit}
           disabled={!canSubmit}
@@ -200,7 +202,7 @@ export default function CreatePostScreen() {
           {submitting ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.submitButtonText}>投稿する</Text>
+            <Text style={styles.submitButtonText}>{t('createPost.submit')}</Text>
           )}
         </Pressable>
       </View>
@@ -230,7 +232,7 @@ export default function CreatePostScreen() {
             style={styles.input}
             value={text}
             onChangeText={(t) => setText(t.slice(0, MAX_CHARS))}
-            placeholder="今何を考えていますか？"
+            placeholder={t('createPost.placeholder')}
             placeholderTextColor={c.textSecondary}
             multiline
             autoFocus

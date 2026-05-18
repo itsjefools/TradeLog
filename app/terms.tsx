@@ -19,7 +19,7 @@ export default function TermsScreen() {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
   const text = useMemo(() => getTermsText(locale), [locale]);
 
   return (
@@ -28,7 +28,7 @@ export default function TermsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('settings.terms')}</Text>
+        <Text style={styles.headerTitle}>利用規約</Text>
         <View style={styles.headerSpacer} />
       </View>
 

@@ -260,6 +260,34 @@ export default {
     nationalityLabel: '国籍',
     nationalitySearchPlaceholder: '検索(例: Japan, JP, 日本)',
   },
+  messages: {
+    title: 'メッセージ',
+    empty: 'メッセージがありません',
+  },
+  dm: {
+    sendFail: '送信失敗',
+    placeholder: 'メッセージを入力...',
+    send: '送信',
+  },
+  bookmarks: {
+    title: 'ブックマーク',
+    empty: 'ブックマークがありません',
+  },
+  tradeHistory: {
+    title: '取引履歴',
+    hint: 'タップで編集 · 長押しで削除',
+    premiumFeatureTitle: 'Premium 機能',
+    premiumFeatureBody:
+      'CSV エクスポートは Premium プラン専用です。Premium にアップグレードして全ての取引をエクスポートしましょう。',
+    seePremium: 'Premium を見る',
+    noDataTitle: 'データなし',
+    noDataBody: 'エクスポートする取引がありません。',
+    exportFail: 'エクスポート失敗',
+    confirmDeleteTitle: '取引を削除しますか?',
+    confirmDeleteBody: 'この操作は元に戻せません。',
+    deleteFail: '削除失敗',
+    emptyMessage: 'まだ取引がありません。\n記録タブから追加してください。',
+  },
   riskCalc: {
     title: 'リスク計算機',
     balanceLabel: '口座残高(円)',

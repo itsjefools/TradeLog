@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { Post, PROFILE_COLUMNS, Profile, Trade } from '@/lib/types';
@@ -27,6 +28,7 @@ type BookmarkRow = {
 
 export default function BookmarksScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { session } = useAuth();
@@ -73,7 +75,7 @@ export default function BookmarksScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>ブックマーク</Text>
+        <Text style={styles.headerTitle}>{t('bookmarks.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -96,7 +98,7 @@ export default function BookmarksScreen() {
                 size={48}
                 color={c.textSecondary}
               />
-              <Text style={styles.emptyTitle}>ブックマークがありません</Text>
+              <Text style={styles.emptyTitle}>{t('bookmarks.empty')}</Text>
               <Text style={styles.emptyText}>
                 フィードの投稿でブックマークアイコンをタップすると{'\n'}
                 ここに保存されます。
@@ -121,10 +123,11 @@ function BookmarkCard({
   router: ReturnType<typeof useRouter>;
 }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const profile = item.profile;
   const trade = item.trade;
-  const fallbackName = profile?.email?.split('@')[0] ?? 'ユーザー';
+  const fallbackName = profile?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName =
     profile?.display_name?.trim() ||
     profile?.username?.trim() ||
@@ -150,7 +153,7 @@ function BookmarkCard({
           {trade && (
             <Text style={styles.tradeMeta}>
               {trade.currency_pair} ·{' '}
-              {trade.direction === 'long' ? 'ロング' : 'ショート'}
+              {trade.direction === 'long' ? t('common.long') : t('common.short')}
             </Text>
           )}
         </View>

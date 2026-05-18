@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
@@ -23,6 +24,7 @@ import { Trade } from '@/lib/types';
 
 export default function TradeHistoryScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { trades, refresh, deleteTrade } = useTrades();
@@ -33,12 +35,12 @@ export default function TradeHistoryScreen() {
   const handleExport = async () => {
     if (!isPremium) {
       Alert.alert(
-        'Premium 機能',
-        'CSV エクスポートは Premium プラン専用です。Premium にアップグレードして全ての取引をエクスポートしましょう。',
+        t('tradeHistory.premiumFeatureTitle'),
+        t('tradeHistory.premiumFeatureBody'),
         [
-          { text: 'キャンセル', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Premium を見る',
+            text: t('tradeHistory.seePremium'),
             onPress: () => router.push('/premium'),
           },
         ],
@@ -46,7 +48,7 @@ export default function TradeHistoryScreen() {
       return;
     }
     if (trades.length === 0) {
-      Alert.alert('データなし', 'エクスポートする取引がありません。');
+      Alert.alert(t('tradeHistory.noDataTitle'), t('tradeHistory.noDataBody'));
       return;
     }
     setExporting(true);
@@ -54,7 +56,7 @@ export default function TradeHistoryScreen() {
       await exportTradesCsv(trades);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('エクスポート失敗', msg);
+      Alert.alert(t('tradeHistory.exportFail'), msg);
     } finally {
       setExporting(false);
     }
@@ -68,19 +70,19 @@ export default function TradeHistoryScreen() {
 
   const handleDelete = (trade: Trade) => {
     Alert.alert(
-      '取引を削除しますか？',
-      `${trade.currency_pair} - ${trade.direction === 'long' ? 'ロング' : 'ショート'}\nこの操作は元に戻せません。`,
+      t('tradeHistory.confirmDeleteTitle'),
+      `${trade.currency_pair} - ${trade.direction === 'long' ? t('common.long') : t('common.short')}\n${t('tradeHistory.confirmDeleteBody')}`,
       [
-        { text: 'キャンセル', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '削除',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteTrade(trade.id);
             } catch (e) {
               const msg = e instanceof Error ? e.message : String(e);
-              Alert.alert('削除失敗', msg);
+              Alert.alert(t('tradeHistory.deleteFail'), msg);
             }
           },
         },
@@ -94,7 +96,7 @@ export default function TradeHistoryScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>取引履歴</Text>
+        <Text style={styles.headerTitle}>{t('tradeHistory.title')}</Text>
         <Pressable
           onPress={handleExport}
           disabled={exporting}
@@ -124,9 +126,7 @@ export default function TradeHistoryScreen() {
               size={48}
               color={c.textSecondary}
             />
-            <Text style={styles.emptyText}>
-              まだ取引がありません。{'\n'}記録タブから追加してください。
-            </Text>
+            <Text style={styles.emptyText}>{t('tradeHistory.emptyMessage')}</Text>
           </View>
         ) : (
           trades.map((trade) => (
@@ -153,10 +153,11 @@ function TradeRow({
   onLongPress: () => void;
 }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const directionLabel = trade.direction === 'long' ? 'ロング' : 'ショート';
+  const directionLabel = trade.direction === 'long' ? t('common.long') : t('common.short');
   const resultLabel =
-    trade.result === 'win' ? '利確' : trade.result === 'loss' ? '損切り' : null;
+    trade.result === 'win' ? t('common.win') : trade.result === 'loss' ? t('common.loss') : null;
   const date = new Date(trade.traded_at);
   const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
@@ -193,7 +194,7 @@ function TradeRow({
           </Text>
         )}
       </View>
-      <Text style={styles.hint}>タップで編集 · 長押しで削除</Text>
+      <Text style={styles.hint}>{t('tradeHistory.hint')}</Text>
     </Pressable>
   );
 }

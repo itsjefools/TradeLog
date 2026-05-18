@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
-import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import {
   ECONOMIC_EVENTS,
@@ -24,7 +23,6 @@ type CountryFilter = 'all' | 'US' | 'JP' | 'EU';
 
 export default function EconomicCalendarScreen() {
   const c = useThemeColors();
-  const { t, locale } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [filter, setFilter] = useState<CountryFilter>('all');
@@ -50,10 +48,10 @@ export default function EconomicCalendarScreen() {
   }, [events]);
 
   const filters: { value: CountryFilter; label: string }[] = [
-    { value: 'all', label: t('economicCalendar.filterAll') },
-    { value: 'US', label: t('economicCalendar.filterUS') },
-    { value: 'JP', label: t('economicCalendar.filterJP') },
-    { value: 'EU', label: t('economicCalendar.filterEU') },
+    { value: 'all', label: 'すべて' },
+    { value: 'US', label: '🇺🇸 米' },
+    { value: 'JP', label: '🇯🇵 日' },
+    { value: 'EU', label: '🇪🇺 欧' },
   ];
 
   return (
@@ -62,7 +60,7 @@ export default function EconomicCalendarScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('economicCalendar.title')}</Text>
+        <Text style={styles.headerTitle}>経済指標カレンダー</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -93,18 +91,20 @@ export default function EconomicCalendarScreen() {
           <Text
             style={[styles.filterText, highOnly && styles.filterTextSelected]}
           >
-            {t('economicCalendar.highOnly')}
+            重要度高のみ
           </Text>
         </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
         {grouped.length === 0 ? (
-          <Text style={styles.empty}>{t('economicCalendar.empty')}</Text>
+          <Text style={styles.empty}>
+            該当する予定がありません。{'\n'}フィルタを変更してください。
+          </Text>
         ) : (
           grouped.map(([date, list]) => (
             <View key={date} style={styles.dayGroup}>
-              <Text style={styles.dayLabel}>{formatDate(date, locale)}</Text>
+              <Text style={styles.dayLabel}>{formatDate(date)}</Text>
               {list.map((e) => (
                 <View key={e.id} style={styles.eventCard}>
                   <View style={styles.eventHead}>
@@ -132,24 +132,18 @@ export default function EconomicCalendarScreen() {
           ))
         )}
 
-        <Text style={styles.disclaimer}>{t('economicCalendar.disclaimer')}</Text>
+        <Text style={styles.disclaimer}>
+          ※ 表示日時はあくまで目安です。最新の正確な予定は各国中銀・統計局の公式発表をご確認ください。
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function formatDate(iso: string, locale: string): string {
+function formatDate(iso: string): string {
   const d = new Date(iso + 'T00:00:00');
-  try {
-    return new Intl.DateTimeFormat(locale, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'short',
-    }).format(d);
-  } catch {
-    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-  }
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日(${days[d.getDay()]})`;
 }
 
 function makeStyles(c: ThemeColors) {

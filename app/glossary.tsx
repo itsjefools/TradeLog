@@ -12,7 +12,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
-import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import {
   GLOSSARY,
@@ -24,7 +23,6 @@ type CategoryFilter = 'all' | GlossaryTerm['category'];
 
 export default function GlossaryScreen() {
   const c = useThemeColors();
-  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -44,7 +42,7 @@ export default function GlossaryScreen() {
   }, [query, filter]);
 
   const categories: { value: CategoryFilter; label: string }[] = [
-    { value: 'all', label: t('glossary.filterAll') },
+    { value: 'all', label: 'すべて' },
     ...Object.entries(GLOSSARY_CATEGORIES).map(([k, v]) => ({
       value: k as GlossaryTerm['category'],
       label: v,
@@ -57,7 +55,7 @@ export default function GlossaryScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('glossary.title')}</Text>
+        <Text style={styles.headerTitle}>用語集</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -66,7 +64,7 @@ export default function GlossaryScreen() {
           style={styles.searchInput}
           value={query}
           onChangeText={setQuery}
-          placeholder={t('glossary.searchPlaceholder')}
+          placeholder="用語を検索（例: pip, RSI, レバレッジ）"
           placeholderTextColor={c.textSecondary}
           autoCorrect={false}
         />
@@ -101,7 +99,7 @@ export default function GlossaryScreen() {
 
       <ScrollView contentContainerStyle={styles.body}>
         {filtered.length === 0 ? (
-          <Text style={styles.empty}>{t('glossary.empty')}</Text>
+          <Text style={styles.empty}>該当する用語がありません</Text>
         ) : (
           filtered.map((g) => (
             <View key={g.term} style={styles.termCard}>

@@ -138,18 +138,9 @@ export default function EconomicCalendarScreen() {
   );
 }
 
-function formatDate(iso: string, locale: string): string {
+function formatDate(iso: string, _locale: string): string {
   const d = new Date(iso + 'T00:00:00');
-  try {
-    return new Intl.DateTimeFormat(locale, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'short',
-    }).format(d);
-  } catch {
-    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-  }
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 function makeStyles(c: ThemeColors) {

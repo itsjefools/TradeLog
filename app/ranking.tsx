@@ -40,7 +40,7 @@ type RankingRow = {
 
 export default function RankingScreen() {
   const c = useThemeColors();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const CATEGORIES: { value: Category; label: string }[] = useMemo(
     () => [
@@ -85,15 +85,8 @@ export default function RankingScreen() {
 
   const monthLabel = useMemo(() => {
     const now = new Date();
-    try {
-      return new Intl.DateTimeFormat(locale, {
-        year: 'numeric',
-        month: 'long',
-      }).format(now);
-    } catch {
-      return `${now.getFullYear()}/${now.getMonth() + 1}`;
-    }
-  }, [locale]);
+    return `${now.getFullYear()}/${now.getMonth() + 1}`;
+  }, []);
 
   const description = useMemo(() => {
     switch (category) {

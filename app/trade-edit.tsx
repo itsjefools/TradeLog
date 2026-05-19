@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
 import { useFavoritePairs } from '@/hooks/use-favorite-pairs';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { supabase } from '@/lib/supabase';
@@ -68,6 +69,7 @@ function tradeToForm(t: Trade): FormState {
 
 export default function TradeEditScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -111,7 +113,7 @@ export default function TradeEditScreen() {
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>取引編集</Text>
+          <Text style={styles.headerTitle}>{t('record.editTitle')}</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.center}>
@@ -164,11 +166,11 @@ export default function TradeEditScreen() {
     if (!form || !id) return;
     const lotSize = parseNumOrNull(form.lotSize);
     if (!form.currencyPair.trim()) {
-      Alert.alert('入力エラー', '通貨ペアを入力してください。');
+      Alert.alert(t('record.inputErrorTitle'), t('record.inputErrorPair'));
       return;
     }
     if (lotSize === null || lotSize <= 0) {
-      Alert.alert('入力エラー', 'ロットサイズを正しく入力してください。');
+      Alert.alert(t('record.inputErrorTitle'), t('record.inputErrorLot'));
       return;
     }
 
@@ -196,7 +198,7 @@ export default function TradeEditScreen() {
       router.back();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('保存失敗', msg);
+      Alert.alert(t('record.saveFail'), msg);
     } finally {
       setSaving(false);
     }
@@ -208,12 +210,12 @@ export default function TradeEditScreen() {
         <Pressable onPress={() => router.back()} disabled={saving} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>取引編集</Text>
+        <Text style={styles.headerTitle}>{t('record.editTitle')}</Text>
         <Pressable onPress={handleSave} disabled={saving} hitSlop={8}>
           {saving ? (
             <ActivityIndicator color={c.accent} />
           ) : (
-            <Text style={[styles.headerLink, styles.saveLink]}>保存</Text>
+            <Text style={[styles.headerLink, styles.saveLink]}>{t('record.save')}</Text>
           )}
         </Pressable>
       </View>
@@ -230,12 +232,12 @@ export default function TradeEditScreen() {
           bounces={false}
         >
           <View style={styles.section}>
-            <Text style={styles.label}>通貨ペア</Text>
+            <Text style={styles.label}>{t('record.pairLabel')}</Text>
             <TextInput
               style={styles.input}
               value={pairSearch}
               onChangeText={setPairSearch}
-              placeholder="検索（例: USD, JPY, EUR）"
+              placeholder={t('record.pairSearchPlaceholder')}
               placeholderTextColor={c.textSecondary}
               autoCapitalize="characters"
               autoCorrect={false}
@@ -245,14 +247,14 @@ export default function TradeEditScreen() {
               選択中: <Text style={styles.selectedPairValue}>{form.currencyPair}</Text>
             </Text>
             {!isSearching && favorites.length > 0 && (
-              <Text style={styles.favHeader}>★ お気に入り</Text>
+              <Text style={styles.favHeader}>{t('record.favHeader')}</Text>
             )}
             <View style={[styles.chipsRow, styles.chipsRowMt]}>
               {visiblePairs.length === 0 ? (
                 <Text style={styles.noMatchText}>
                   {isSearching
-                    ? '該当する通貨ペアがありません'
-                    : '検索欄に通貨を入力してください'}
+                    ? t('record.noMatchingPair')
+                    : t('record.pairSearchHintShort')}
                 </Text>
               ) : (
                 visiblePairs.map((pair) => {
@@ -290,7 +292,7 @@ export default function TradeEditScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>方向</Text>
+            <Text style={styles.label}>{t('record.directionLabel')}</Text>
             <View style={styles.segment}>
               <Pressable
                 style={[
@@ -330,7 +332,7 @@ export default function TradeEditScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>結果</Text>
+            <Text style={styles.label}>{t('record.resultLabel')}</Text>
             <View style={styles.resultRow}>
               <Pressable
                 style={[
@@ -375,24 +377,24 @@ export default function TradeEditScreen() {
 
           <View style={styles.row}>
             <View style={[styles.section, styles.flex]}>
-              <Text style={styles.label}>エントリー価格（任意）</Text>
+              <Text style={styles.label}>{t('record.entryPriceLabel')}</Text>
               <TextInput
                 style={styles.input}
                 value={form.entryPrice}
                 onChangeText={(t) => updatePriceField('entryPrice', t)}
-                placeholder="例: 148.250"
+                placeholder={t('record.entryPriceExample')}
                 placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
                 editable={!saving}
               />
             </View>
             <View style={[styles.section, styles.flex]}>
-              <Text style={styles.label}>エグジット価格（任意）</Text>
+              <Text style={styles.label}>{t('record.exitPriceLabel')}</Text>
               <TextInput
                 style={styles.input}
                 value={form.exitPrice}
                 onChangeText={(t) => updatePriceField('exitPrice', t)}
-                placeholder="例: 148.800"
+                placeholder={t('record.exitPriceExample')}
                 placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
                 editable={!saving}
@@ -401,12 +403,12 @@ export default function TradeEditScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>ロットサイズ</Text>
+            <Text style={styles.label}>{t('record.lotLabel')}</Text>
             <TextInput
               style={styles.input}
               value={form.lotSize}
               onChangeText={(t) => setField('lotSize', t)}
-              placeholder="例: 0.1"
+              placeholder={t('record.lotExample')}
               placeholderTextColor={c.textSecondary}
               keyboardType="decimal-pad"
               editable={!saving}
@@ -415,24 +417,24 @@ export default function TradeEditScreen() {
 
           <View style={styles.row}>
             <View style={[styles.section, styles.flex]}>
-              <Text style={styles.label}>損益（円）</Text>
+              <Text style={styles.label}>{t('record.pnlLabel')}</Text>
               <TextInput
                 style={styles.input}
                 value={form.pnl}
                 onChangeText={(t) => setField('pnl', t)}
-                placeholder="例: 5500"
+                placeholder={t('record.pnlExample')}
                 placeholderTextColor={c.textSecondary}
                 keyboardType="numbers-and-punctuation"
                 editable={!saving}
               />
             </View>
             <View style={[styles.section, styles.flex]}>
-              <Text style={styles.label}>損益 pips</Text>
+              <Text style={styles.label}>{t('record.pipsLabel')}</Text>
               <TextInput
                 style={styles.input}
                 value={form.pnlPips}
                 onChangeText={(t) => setField('pnlPips', t)}
-                placeholder="例: 55"
+                placeholder={t('record.pipsExample')}
                 placeholderTextColor={c.textSecondary}
                 keyboardType="numbers-and-punctuation"
                 editable={!saving}
@@ -441,12 +443,12 @@ export default function TradeEditScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>メモ（任意）</Text>
+            <Text style={styles.label}>{t('record.memoLabel')}</Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
               value={form.memo}
               onChangeText={(t) => setField('memo', t)}
-              placeholder="取引の根拠、感想、振り返りなどを自由に記録"
+              placeholder={t('record.memoPlaceholder')}
               placeholderTextColor={c.textSecondary}
               multiline
               maxLength={1000}
@@ -456,8 +458,8 @@ export default function TradeEditScreen() {
 
           <View style={[styles.section, styles.switchRow]}>
             <View style={styles.flex}>
-              <Text style={styles.label}>フィードに共有</Text>
-              <Text style={styles.helperText}>オンでタイムラインに表示</Text>
+              <Text style={styles.label}>{t('record.shareFeedLabel')}</Text>
+              <Text style={styles.helperText}>{t('record.shareFeedShortHelp')}</Text>
             </View>
             <Switch
               value={form.isShared}

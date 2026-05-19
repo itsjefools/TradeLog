@@ -17,6 +17,7 @@ import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useBlocks } from '@/hooks/use-blocks';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
@@ -27,6 +28,7 @@ type TabKey = 'followers' | 'following';
 
 export default function FollowListScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { userId, tab: initialTab } = useLocalSearchParams<{
@@ -89,7 +91,7 @@ export default function FollowListScreen() {
         setFollowingSet(new Set());
       }
     } catch (e) {
-      Alert.alert('読み込み失敗', e instanceof Error ? e.message : String(e));
+      Alert.alert(t('followList.loadFail'), e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
@@ -141,7 +143,7 @@ export default function FollowListScreen() {
         else next.delete(target.id);
         return next;
       });
-      Alert.alert('エラー', e instanceof Error ? e.message : String(e));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
     } finally {
       setPendingId(null);
     }
@@ -164,7 +166,7 @@ export default function FollowListScreen() {
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>
-          {tab === 'followers' ? 'フォロワー' : 'フォロー中'}
+          {tab === 'followers' ? t('followList.followersTitle') : t('followList.followingTitle')}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -217,7 +219,7 @@ export default function FollowListScreen() {
           style={styles.searchInput}
           value={query}
           onChangeText={setQuery}
-          placeholder="ユーザー名で絞り込み"
+          placeholder={t('followList.filterPlaceholder')}
           placeholderTextColor={c.textSecondary}
           autoCapitalize="none"
           autoCorrect={false}
@@ -241,8 +243,8 @@ export default function FollowListScreen() {
         <View style={styles.emptyBox}>
           <Text style={styles.emptyText}>
             {tab === 'followers'
-              ? 'フォロワーはまだいません'
-              : 'まだ誰もフォローしていません'}
+              ? t('followList.emptyFollowers')
+              : t('followList.emptyFollowing')}
           </Text>
         </View>
       ) : (
@@ -287,7 +289,8 @@ function UserRow({
   onToggleFollow: () => void;
   onPress: () => void;
 }) {
-  const fallbackName = profile.email?.split('@')[0] ?? 'ユーザー';
+  const { t } = useI18n();
+  const fallbackName = profile.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName =
     profile.display_name?.trim() || profile.username?.trim() || fallbackName;
   const username = profile.username?.trim() || fallbackName;
@@ -369,7 +372,7 @@ function UserRow({
                 isFollowing && styles.followButtonTextActive,
               ]}
             >
-              {isFollowing ? 'フォロー中' : 'フォロー'}
+              {isFollowing ? t('followList.followingBtn') : t('followList.followBtn')}
             </Text>
           )}
         </Pressable>

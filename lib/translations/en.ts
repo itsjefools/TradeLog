@@ -209,6 +209,34 @@ export default {
     nationalityLabel: 'Nationality',
     nationalitySearchPlaceholder: 'Search (e.g. Japan, JP)',
   },
+  messages: {
+    title: 'Messages',
+    empty: 'No messages yet',
+  },
+  dm: {
+    sendFail: 'Send failed',
+    placeholder: 'Type a message...',
+    send: 'Send',
+  },
+  bookmarks: {
+    title: 'Bookmarks',
+    empty: 'No bookmarks yet',
+  },
+  tradeHistory: {
+    title: 'Trade history',
+    hint: 'Tap to edit · Long-press to delete',
+    premiumFeatureTitle: 'Premium feature',
+    premiumFeatureBody:
+      'CSV export is a Premium feature. Upgrade to Premium to export every trade.',
+    seePremium: 'See Premium',
+    noDataTitle: 'No data',
+    noDataBody: 'There are no trades to export.',
+    exportFail: 'Export failed',
+    confirmDeleteTitle: 'Delete this trade?',
+    confirmDeleteBody: 'This cannot be undone.',
+    deleteFail: 'Delete failed',
+    emptyMessage: 'No trades yet.\nAdd one from the Record tab.',
+  },
   riskCalc: {
     title: 'Risk Calculator',
     balanceLabel: 'Account balance',

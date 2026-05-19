@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { PROFILE_COLUMNS, Profile } from '@/lib/types';
@@ -33,6 +34,7 @@ type Message = {
 
 export default function DMThreadScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { id: partnerId } = useLocalSearchParams<{ id: string }>();
@@ -136,13 +138,13 @@ export default function DMThreadScreen() {
       setText('');
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('送信失敗', msg);
+      Alert.alert(t('dm.sendFail'), msg);
     } finally {
       setSending(false);
     }
   };
 
-  const fallbackName = partner?.email?.split('@')[0] ?? 'ユーザー';
+  const fallbackName = partner?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName =
     partner?.display_name?.trim() ||
     partner?.username?.trim() ||
@@ -208,7 +210,7 @@ export default function DMThreadScreen() {
             style={styles.input}
             value={text}
             onChangeText={setText}
-            placeholder="メッセージを入力..."
+            placeholder={t('dm.placeholder')}
             placeholderTextColor={c.textSecondary}
             multiline
             editable={!sending}
@@ -226,7 +228,7 @@ export default function DMThreadScreen() {
             {sending ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.sendButtonText}>送信</Text>
+              <Text style={styles.sendButtonText}>{t('dm.send')}</Text>
             )}
           </Pressable>
         </View>

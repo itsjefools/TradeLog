@@ -213,6 +213,34 @@ export default {
     nationalityLabel: 'Nacionalidade',
     nationalitySearchPlaceholder: 'Buscar (ex. Japan, JP)',
   },
+  messages: {
+    title: 'Mensagens',
+    empty: 'Ainda não há mensagens',
+  },
+  dm: {
+    sendFail: 'Falha ao enviar',
+    placeholder: 'Digite uma mensagem...',
+    send: 'Enviar',
+  },
+  bookmarks: {
+    title: 'Salvos',
+    empty: 'Ainda não há salvos',
+  },
+  tradeHistory: {
+    title: 'Histórico de operações',
+    hint: 'Toque para editar · Segure para excluir',
+    premiumFeatureTitle: 'Recurso Premium',
+    premiumFeatureBody:
+      'A exportação CSV é exclusiva do plano Premium. Atualize para Premium e exporte todas as suas operações.',
+    seePremium: 'Ver Premium',
+    noDataTitle: 'Sem dados',
+    noDataBody: 'Não há operações para exportar.',
+    exportFail: 'Falha na exportação',
+    confirmDeleteTitle: 'Excluir esta operação?',
+    confirmDeleteBody: 'Esta ação não pode ser desfeita.',
+    deleteFail: 'Falha ao excluir',
+    emptyMessage: 'Ainda não há operações.\nAdicione uma na aba Registrar.',
+  },
   riskCalc: {
     title: 'Calculadora de risco',
     balanceLabel: 'Saldo da conta',

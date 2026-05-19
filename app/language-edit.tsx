@@ -19,7 +19,7 @@ export default function LanguageEditScreen() {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
-  const { locale, setLocale } = useI18n();
+  const { locale, setLocale, t } = useI18n();
   const { updateProfile } = useProfile();
 
   const handlePick = async (next: LocaleCode) => {
@@ -38,7 +38,7 @@ export default function LanguageEditScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>言語</Text>
+        <Text style={styles.headerTitle}>{t('languageEdit.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 

@@ -18,14 +18,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { COUNTRIES, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
 import { TRADE_STYLE_OPTIONS, TradeStyle } from '@/lib/types';
 
+function tradeStyleI18nKey(value: TradeStyle): string {
+  switch (value) {
+    case 'scalping':
+      return 'auth.styleScalping';
+    case 'day_trading':
+      return 'auth.styleDayTrading';
+    case 'swing':
+      return 'auth.styleSwing';
+    case 'position':
+      return 'auth.stylePosition';
+  }
+}
+
 export default function ProfileEditScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
@@ -50,7 +65,7 @@ export default function ProfileEditScreen() {
     if (avatarUploading || saving) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('許可が必要', '画像を選ぶには写真へのアクセス許可が必要です。');
+      Alert.alert(t('profileEdit.permissionTitle'), t('profileEdit.permissionBody'));
       return;
     }
 
@@ -70,7 +85,7 @@ export default function ProfileEditScreen() {
 
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
-      if (!userId) throw new Error('ログインが必要です');
+      if (!userId) throw new Error(t('profileEdit.notLoggedIn'));
 
       const response = await fetch(uri);
       const arrayBuffer = await response.arrayBuffer();
@@ -94,7 +109,7 @@ export default function ProfileEditScreen() {
       await updateProfile({ avatar_url: publicUrl });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('画像のアップロード失敗', msg);
+      Alert.alert(t('profileEdit.uploadFail'), msg);
     } finally {
       setAvatarUploading(false);
     }
@@ -103,17 +118,17 @@ export default function ProfileEditScreen() {
   const removeAvatar = async () => {
     if (avatarUploading || saving) return;
     if (!profile?.avatar_url) return;
-    Alert.alert('プロフィール画像を削除', '画像を削除しますか？', [
-      { text: 'キャンセル', style: 'cancel' },
+    Alert.alert(t('profileEdit.confirmDeletePhotoTitle'), t('profileEdit.confirmDeletePhotoBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '削除',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
             await updateProfile({ avatar_url: null });
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
-            Alert.alert('削除失敗', msg);
+            Alert.alert(t('profileEdit.deleteFail'), msg);
           }
         },
       },
@@ -134,8 +149,8 @@ export default function ProfileEditScreen() {
   const handleSave = async () => {
     if (username.trim() && !/^[a-zA-Z0-9_]+$/.test(username.trim())) {
       Alert.alert(
-        '入力エラー',
-        'ユーザー名は半角英数字とアンダースコア (_) のみ使えます。',
+        t('profileEdit.inputErrorTitle'),
+        t('profileEdit.inputErrorUsername'),
       );
       return;
     }
@@ -151,7 +166,7 @@ export default function ProfileEditScreen() {
       router.back();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert('保存失敗', msg);
+      Alert.alert(t('profileEdit.saveFail'), msg);
     } finally {
       setSaving(false);
     }
@@ -175,12 +190,12 @@ export default function ProfileEditScreen() {
         <Pressable onPress={() => router.back()} disabled={saving}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>プロフィール編集</Text>
+        <Text style={styles.headerTitle}>{t('profileEdit.title')}</Text>
         <Pressable onPress={handleSave} disabled={saving}>
           {saving ? (
             <ActivityIndicator color={c.accent} />
           ) : (
-            <Text style={[styles.headerLink, styles.saveLink]}>保存</Text>
+            <Text style={[styles.headerLink, styles.saveLink]}>{t('profileEdit.save')}</Text>
           )}
         </Pressable>
       </View>
@@ -219,47 +234,47 @@ export default function ProfileEditScreen() {
             </Pressable>
             <Text style={styles.avatarHint}>
               {avatarUploading
-                ? 'アップロード中...'
+                ? t('profileEdit.photoUploading')
                 : profile?.avatar_url
-                  ? 'タップで変更 / 長押しで削除'
-                  : 'タップして画像を選択'}
+                  ? t('profileEdit.photoHintWithImage')
+                  : t('profileEdit.photoHintEmpty')}
             </Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>表示名</Text>
+            <Text style={styles.label}>{t('profileEdit.displayNameLabel')}</Text>
             <TextInput
               style={styles.input}
               value={displayName}
               onChangeText={setDisplayName}
-              placeholder="例: ジェフ"
+              placeholder={t('profileEdit.displayNameExample')}
               placeholderTextColor={c.textSecondary}
               editable={!saving}
             />
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>ユーザー名 (@)</Text>
+            <Text style={styles.label}>{t('profileEdit.usernameLabel')}</Text>
             <TextInput
               style={styles.input}
               value={username}
               onChangeText={setUsername}
-              placeholder="例: jeff_trader"
+              placeholder={t('profileEdit.usernameExample')}
               placeholderTextColor={c.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
               editable={!saving}
             />
-            <Text style={styles.helper}>半角英数字と _ のみ</Text>
+            <Text style={styles.helper}>{t('profileEdit.usernameHelper')}</Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>自己紹介</Text>
+            <Text style={styles.label}>{t('profileEdit.bioLabel')}</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={bio}
               onChangeText={setBio}
-              placeholder="トレード歴・得意な手法など"
+              placeholder={t('profileEdit.bioPlaceholder')}
               placeholderTextColor={c.textSecondary}
               multiline
               numberOfLines={4}
@@ -268,7 +283,7 @@ export default function ProfileEditScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>トレードスタイル</Text>
+            <Text style={styles.label}>{t('profileEdit.tradeStyleLabel')}</Text>
             <View style={styles.chipsRow}>
               {TRADE_STYLE_OPTIONS.map((opt) => {
                 const selected = tradeStyle === opt.value;
@@ -285,7 +300,7 @@ export default function ProfileEditScreen() {
                         selected && styles.chipTextSelected,
                       ]}
                     >
-                      {opt.label}
+                      {t(tradeStyleI18nKey(opt.value))}
                     </Text>
                   </Pressable>
                 );
@@ -294,7 +309,7 @@ export default function ProfileEditScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>国籍</Text>
+            <Text style={styles.label}>{t('profileEdit.nationalityLabel')}</Text>
             {selectedCountry && (
               <View style={styles.selectedCountryBox}>
                 <Text style={styles.selectedFlag}>
@@ -316,7 +331,7 @@ export default function ProfileEditScreen() {
               style={[styles.input, styles.inputMt]}
               value={countrySearch}
               onChangeText={setCountrySearch}
-              placeholder="検索（例: Japan, JP, 日本）"
+              placeholder={t('profileEdit.nationalitySearchPlaceholder')}
               placeholderTextColor={c.textSecondary}
               autoCorrect={false}
               editable={!saving}

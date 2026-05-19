@@ -187,7 +187,7 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       gap: 12,
       backgroundColor: c.surface,
-      borderRadius: 6,
+      borderRadius: 10,
       padding: 12,
     },
     rowInfo: { flex: 1 },

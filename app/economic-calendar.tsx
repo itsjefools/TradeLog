@@ -204,7 +204,7 @@ function makeStyles(c: ThemeColors) {
     },
     eventCard: {
       backgroundColor: c.surface,
-      borderRadius: 4,
+      borderRadius: 8,
       padding: 12,
       gap: 4,
     },
@@ -214,7 +214,7 @@ function makeStyles(c: ThemeColors) {
       gap: 8,
     },
     flag: { fontSize: 18 },
-    impDot: { width: 8, height: 8, borderRadius: 4 },
+    impDot: { width: 8, height: 8, borderRadius: 8 },
     impText: {
       fontSize: 11,
       color: c.textSecondary,

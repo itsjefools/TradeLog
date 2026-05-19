@@ -283,7 +283,7 @@ export function FeedCard({
               paddingVertical: 16,
               marginTop: 8,
               marginHorizontal: 16,
-              borderRadius: 6,
+              borderRadius: 10,
               backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7',
             }}
           >
@@ -786,7 +786,7 @@ function makeMediaStyles(c: ThemeColors, height: number) {
       marginTop: 10,
       width: CARD_INNER,
       height,
-      borderRadius: 6,
+      borderRadius: 10,
       overflow: 'hidden',
       backgroundColor: c.surfaceAlt,
       position: 'relative',
@@ -824,7 +824,7 @@ function makeMediaStyles(c: ThemeColors, height: number) {
       backgroundColor: '#fff',
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: 8,
     },
   });
 }
@@ -1028,7 +1028,7 @@ function makeStyles(c: ThemeColors) {
     verifiedBadge: {
       width: 16,
       height: 16,
-      borderRadius: 4,
+      borderRadius: 8,
       backgroundColor: c.verified,
       alignItems: 'center',
       justifyContent: 'center',
@@ -1062,7 +1062,7 @@ function makeStyles(c: ThemeColors) {
     tradeBlock: {
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
-      borderRadius: 4,
+      borderRadius: 8,
       padding: 12,
       gap: 6,
       marginTop: 6,
@@ -1084,7 +1084,7 @@ function makeStyles(c: ThemeColors) {
     resultBadge: {
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 6,
+      borderRadius: 10,
     },
     resultBadgeWin: {
       backgroundColor: c.win,

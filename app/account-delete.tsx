@@ -17,24 +17,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
-const CONFIRM_PHRASE = '削除';
-
-const DELETION_ITEMS = [
-  'プロフィール（アバター・自己紹介・国籍・トレードスタイル）',
-  '全ての取引記録',
-  '全ての投稿・コメント・いいね・ブックマーク・リポスト',
-  'フォロー関係（双方向）',
-  '送受信した DM の全履歴',
-  '通知履歴',
-  '購入履歴（サブスクリプションは別途 App Store / Google Play で解約してください）',
-];
-
 export default function AccountDeleteScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
+  const CONFIRM_PHRASE = t('accountDelete.confirmPhrase');
+  const DELETION_ITEMS = [
+    t('accountDelete.item1'),
+    t('accountDelete.item2'),
+    t('accountDelete.item3'),
+    t('accountDelete.item4'),
+    t('accountDelete.item5'),
+    t('accountDelete.item6'),
+    t('accountDelete.item7'),
+  ];
   const router = useRouter();
   const { session } = useAuth();
   const email = session?.user.email ?? '';
@@ -50,12 +50,12 @@ export default function AccountDeleteScreen() {
     }
 
     Alert.alert(
-      '本当に削除しますか？',
-      'この操作は取り消せません。\n全てのデータが完全に削除されます。',
+      t('accountDelete.confirmTitle'),
+      t('accountDelete.confirmBody'),
       [
-        { text: 'キャンセル', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '削除する',
+          text: t('accountDelete.confirmDelete'),
           style: 'destructive',
           onPress: async () => {
             // 三重ガード: ダイアログ表示中に値が変わった場合の保険
@@ -69,7 +69,7 @@ export default function AccountDeleteScreen() {
             } catch (e) {
               setDeleting(false);
               Alert.alert(
-                '削除に失敗しました',
+                t('accountDelete.deleteFail'),
                 e instanceof Error ? e.message : String(e),
               );
             }
@@ -85,7 +85,7 @@ export default function AccountDeleteScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>アカウントを削除</Text>
+        <Text style={styles.headerTitle}>{t('accountDelete.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -102,13 +102,13 @@ export default function AccountDeleteScreen() {
           <View style={styles.warningIcon}>
             <Ionicons name="warning" size={28} color="#fff" />
           </View>
-          <Text style={styles.warningTitle}>この操作は取り消せません</Text>
+          <Text style={styles.warningTitle}>{t('accountDelete.warningTitle')}</Text>
           <Text style={styles.warningBody}>
             アカウントを削除すると、{email && `${email} に関連する `}以下のデータが完全に削除されます。
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel}>削除されるデータ</Text>
+        <Text style={styles.sectionLabel}>{t('accountDelete.sectionLabel')}</Text>
         <View style={styles.itemsCard}>
           {DELETION_ITEMS.map((item, i) => (
             <View key={item}>
@@ -162,7 +162,7 @@ export default function AccountDeleteScreen() {
           {deleting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.deleteButtonText}>アカウントを完全に削除</Text>
+            <Text style={styles.deleteButtonText}>{t('accountDelete.deleteButton')}</Text>
           )}
         </Pressable>
 
@@ -171,7 +171,7 @@ export default function AccountDeleteScreen() {
           style={styles.cancelButton}
           disabled={deleting}
         >
-          <Text style={styles.cancelButtonText}>やめる</Text>
+          <Text style={styles.cancelButtonText}>{t('accountDelete.cancelButton')}</Text>
         </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

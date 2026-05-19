@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useUnreadCounts } from '@/hooks/use-unread-counts';
 import { formatRelativeTime } from '@/lib/format-time';
@@ -32,13 +33,6 @@ type NotificationItem = {
 };
 
 type SectionKey = 'today' | 'yesterday' | 'thisWeek' | 'older';
-
-const SECTION_LABEL: Record<SectionKey, string> = {
-  today: '今日',
-  yesterday: '昨日',
-  thisWeek: '今週',
-  older: 'これ以前',
-};
 
 function sectionFor(date: Date): SectionKey {
   const now = new Date();
@@ -70,6 +64,13 @@ function groupByDay(items: NotificationItem[]) {
 
 export default function NotificationsScreen() {
   const c = useThemeColors();
+  const { t } = useI18n();
+  const SECTION_LABEL: Record<SectionKey, string> = {
+    today: t('notifications.today'),
+    yesterday: t('notifications.yesterday'),
+    thisWeek: t('notifications.thisWeek'),
+    older: t('notifications.older'),
+  };
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { session } = useAuth();
@@ -142,7 +143,7 @@ export default function NotificationsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>通知</Text>
+        <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -165,11 +166,8 @@ export default function NotificationsScreen() {
                 size={48}
                 color={c.textSecondary}
               />
-              <Text style={styles.emptyTitle}>通知はまだありません</Text>
-              <Text style={styles.emptyText}>
-                いいね・コメント・フォローがあると{'\n'}
-                ここに表示されます。
-              </Text>
+              <Text style={styles.emptyTitle}>{t('notifications.emptyTitle')}</Text>
+              <Text style={styles.emptyText}>{t('notifications.emptyText')}</Text>
             </View>
           ) : (
             sections.map((section) => (
@@ -191,10 +189,11 @@ export default function NotificationsScreen() {
 
 function NotificationRow({ item }: { item: NotificationItem }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const actor = item.actor;
-  const fallbackName = actor?.email?.split('@')[0] ?? 'ユーザー';
+  const fallbackName = actor?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName =
     actor?.display_name?.trim() ||
     actor?.username?.trim() ||
@@ -203,16 +202,16 @@ function NotificationRow({ item }: { item: NotificationItem }) {
 
   const message =
     item.type === 'like'
-      ? 'があなたの投稿にいいねしました'
+      ? t('notifications.likedYourPost')
       : item.type === 'comment'
-        ? 'があなたの投稿にコメントしました'
+        ? t('notifications.commentedYourPost')
         : item.type === 'follow'
-          ? 'があなたをフォローしました'
+          ? t('notifications.followedYou')
           : item.type === 'mention'
-            ? 'があなたをメンションしました'
+            ? t('notifications.mentionedYou')
             : item.type === 'repost'
-              ? 'があなたの投稿をリポストしました'
-              : 'からの通知';
+              ? t('notifications.repostedYourPost')
+              : t('notifications.fromUser');
 
   const handlePress = () => {
     if (item.type === 'follow') {

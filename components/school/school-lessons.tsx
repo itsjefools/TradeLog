@@ -139,43 +139,53 @@ export function SchoolLessons() {
       data={categories}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
-      renderItem={({ item: cat }) => (
-        <View style={styles.categoryBlock}>
+      renderItem={({ item: cat, index: catIndex }) => (
+        <View
+          style={[
+            styles.categoryBlock,
+            catIndex > 0 && styles.categoryBlockSpaced,
+          ]}
+        >
           <View style={styles.categoryHead}>
             <View
-              style={[styles.categoryIconWrap, { backgroundColor: `${cat.color}25` }]}
+              style={[styles.categoryIconWrap, { backgroundColor: `${cat.color}14` }]}
             >
               <Ionicons
                 name={cat.icon as keyof typeof Ionicons.glyphMap}
-                size={18}
+                size={16}
                 color={cat.color}
               />
             </View>
-            <View style={styles.categoryTitleWrap}>
-              <Text style={styles.categoryName}>
-                {pickLocalized(cat, 'name', lang)}
-              </Text>
-              <Text style={styles.categoryMeta}>
-                {cat.lessons.length} {t('school.lessons')}
-              </Text>
-            </View>
+            <Text style={styles.categoryName}>
+              {pickLocalized(cat, 'name', lang)}
+            </Text>
+            <Text style={styles.categoryCount}>{cat.lessons.length}</Text>
           </View>
 
           {cat.lessons.map((lesson, index) => {
             const diffColor = difficultyColor(lesson.difficulty, c);
             const locked = !lesson.is_free && !isPremium;
+            const isLast = index === cat.lessons.length - 1;
             return (
               <TouchableOpacity
                 key={lesson.id}
                 onPress={() => handleLessonPress(lesson)}
-                activeOpacity={0.7}
-                style={styles.lessonRow}
+                activeOpacity={0.6}
+                style={[
+                  styles.lessonRow,
+                  !isLast && styles.lessonRowDivider,
+                ]}
               >
-                <Text style={[styles.lessonNum, { color: diffColor }]}>
-                  {index + 1}
+                <Text style={styles.lessonNum}>
+                  {String(index + 1).padStart(2, '0')}
                 </Text>
                 <View style={styles.lessonBody}>
-                  <Text style={styles.lessonTitle}>
+                  <Text
+                    style={[
+                      styles.lessonTitle,
+                      locked && styles.lessonTitleLocked,
+                    ]}
+                  >
                     {pickLocalized(lesson, 'title', lang)}
                   </Text>
                   <View style={styles.lessonMetaRow}>
@@ -190,19 +200,20 @@ export function SchoolLessons() {
                   </View>
                 </View>
                 {locked ? (
-                  <View style={styles.premiumBadge}>
-                    <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+                  <View style={styles.lockBadge}>
+                    <Ionicons
+                      name="lock-closed"
+                      size={12}
+                      color={c.textSecondary}
+                    />
                   </View>
-                ) : lesson.is_free ? (
-                  <View style={styles.freeBadge}>
-                    <Text style={styles.freeBadgeText}>FREE</Text>
-                  </View>
-                ) : null}
-                <Ionicons
-                  name="chevron-forward"
-                  size={14}
-                  color={c.textSecondary}
-                />
+                ) : (
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={c.textSecondary}
+                  />
+                )}
               </TouchableOpacity>
             );
           })}
@@ -216,62 +227,66 @@ function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     listContent: {
-      padding: 20,
-      paddingTop: 12,
-      paddingBottom: 40,
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      paddingBottom: 48,
     },
-    categoryBlock: {
-      marginBottom: 24,
+    categoryBlock: {},
+    categoryBlockSpaced: {
+      marginTop: 28,
     },
     categoryHead: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 12,
+      marginBottom: 14,
     },
     categoryIconWrap: {
-      width: 36,
-      height: 36,
-      borderRadius: 10,
+      width: 32,
+      height: 32,
+      borderRadius: 8,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 10,
     },
-    categoryTitleWrap: {
-      flex: 1,
-    },
     categoryName: {
-      fontSize: 17,
+      flex: 1,
+      fontSize: 18,
       fontWeight: '700',
       color: c.textPrimary,
+      letterSpacing: -0.2,
     },
-    categoryMeta: {
+    categoryCount: {
       fontSize: 12,
       color: c.textSecondary,
-      marginTop: 2,
+      fontVariant: ['tabular-nums'],
     },
     lessonRow: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: 14,
-      paddingHorizontal: 14,
-      backgroundColor: c.surface,
-      borderRadius: 10,
-      marginBottom: 6,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.border,
+      paddingHorizontal: 4,
+    },
+    lessonRowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
     },
     lessonNum: {
-      fontSize: 13,
-      fontWeight: '700',
-      width: 24,
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.textSecondary,
+      width: 28,
+      fontVariant: ['tabular-nums'],
     },
     lessonBody: {
       flex: 1,
     },
     lessonTitle: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: '500',
       color: c.textPrimary,
+    },
+    lessonTitleLocked: {
+      color: c.textSecondary,
     },
     lessonMetaRow: {
       flexDirection: 'row',
@@ -279,7 +294,7 @@ function makeStyles(c: ThemeColors) {
       marginTop: 3,
     },
     lessonDuration: {
-      fontSize: 11,
+      fontSize: 12,
       color: c.textSecondary,
     },
     metaDot: {
@@ -290,33 +305,14 @@ function makeStyles(c: ThemeColors) {
       marginHorizontal: 6,
     },
     lessonDifficulty: {
-      fontSize: 11,
+      fontSize: 12,
+      fontWeight: '500',
     },
-    premiumBadge: {
+    lockBadge: {
       paddingHorizontal: 8,
-      paddingVertical: 3,
+      paddingVertical: 6,
       borderRadius: 6,
-      backgroundColor: 'rgba(245, 158, 11, 0.18)',
-      marginRight: 8,
-    },
-    premiumBadgeText: {
-      fontSize: 10,
-      fontWeight: '700',
-      color: '#F59E0B',
-      letterSpacing: 0.4,
-    },
-    freeBadge: {
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: 6,
-      backgroundColor: 'rgba(16, 185, 129, 0.18)',
-      marginRight: 8,
-    },
-    freeBadgeText: {
-      fontSize: 10,
-      fontWeight: '700',
-      color: '#10B981',
-      letterSpacing: 0.4,
+      backgroundColor: c.surfaceAlt,
     },
   });
 }

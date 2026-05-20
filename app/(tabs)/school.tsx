@@ -18,11 +18,11 @@ export default function SchoolScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const [activeTab, setActiveTab] = useState<SchoolTab>('lessons');
 
-  const tabs: { key: SchoolTab; label: string; icon: string }[] = [
-    { key: 'lessons', label: t('school.tab_lessons'), icon: '📖' },
-    { key: 'videos', label: t('school.tab_videos'), icon: '🎬' },
-    { key: 'books', label: t('school.tab_books'), icon: '📚' },
-    { key: 'community', label: t('school.tab_community'), icon: '👥' },
+  const tabs: { key: SchoolTab; label: string }[] = [
+    { key: 'lessons', label: t('school.tab_lessons') },
+    { key: 'videos', label: t('school.tab_videos') },
+    { key: 'books', label: t('school.tab_books') },
+    { key: 'community', label: t('school.tab_community') },
   ];
 
   const renderContent = () => {
@@ -58,11 +58,10 @@ export default function SchoolScreen() {
                 onPress={() => setActiveTab(tab.key)}
                 activeOpacity={0.7}
                 style={[
-                  styles.tabChip,
-                  isActive ? styles.tabChipActive : styles.tabChipInactive,
+                  styles.tabItem,
+                  isActive && styles.tabItemActive,
                 ]}
               >
-                <Text style={styles.tabIcon}>{tab.icon}</Text>
                 <Text
                   style={[
                     styles.tabLabel,
@@ -91,8 +90,8 @@ function makeStyles(c: ThemeColors) {
       paddingBottom: 6,
     },
     title: {
-      fontSize: 26,
-      fontWeight: '700',
+      fontSize: 28,
+      fontWeight: '800',
       color: c.textPrimary,
       letterSpacing: -0.5,
     },
@@ -101,32 +100,23 @@ function makeStyles(c: ThemeColors) {
       borderBottomColor: c.border,
     },
     tabBarContent: {
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      gap: 8,
+      paddingHorizontal: 20,
     },
-    tabChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 20,
+    tabItem: {
+      paddingVertical: 14,
+      paddingHorizontal: 4,
+      marginRight: 24,
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
     },
-    tabChipActive: {
-      backgroundColor: c.accent,
-    },
-    tabChipInactive: {
-      backgroundColor: c.surfaceAlt,
-    },
-    tabIcon: {
-      fontSize: 14,
-      marginRight: 6,
+    tabItemActive: {
+      borderBottomColor: c.accent,
     },
     tabLabel: {
-      fontSize: 13,
+      fontSize: 15,
     },
     tabLabelActive: {
-      color: c.onAccent,
+      color: c.textPrimary,
       fontWeight: '700',
     },
     tabLabelInactive: {

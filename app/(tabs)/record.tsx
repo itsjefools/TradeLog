@@ -88,11 +88,13 @@ export default function RecordScreen() {
     }
   }, [params.date]);
 
+  const pairSearchRef = useRef<TextInput>(null);
   const entryPriceRef = useRef<TextInput>(null);
   const exitPriceRef = useRef<TextInput>(null);
   const lotSizeRef = useRef<TextInput>(null);
   const pnlRef = useRef<TextInput>(null);
   const pnlPipsRef = useRef<TextInput>(null);
+  const memoRef = useRef<TextInput>(null);
   const { addTrade, trades } = useTrades();
   const { favorites, isFavorite, toggleFavorite } = useFavoritePairs();
   const { profile } = useProfile();
@@ -278,6 +280,10 @@ export default function RecordScreen() {
           : applySignToString(prev.pnlPips, newResult),
       };
     });
+    // 結果選択後にエントリー価格にフォーカス
+    if (newResult !== null) {
+      setTimeout(() => entryPriceRef.current?.focus(), 100);
+    }
   };
 
   return (
@@ -290,12 +296,13 @@ export default function RecordScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <ScrollView
           style={styles.flex}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           bounces={false}
         >
           <View style={styles.section}>
@@ -371,22 +378,46 @@ export default function RecordScreen() {
 
           <View style={styles.section}>
             <Text style={styles.label}>{t('record.pairLabel')}</Text>
-            <TextInput
-              style={styles.input}
-              value={pairSearch}
-              onChangeText={setPairSearch}
-              placeholder={t('record.pairSearchPlaceholder')}
-              placeholderTextColor={c.textSecondary}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              editable={!loading}
-            />
-            {form.currencyPair && (
-              <Text style={styles.selectedPairText}>
-                選択中: <Text style={styles.selectedPairValue}>{form.currencyPair}</Text>
-              </Text>
+
+            {form.currencyPair ? (
+              <View style={styles.selectedPairCard}>
+                <Text style={styles.selectedPairCardText}>
+                  {form.currencyPair}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    updateCurrencyPair('');
+                    setPairSearch('');
+                    setTimeout(() => pairSearchRef.current?.focus(), 50);
+                  }}
+                  hitSlop={8}
+                  style={styles.selectedPairClear}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={22}
+                    color={c.textSecondary}
+                  />
+                </Pressable>
+              </View>
+            ) : (
+              <TextInput
+                ref={pairSearchRef}
+                style={styles.input}
+                value={pairSearch}
+                onChangeText={setPairSearch}
+                placeholder={t('record.pairSearchPlaceholder')}
+                placeholderTextColor={c.textSecondary}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => entryPriceRef.current?.focus()}
+                editable={!loading}
+              />
             )}
-            {!isSearching && favorites.length > 0 && (
+
+            {!isSearching && !form.currencyPair && favorites.length > 0 && (
               <Text style={styles.favHeader}>{t('record.favHeader')}</Text>
             )}
             <View style={[styles.chipsRow, styles.chipsRowMt]}>
@@ -528,6 +559,7 @@ export default function RecordScreen() {
                 placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
                 returnKeyType="next"
+                blurOnSubmit={false}
                 onSubmitEditing={() => exitPriceRef.current?.focus()}
                 editable={!loading}
               />
@@ -543,6 +575,7 @@ export default function RecordScreen() {
                 placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
                 returnKeyType="next"
+                blurOnSubmit={false}
                 onSubmitEditing={() => lotSizeRef.current?.focus()}
                 editable={!loading}
               />
@@ -560,6 +593,7 @@ export default function RecordScreen() {
               placeholderTextColor={c.textSecondary}
               keyboardType="decimal-pad"
               returnKeyType="next"
+              blurOnSubmit={false}
               onSubmitEditing={() => pnlRef.current?.focus()}
               editable={!loading}
             />
@@ -575,8 +609,9 @@ export default function RecordScreen() {
                 onChangeText={(t) => setField('pnl', t)}
                 placeholder={t('record.pnlExample')}
                 placeholderTextColor={c.textSecondary}
-                keyboardType="numbers-and-punctuation"
+                keyboardType="decimal-pad"
                 returnKeyType="next"
+                blurOnSubmit={false}
                 onSubmitEditing={() => pnlPipsRef.current?.focus()}
                 editable={!loading}
               />
@@ -590,8 +625,10 @@ export default function RecordScreen() {
                 onChangeText={(t) => setField('pnlPips', t)}
                 placeholder={t('record.pipsExample')}
                 placeholderTextColor={c.textSecondary}
-                keyboardType="numbers-and-punctuation"
-                returnKeyType="done"
+                keyboardType="decimal-pad"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => memoRef.current?.focus()}
                 editable={!loading}
               />
             </View>
@@ -600,11 +637,14 @@ export default function RecordScreen() {
           <View style={styles.section}>
             <Text style={styles.label}>{t('record.memoLabel')}</Text>
             <TextInput
+              ref={memoRef}
               style={[styles.input, styles.inputMultiline]}
               value={form.memo}
               onChangeText={(t) => setField('memo', t)}
               placeholder={t('record.memoPlaceholder')}
               placeholderTextColor={c.textSecondary}
+              keyboardType="default"
+              returnKeyType="done"
               multiline
               maxLength={1000}
               editable={!loading}
@@ -800,14 +840,27 @@ function makeStyles(c: ThemeColors) {
   chipsRowMt: {
     marginTop: 12,
   },
-  selectedPairText: {
-    marginTop: 10,
-    fontSize: 12,
-    color: c.textSecondary,
+  selectedPairCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: `${c.accent}15`,
+    borderWidth: 1.5,
+    borderColor: c.accent,
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  selectedPairValue: {
+  selectedPairCardText: {
+    fontSize: 20,
+    fontWeight: '800',
     color: c.accent,
-    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  selectedPairClear: {
+    position: 'absolute',
+    right: 10,
+    padding: 4,
   },
   noMatchText: {
     fontSize: 13,

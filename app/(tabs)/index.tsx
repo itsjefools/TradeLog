@@ -14,7 +14,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FeedCard, FeedCardItem } from '@/components/feed-card';
-import { FeedRecommendations } from '@/components/feed-recommendations';
 import { FeedSkeletonList } from '@/components/skeleton';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
@@ -390,17 +389,14 @@ export default function FeedScreen() {
             />
           }
           ListHeaderComponent={
-            <>
-              {error && (
-                <View style={styles.errorBox}>
-                  <Text style={styles.errorText}>
-                    {t('feed.errorPrefix')}
-                    {error}
-                  </Text>
-                </View>
-              )}
-              <FeedRecommendations />
-            </>
+            error ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>
+                  {t('feed.errorPrefix')}
+                  {error}
+                </Text>
+              </View>
+            ) : null
           }
           ListEmptyComponent={
             <View style={styles.emptyBox}>

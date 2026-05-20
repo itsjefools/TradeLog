@@ -14,7 +14,7 @@ export default {
     loss: '損切り',
   },
   tabs: {
-    feed: 'フィード',
+    feed: 'フィード✨',
     record: '記録',
     analytics: '分析',
     school: 'スクール',

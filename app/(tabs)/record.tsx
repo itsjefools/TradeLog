@@ -416,8 +416,6 @@ export default function RecordScreen() {
                     mode="time"
                     display="spinner"
                     locale={pickerLocale(locale)}
-                    themeVariant={c.background === '#FFFFFF' ? 'light' : 'dark'}
-                    accentColor={c.accent}
                     is24Hour
                     onChange={(_, selected) => {
                       if (selected) setTradedAt(selected);

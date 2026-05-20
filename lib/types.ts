@@ -28,6 +28,7 @@ export type Profile = {
   bio: string | null;
   trade_style: string | null;
   language: string | null;
+  currency: string | null;
   is_premium: boolean | null;
   nationality: string | null;
   is_verified: boolean | null;
@@ -43,9 +44,32 @@ export type Profile = {
  */
 export const PROFILE_COLUMNS = `
   id, email, username, display_name, avatar_url, bio,
-  trade_style, language, is_premium, nationality, is_verified,
+  trade_style, language, currency, is_premium, nationality, is_verified,
   monthly_pnl_goal, push_token, created_at
 `;
+
+// サポートする取引通貨。設定画面 → 通貨で選択し、profiles.currency に保存。
+export const SUPPORTED_CURRENCIES = [
+  { code: 'JPY', label: '日本円 (¥)', symbol: '¥', decimals: 0 },
+  { code: 'USD', label: 'US Dollar ($)', symbol: '$', decimals: 2 },
+  { code: 'EUR', label: 'Euro (€)', symbol: '€', decimals: 2 },
+  { code: 'GBP', label: 'British Pound (£)', symbol: '£', decimals: 2 },
+  { code: 'AUD', label: 'Australian Dollar (A$)', symbol: 'A$', decimals: 2 },
+  { code: 'CAD', label: 'Canadian Dollar (C$)', symbol: 'C$', decimals: 2 },
+  { code: 'CHF', label: 'Swiss Franc (CHF)', symbol: 'CHF', decimals: 2 },
+  { code: 'NZD', label: 'New Zealand Dollar (NZ$)', symbol: 'NZ$', decimals: 2 },
+  { code: 'BRL', label: 'Brazilian Real (R$)', symbol: 'R$', decimals: 2 },
+  { code: 'MXN', label: 'Mexican Peso (MX$)', symbol: 'MX$', decimals: 2 },
+] as const;
+
+export type CurrencyCode = (typeof SUPPORTED_CURRENCIES)[number]['code'];
+
+export function getCurrencyInfo(code: string | null | undefined) {
+  return (
+    SUPPORTED_CURRENCIES.find((c) => c.code === code) ??
+    SUPPORTED_CURRENCIES[0]
+  );
+}
 
 export type Post = {
   id: string;

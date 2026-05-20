@@ -17,6 +17,7 @@ import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
+import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { useTrades } from '@/hooks/use-trades';
 import { exportTradesCsv } from '@/lib/export-csv';
 import { getPlan } from '@/lib/premium';
@@ -154,6 +155,8 @@ function TradeRow({
 }) {
   const c = useThemeColors();
   const { t } = useI18n();
+  const { profile } = useProfile();
+  const currency = profile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
   const directionLabel = trade.direction === 'long' ? t('common.long') : t('common.short');
   const resultLabel =
@@ -186,7 +189,7 @@ function TradeRow({
       </View>
       <View style={styles.rowMid}>
         <Text style={[styles.pnl, pnlColor(trade.pnl, c)]}>
-          {trade.pnl !== null ? formatPnl(trade.pnl) : '—'}
+          {trade.pnl !== null ? formatPnlWithCurrency(trade.pnl, currency) : '—'}
         </Text>
         {trade.pnl_pips !== null && (
           <Text style={[styles.pips, pnlColor(trade.pnl_pips, c)]}>
@@ -199,10 +202,7 @@ function TradeRow({
   );
 }
 
-function formatPnl(n: number): string {
-  const sign = n > 0 ? '+' : '';
-  return `${sign}${Math.round(n).toLocaleString('ja-JP')}円`;
-}
+// formatPnl は formatPnlWithCurrency(n, currency) に置換済み
 
 function formatPips(n: number): string {
   const sign = n > 0 ? '+' : '';

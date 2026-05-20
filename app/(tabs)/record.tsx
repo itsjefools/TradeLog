@@ -333,24 +333,29 @@ export default function RecordScreen() {
               <Pressable
                 style={styles.datePickerBackdrop}
                 onPress={() => setShowDatePicker(false)}
-              />
-              <View style={styles.datePickerSheet}>
-                <View style={styles.datePickerHeader}>
-                  <Pressable onPress={() => setShowDatePicker(false)} hitSlop={12}>
-                    <Text style={styles.datePickerDone}>{t('record.doneButton')}</Text>
-                  </Pressable>
-                </View>
-                <DateTimePicker
-                  value={tradedAt}
-                  mode="date"
-                  display="spinner"
-                  maximumDate={new Date()}
-                  themeVariant={c.background === '#fff' ? 'light' : 'dark'}
-                  onChange={(_, selected) => {
-                    if (selected) setTradedAt(selected);
-                  }}
-                />
-              </View>
+              >
+                <Pressable
+                  style={styles.datePickerSheet}
+                  onPress={(e) => e.stopPropagation()}
+                >
+                  <View style={styles.datePickerHeader}>
+                    <Pressable onPress={() => setShowDatePicker(false)} hitSlop={12}>
+                      <Text style={styles.datePickerDone}>{t('record.doneButton')}</Text>
+                    </Pressable>
+                  </View>
+                  <DateTimePicker
+                    value={tradedAt}
+                    mode="date"
+                    display="inline"
+                    maximumDate={new Date()}
+                    themeVariant={c.background === '#FFFFFF' ? 'light' : 'dark'}
+                    accentColor={c.accent}
+                    onChange={(_, selected) => {
+                      if (selected) setTradedAt(selected);
+                    }}
+                  />
+                </Pressable>
+              </Pressable>
             </Modal>
           )}
 
@@ -764,10 +769,13 @@ function makeStyles(c: ThemeColors) {
   datePickerBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
   datePickerSheet: {
     backgroundColor: c.surface,
     paddingBottom: 24,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
   },
   datePickerHeader: {
     flexDirection: 'row',

@@ -33,6 +33,7 @@ import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
+import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { getPlan } from '@/lib/premium';
 import { Trade } from '@/lib/types';
 
@@ -112,8 +113,8 @@ export default function AnalyticsScreen() {
   );
 
   const stats = useMemo(
-    () => computeStats(monthlyTrades, c),
-    [monthlyTrades, c],
+    () => computeStats(monthlyTrades, c, profile?.currency),
+    [monthlyTrades, c, profile?.currency],
   );
 
   const dailyData = useMemo(
@@ -451,6 +452,8 @@ function GoalProgress({
 }) {
   const c = useThemeColors();
   const { t } = useI18n();
+  const { profile } = useProfile();
+  const currency = profile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
   const pct = goal > 0 ? Math.max(0, Math.min(100, (actual / goal) * 100)) : 0;
   const achieved = actual >= goal;
@@ -475,10 +478,10 @@ function GoalProgress({
       </View>
       <View style={styles.goalRow}>
         <Text style={styles.goalSub}>
-          {t('analytics.current')}: {Math.round(actual).toLocaleString('ja-JP')}円
+          {t('analytics.current')}: {formatPnlWithCurrency(actual, currency)}
         </Text>
         <Text style={styles.goalSub}>
-          {t('analytics.goal')}: {Math.round(goal).toLocaleString('ja-JP')}円
+          {t('analytics.goal')}: {formatPnlWithCurrency(goal, currency)}
         </Text>
       </View>
     </View>
@@ -542,6 +545,8 @@ function HourlyHeatmap({ trades }: { trades: Trade[] }) {
 function WeekdayPerf({ trades }: { trades: Trade[] }) {
   const c = useThemeColors();
   const { t } = useI18n();
+  const { profile } = useProfile();
+  const currency = profile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
   const labels = [
     t('record.daySun'),
@@ -585,7 +590,7 @@ function WeekdayPerf({ trades }: { trades: Trade[] }) {
             </Text>
             <View style={styles.weekdayStats}>
               <Text style={[styles.weekdayPnl, pnlColor(v.pnl, c)]}>
-                {v.count > 0 ? formatPnl(v.pnl) : '—'}
+                {v.count > 0 ? formatPnl(v.pnl, currency) : '—'}
               </Text>
               <Text style={styles.weekdaySub}>
                 {v.count}回{winRate !== null ? ` · 勝率${winRate}%` : ''}
@@ -736,6 +741,8 @@ function DayDetail({
 }) {
   const c = useThemeColors();
   const { t } = useI18n();
+  const { profile } = useProfile();
+  const currency = profile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
 
   const stats = useMemo(() => {
@@ -778,7 +785,7 @@ function DayDetail({
                   pnlColor(stats.total, c),
                 ]}
               >
-                {formatPnl(stats.total)}
+                {formatPnl(stats.total, currency)}
               </Text>
             </View>
             {stats.winRate !== null && (
@@ -825,7 +832,7 @@ function DayDetail({
                 </View>
                 <View style={styles.dayTradeNumbers}>
                   <Text style={[styles.tradePnl, pnlColor(trade.pnl, c)]}>
-                    {trade.pnl !== null ? formatPnl(trade.pnl) : '—'}
+                    {trade.pnl !== null ? formatPnl(trade.pnl, currency) : '—'}
                   </Text>
                   {trade.pnl_pips !== null && (
                     <Text
@@ -904,6 +911,8 @@ function TradeRow({
 }) {
   const c = useThemeColors();
   const { t } = useI18n();
+  const { profile } = useProfile();
+  const currency = profile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
   const directionLabel = trade.direction === 'long' ? t('common.long') : t('common.short');
   const resultLabel =
@@ -942,7 +951,7 @@ function TradeRow({
       </View>
       <View style={styles.tradeRowMid}>
         <Text style={[styles.tradePnl, pnlColor(trade.pnl, c)]}>
-          {trade.pnl !== null ? formatPnl(trade.pnl) : '—'}
+          {trade.pnl !== null ? formatPnl(trade.pnl, currency) : '—'}
         </Text>
         {trade.pnl_pips !== null && (
           <Text style={[styles.tradePips, pnlColor(trade.pnl_pips, c)]}>
@@ -966,7 +975,7 @@ type Stats = {
   avgPipsStyle?: TextStyle;
 };
 
-function computeStats(monthly: Trade[], c: ThemeColors): Stats {
+function computeStats(monthly: Trade[], c: ThemeColors, currency: string | null | undefined): Stats {
   const withPnl = monthly.filter((t) => t.pnl !== null);
   const totalPnl = withPnl.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
   const avgPnl = withPnl.length > 0 ? totalPnl / withPnl.length : null;
@@ -998,9 +1007,9 @@ function computeStats(monthly: Trade[], c: ThemeColors): Stats {
 
   return {
     tradeCount: monthly.length,
-    pnlDisplay: withPnl.length === 0 ? '—' : formatPnl(totalPnl),
+    pnlDisplay: withPnl.length === 0 ? '—' : formatPnl(totalPnl, currency),
     pnlStyle: withPnl.length === 0 ? undefined : pnlColor(totalPnl, c),
-    avgPnlDisplay: avgPnl === null ? '—' : formatPnl(avgPnl),
+    avgPnlDisplay: avgPnl === null ? '—' : formatPnl(avgPnl, currency),
     avgPnlStyle: avgPnl === null ? undefined : pnlColor(avgPnl, c),
     winRateDisplay: winRate === null ? '—' : `${winRate}%`,
     rrDisplay: rr === null ? '—' : rr.toFixed(2),
@@ -1115,9 +1124,8 @@ function buildWinLossDistribution(
   return result;
 }
 
-function formatPnl(n: number): string {
-  const sign = n > 0 ? '+' : '';
-  return `${sign}${Math.round(n).toLocaleString('ja-JP')}円`;
+function formatPnl(n: number, currency: string | null | undefined): string {
+  return formatPnlWithCurrency(n, currency);
 }
 
 function formatPips(n: number): string {

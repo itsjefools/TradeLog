@@ -15,7 +15,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
+import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
+import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
 
@@ -187,6 +189,8 @@ function RankingRowItem({
 }) {
   const c = useThemeColors();
   const { t } = useI18n();
+  const { profile } = useProfile();
+  const currency = profile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
   const fallbackName = t('profile.defaultName');
   const displayName =
@@ -209,7 +213,9 @@ function RankingRowItem({
       case 'pnl':
         return {
           text:
-            row.total_pnl !== null ? formatPnl(row.total_pnl) : '—',
+            row.total_pnl !== null
+              ? formatPnlWithCurrency(row.total_pnl, currency)
+              : '—',
           style: pnlColor(row.total_pnl, c),
         };
       case 'pips':
@@ -291,10 +297,7 @@ function RankingRowItem({
   );
 }
 
-function formatPnl(n: number): string {
-  const sign = n > 0 ? '+' : '';
-  return `${sign}${Math.round(n).toLocaleString('ja-JP')}円`;
-}
+// formatPnl は formatPnlWithCurrency(n, currency) に置換済み
 
 function formatPips(n: number): string {
   const sign = n > 0 ? '+' : '';

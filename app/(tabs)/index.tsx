@@ -394,17 +394,6 @@ export default function FeedScreen() {
         />
       )}
 
-      <Link href="/create-post" asChild>
-        <Pressable
-          style={({ pressed }) => [
-            styles.fab,
-            pressed && styles.fabPressed,
-          ]}
-          hitSlop={6}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </Pressable>
-      </Link>
     </SafeAreaView>
   );
 }
@@ -455,26 +444,6 @@ function makeStyles(c: ThemeColors) {
     },
     headerButtonPressed: {
       opacity: 0.7,
-    },
-    fab: {
-      position: 'absolute',
-      bottom: 20,
-      right: 20,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: c.accent,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: c.accent,
-      shadowOpacity: 0.4,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 8,
-    },
-    fabPressed: {
-      opacity: 0.85,
-      transform: [{ scale: 0.95 }],
     },
     title: {
       fontSize: 28,

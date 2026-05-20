@@ -21,7 +21,9 @@ import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useBlocks } from '@/hooks/use-blocks';
 import { useI18n } from '@/hooks/use-i18n';
+import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
+import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
 import { PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
@@ -409,6 +411,8 @@ export default function UserProfileScreen() {
 function TradeCard({ trade }: { trade: Trade }) {
   const c = useThemeColors();
   const { t } = useI18n();
+  const { profile: viewerProfile } = useProfile();
+  const currency = viewerProfile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
   const directionLabel = trade.direction === 'long' ? t('common.long') : t('common.short');
   const resultLabel =
@@ -437,7 +441,7 @@ function TradeCard({ trade }: { trade: Trade }) {
       </View>
       <View style={styles.tradeNumbers}>
         <Text style={[styles.tradePnl, pnlColor(trade.pnl, c)]}>
-          {trade.pnl !== null ? formatPnl(trade.pnl) : '—'}
+          {trade.pnl !== null ? formatPnlWithCurrency(trade.pnl, currency) : '—'}
         </Text>
         {trade.pnl_pips !== null && (
           <Text style={[styles.tradePips, pnlColor(trade.pnl_pips, c)]}>
@@ -452,10 +456,7 @@ function TradeCard({ trade }: { trade: Trade }) {
   );
 }
 
-function formatPnl(n: number): string {
-  const sign = n > 0 ? '+' : '';
-  return `${sign}${Math.round(n).toLocaleString('ja-JP')}円`;
-}
+// formatPnl は formatPnlWithCurrency(n, currency) に置換済み
 
 function formatPips(n: number): string {
   const sign = n > 0 ? '+' : '';

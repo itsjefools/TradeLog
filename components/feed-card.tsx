@@ -31,7 +31,9 @@ import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
+import { useProfile } from '@/hooks/use-profile';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
+import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { formatRelativeTime } from '@/lib/format-time';
 import { tapSuccess } from '@/lib/haptics';
@@ -64,6 +66,8 @@ export function FeedCard({
 }) {
   const c = useThemeColors();
   const { t } = useI18n();
+  const { profile: myProfile } = useProfile();
+  const currency = myProfile?.currency;
   const { resolved } = useTheme();
   const isDark = resolved === 'dark';
   const styles = useMemo(() => makeStyles(c), [c]);
@@ -333,7 +337,7 @@ export function FeedCard({
         </View>
         <View style={styles.compactRow2}>
           <Text style={[styles.compactPnl, pnlColor(trade.pnl, c)]}>
-            {trade.pnl !== null ? formatPnl(trade.pnl) : '—'}
+            {trade.pnl !== null ? formatPnlWithCurrency(trade.pnl, currency) : '—'}
           </Text>
           {trade.pnl_pips !== null && (
             <Text style={[styles.compactPips, pnlColor(trade.pnl_pips, c)]}>
@@ -487,7 +491,7 @@ export function FeedCard({
           </View>
           <View style={styles.tradeNumbers}>
             <Text style={[styles.tradePnl, pnlColor(trade.pnl, c)]}>
-              {trade.pnl !== null ? formatPnl(trade.pnl) : '—'}
+              {trade.pnl !== null ? formatPnlWithCurrency(trade.pnl, currency) : '—'}
             </Text>
             {trade.pnl_pips !== null && (
               <Text style={[styles.tradePips, pnlColor(trade.pnl_pips, c)]}>
@@ -876,10 +880,7 @@ function LikeButton({
   );
 }
 
-function formatPnl(n: number): string {
-  const sign = n > 0 ? '+' : '';
-  return `${sign}${Math.round(n).toLocaleString('ja-JP')}円`;
-}
+// 通貨対応の P&L 表示は formatPnlWithCurrency(n, currency) を使う
 
 function formatPips(n: number): string {
   const sign = n > 0 ? '+' : '';

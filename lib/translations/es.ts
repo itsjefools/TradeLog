@@ -309,6 +309,10 @@ export default {
   languageEdit: {
     title: 'Idioma',
   },
+  currencyEdit: {
+    title: 'Moneda',
+    description: 'Moneda usada para mostrar P&G en los registros.',
+  },
   accountDelete: {
     title: 'Eliminar cuenta',
     warningTitle: 'Esta acción es permanente',
@@ -458,6 +462,7 @@ export default {
     themeLight: 'Claro',
     themeDark: 'Oscuro',
     language: 'Idioma',
+    currency: 'Moneda',
     logout: 'Cerrar sesión',
     logoutConfirmTitle: 'Cerrar sesión',
     logoutConfirmBody: '¿Seguro que quieres cerrar sesión?',

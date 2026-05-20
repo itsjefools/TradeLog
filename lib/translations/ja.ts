@@ -101,6 +101,7 @@ export default {
     themeLight: 'ライト',
     themeDark: 'ダーク',
     language: '言語',
+    currency: '通貨',
     logout: 'ログアウト',
     logoutConfirmTitle: 'ログアウト',
     logoutConfirmBody: '本当にログアウトしますか?',
@@ -354,6 +355,10 @@ export default {
   },
   languageEdit: {
     title: '言語',
+  },
+  currencyEdit: {
+    title: '通貨',
+    description: '取引記録の P&L 表示に使う通貨を選択します。',
   },
   accountDelete: {
     title: 'アカウントを削除',

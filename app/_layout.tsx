@@ -179,6 +179,10 @@ function ThemedRoot() {
               options={{ headerShown: false }}
             />
             <Stack.Screen
+              name="currency-edit"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
               name="blocked-users"
               options={{ headerShown: false }}
             />

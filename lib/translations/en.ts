@@ -304,6 +304,10 @@ export default {
   languageEdit: {
     title: 'Language',
   },
+  currencyEdit: {
+    title: 'Currency',
+    description: 'Currency used for P&L display in trade records.',
+  },
   accountDelete: {
     title: 'Delete account',
     warningTitle: 'This action is permanent',
@@ -452,6 +456,7 @@ export default {
     themeLight: 'Light',
     themeDark: 'Dark',
     language: 'Language',
+    currency: 'Currency',
     logout: 'Log out',
     logoutConfirmTitle: 'Log out',
     logoutConfirmBody: 'Are you sure you want to log out?',

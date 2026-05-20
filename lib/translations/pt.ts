@@ -308,6 +308,10 @@ export default {
   languageEdit: {
     title: 'Idioma',
   },
+  currencyEdit: {
+    title: 'Moeda',
+    description: 'Moeda usada para exibir L&P nos registros.',
+  },
   accountDelete: {
     title: 'Excluir conta',
     warningTitle: 'Esta ação é permanente',
@@ -457,6 +461,7 @@ export default {
     themeLight: 'Claro',
     themeDark: 'Escuro',
     language: 'Idioma',
+    currency: 'Moeda',
     logout: 'Sair',
     logoutConfirmTitle: 'Sair',
     logoutConfirmBody: 'Tem certeza que deseja sair?',

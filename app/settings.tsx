@@ -18,6 +18,7 @@ import { SUPPORTED_LOCALES, useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
+import { getCurrencyInfo } from '@/lib/types';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -47,6 +48,7 @@ export default function SettingsScreen() {
   const currentLocaleLabel =
     SUPPORTED_LOCALES.find((l) => l.code === locale)?.label ??
     t('settings.defaultLanguageLabel');
+  const currentCurrencyLabel = getCurrencyInfo(profile?.currency).code;
 
   const handleLogout = () => {
     Alert.alert(t('settings.logoutConfirmTitle'), t('settings.logoutConfirmBody'), [
@@ -324,6 +326,30 @@ export default function SettingsScreen() {
                 numberOfLines={1}
               >
                 {currentLocaleLabel}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={c.textSecondary}
+              />
+            </View>
+          }
+        />
+        <SettingRow
+          icon="cash-outline"
+          label={t('settings.currency')}
+          onPress={() => router.push('/currency-edit')}
+          rightElement={
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: c.textSecondary,
+                  marginRight: 6,
+                }}
+                numberOfLines={1}
+              >
+                {currentCurrencyLabel}
               </Text>
               <Ionicons
                 name="chevron-forward"

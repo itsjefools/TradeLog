@@ -16,7 +16,9 @@ import { Avatar } from '@/components/avatar';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
+import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
+import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { supabase } from '@/lib/supabase';
 import { Post, PROFILE_COLUMNS, Profile, Trade } from '@/lib/types';
 
@@ -124,6 +126,8 @@ function BookmarkCard({
 }) {
   const c = useThemeColors();
   const { t } = useI18n();
+  const { profile: myProfile } = useProfile();
+  const currency = myProfile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
   const profile = item.profile;
   const trade = item.trade;
@@ -159,7 +163,7 @@ function BookmarkCard({
         </View>
         {trade && trade.pnl !== null && (
           <Text style={[styles.pnl, pnlColor(trade.pnl, c)]}>
-            {formatPnl(trade.pnl)}
+            {formatPnlWithCurrency(trade.pnl, currency)}
           </Text>
         )}
         <Ionicons name="bookmark" size={16} color={c.accent} />
@@ -173,10 +177,7 @@ function BookmarkCard({
   );
 }
 
-function formatPnl(n: number): string {
-  const sign = n > 0 ? '+' : '';
-  return `${sign}${Math.round(n).toLocaleString('ja-JP')}円`;
-}
+// formatPnl は formatPnlWithCurrency(n, currency) に置換済み
 
 function pnlColor(n: number | null, c: ThemeColors): TextStyle | undefined {
   if (n === null || n === 0) return undefined;

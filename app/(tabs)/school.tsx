@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SchoolBooks } from '@/components/school/school-books';
 import { SchoolLessons } from '@/components/school/school-lessons';
+import { SchoolVideos } from '@/components/school/school-videos';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
@@ -27,9 +29,9 @@ export default function SchoolScreen() {
       case 'lessons':
         return <SchoolLessons />;
       case 'videos':
-        return <ComingSoon label={t('school.tab_videos')} />;
+        return <SchoolVideos />;
       case 'books':
-        return <ComingSoon label={t('school.tab_books')} />;
+        return <SchoolBooks />;
       case 'community':
         return <ComingSoon label={t('school.tab_community')} />;
     }

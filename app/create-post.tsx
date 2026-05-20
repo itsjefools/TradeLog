@@ -28,8 +28,7 @@ import { FREE_LIMITS, getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
 import {
   LocalMedia,
-  pickImagesFromLibrary,
-  pickVideoFromLibrary,
+  pickMediaFromLibrary,
   takePhotoWithCamera,
   uploadPostMedia,
 } from '@/lib/upload-media';
@@ -90,15 +89,35 @@ export default function CreatePostScreen() {
 
   const remainingSlots = MAX_MEDIA - media.length;
 
-  const handlePickImages = async () => {
+  const translateMediaError = (msg: string): string => {
+    switch (msg) {
+      case 'video_too_large':
+        return t('post.video_too_large');
+      case 'image_too_large':
+        return t('post.image_too_large');
+      case 'video_too_long':
+        return t('post.video_too_long');
+      case 'media_permission_denied':
+        return t('post.media_permission_denied');
+      case 'camera_permission_denied':
+        return t('post.camera_permission_denied');
+      case 'not_authenticated':
+        return t('post.not_authenticated');
+      default:
+        return msg;
+    }
+  };
+
+  const handlePickMedia = async () => {
     if (remainingSlots <= 0) return;
     try {
-      const picked = await pickImagesFromLibrary(remainingSlots);
+      const picked = await pickMediaFromLibrary(remainingSlots);
       if (picked.length > 0) {
         setMedia((prev) => [...prev, ...picked].slice(0, MAX_MEDIA));
       }
     } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      Alert.alert(t('common.error'), translateMediaError(msg));
     }
   };
 
@@ -108,17 +127,8 @@ export default function CreatePostScreen() {
       const photo = await takePhotoWithCamera();
       if (photo) setMedia((prev) => [...prev, photo].slice(0, MAX_MEDIA));
     } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  const handlePickVideo = async () => {
-    if (remainingSlots <= 0) return;
-    try {
-      const video = await pickVideoFromLibrary();
-      if (video) setMedia((prev) => [...prev, video].slice(0, MAX_MEDIA));
-    } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      Alert.alert(t('common.error'), translateMediaError(msg));
     }
   };
 
@@ -149,7 +159,7 @@ export default function CreatePostScreen() {
     }
     setSubmitting(true);
     try {
-      const imageUrls = await uploadPostMedia(media);
+      const { imageUrls, videoUrls } = await uploadPostMedia(media);
       const hashtags = extractHashtags(text);
 
       const { error } = await supabase.from('posts').insert({
@@ -157,7 +167,8 @@ export default function CreatePostScreen() {
         trade_id: null,
         post_type: 'text',
         content: trimmed || null,
-        image_urls: imageUrls,
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
+        video_urls: videoUrls.length > 0 ? videoUrls : null,
         hashtags,
         likes_count: 0,
         comments_count: 0,
@@ -169,7 +180,8 @@ export default function CreatePostScreen() {
       router.back();
     } catch (e) {
       notifyError();
-      Alert.alert(t('createPost.postFail'), e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      Alert.alert(t('createPost.postFail'), translateMediaError(msg));
     } finally {
       setSubmitting(false);
     }
@@ -297,13 +309,7 @@ export default function CreatePostScreen() {
           <ToolButton
             icon="image-outline"
             disabled={submitting || remainingSlots <= 0}
-            onPress={handlePickImages}
-            c={c}
-          />
-          <ToolButton
-            icon="videocam-outline"
-            disabled={submitting || remainingSlots <= 0}
-            onPress={handlePickVideo}
+            onPress={handlePickMedia}
             c={c}
           />
           <View style={styles.toolDivider} />

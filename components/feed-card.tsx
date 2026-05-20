@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ResizeMode, Video } from 'expo-av';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -112,8 +112,6 @@ export function FeedCard({
       ],
     );
   };
-
-  const handleReport = () => setReportVisible(true);
 
   const handleShare = async () => {
     const trade = item.trade;
@@ -306,12 +304,18 @@ export function FeedCard({
     </Modal>
   );
 
+  const mediaUrls = useMemo(() => {
+    const imgs = item.image_urls ?? [];
+    const vids = item.video_urls ?? [];
+    return [...imgs, ...vids];
+  }, [item.image_urls, item.video_urls]);
+
   // 取引結果のみ(本文・画像なし)はTradingView風コンパクト1行レイアウト
   const isCompactTradeOnly =
     item.post_type === 'trade_result' &&
     !!trade &&
     (!item.content || item.content.trim() === '') &&
-    (!item.image_urls || item.image_urls.length === 0);
+    mediaUrls.length === 0;
 
   if (isCompactTradeOnly && trade) {
     const dirShort = trade.direction === 'long' ? 'L' : 'S';
@@ -327,11 +331,15 @@ export function FeedCard({
           <Text style={styles.compactPair}>{trade.currency_pair}</Text>
           <Text style={[styles.compactDir, { color: dirColor }]}>{dirShort}</Text>
           <Text style={styles.compactPriceFlow}>{priceFlow}</Text>
-          <TouchableOpacity onPress={handleMenu} hitSlop={8} style={{ padding: 4 }}>
+          <TouchableOpacity
+            onPress={handleMenu}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ padding: 6 }}
+          >
             <Ionicons
               name="ellipsis-horizontal"
-              size={14}
-              color={c.textSecondary}
+              size={18}
+              color={c.textPrimary}
             />
           </TouchableOpacity>
         </View>
@@ -451,15 +459,13 @@ export function FeedCard({
         <TouchableOpacity
           onPress={handleMenu}
           activeOpacity={0.6}
-          style={{
-            padding: 8,
-            marginRight: -8,
-          }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={{ padding: 8 }}
         >
           <Ionicons
             name="ellipsis-horizontal"
-            size={18}
-            color={c.textSecondary}
+            size={20}
+            color={c.textPrimary}
           />
         </TouchableOpacity>
       </View>
@@ -506,23 +512,21 @@ export function FeedCard({
         <Text style={styles.memo}>{item.content}</Text>
       )}
 
-      {item.image_urls && item.image_urls.length > 0 && (
+      {mediaUrls.length > 0 && (
         <MediaCarousel
-          urls={item.image_urls}
+          urls={mediaUrls}
           onTapImage={(uri) => {
-            const photoOnly = (item.image_urls ?? []).filter(
-              (u) => !isVideoUrl(u),
-            );
+            const photoOnly = mediaUrls.filter((u) => !isVideoUrl(u));
             const i = photoOnly.indexOf(uri);
             if (i >= 0) setViewerIndex(i);
           }}
         />
       )}
 
-      {item.image_urls && (
+      {mediaUrls.length > 0 && (
         <ImageViewer
           visible={viewerIndex !== null}
-          uris={item.image_urls.filter((u) => !isVideoUrl(u))}
+          uris={mediaUrls.filter((u) => !isVideoUrl(u))}
           initialIndex={viewerIndex ?? 0}
           onClose={() => setViewerIndex(null)}
         />
@@ -756,15 +760,7 @@ function MediaTile({
   };
   const isVideo = isVideoUrl(uri);
   if (isVideo) {
-    return (
-      <Video
-        source={{ uri }}
-        style={tileStyle}
-        useNativeControls
-        resizeMode={ResizeMode.CONTAIN}
-        isLooping={false}
-      />
-    );
+    return <FeedVideoPlayer uri={uri} width={CARD_INNER} height={height} />;
   }
   return (
     <Pressable
@@ -781,6 +777,112 @@ function MediaTile({
         contentFit="contain"
       />
     </Pressable>
+  );
+}
+
+function FeedVideoPlayer({
+  uri,
+  width,
+  height,
+}: {
+  uri: string;
+  width: number;
+  height: number;
+}) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = false;
+    p.muted = true;
+  });
+
+  const togglePlay = () => {
+    if (player.playing) {
+      player.pause();
+      setIsPlaying(false);
+    } else {
+      player.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const toggleMute = () => {
+    const next = !muted;
+    player.muted = next;
+    setMuted(next);
+  };
+
+  return (
+    <View
+      style={{
+        width,
+        height,
+        position: 'relative',
+        backgroundColor: '#000',
+      }}
+    >
+      <VideoView
+        player={player}
+        style={{ width: '100%', height: '100%' }}
+        contentFit="contain"
+        nativeControls={false}
+      />
+
+      <Pressable
+        onPress={togglePlay}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        {!isPlaying && (
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              backgroundColor: 'rgba(0,0,0,0.55)',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Ionicons
+              name="play"
+              size={26}
+              color="#fff"
+              style={{ marginLeft: 3 }}
+            />
+          </View>
+        )}
+      </Pressable>
+
+      <Pressable
+        onPress={toggleMute}
+        hitSlop={6}
+        style={{
+          position: 'absolute',
+          bottom: 10,
+          right: 10,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: 'rgba(0,0,0,0.55)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Ionicons
+          name={muted ? 'volume-mute' : 'volume-high'}
+          size={16}
+          color="#fff"
+        />
+      </Pressable>
+    </View>
   );
 }
 

@@ -435,6 +435,15 @@ export default {
     freePlanLimit: 'Limite do plano gratuito',
     seePremium: 'Ver Premium',
   },
+  post: {
+    video_too_large: 'O vídeo deve ter menos de 50MB',
+    image_too_large: 'A imagem deve ter menos de 10MB',
+    video_too_long: 'O vídeo deve ter 60 segundos ou menos',
+    uploading_media: 'Enviando mídia...',
+    media_permission_denied: 'Acesso à biblioteca de fotos negado',
+    camera_permission_denied: 'Acesso à câmera negado',
+    not_authenticated: 'Você precisa estar conectado',
+  },
   onboarding: {
     skip: 'Pular',
     next: 'Próximo',

@@ -78,6 +78,7 @@ export type Post = {
   post_type: string;
   content: string | null;
   image_urls: string[] | null;
+  video_urls: string[] | null;
   hashtags: string[] | null;
   likes_count: number;
   comments_count: number;

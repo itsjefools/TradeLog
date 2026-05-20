@@ -69,9 +69,10 @@
         }
       ],
       [
-        "expo-av",
+        "expo-video",
         {
-          "microphonePermission": false
+          "supportsBackgroundPlayback": false,
+          "supportsPictureInPicture": false
         }
       ],
       "@react-native-community/datetimepicker"

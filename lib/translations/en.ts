@@ -431,6 +431,15 @@ export default {
     freePlanLimit: 'Free plan limit',
     seePremium: 'See Premium',
   },
+  post: {
+    video_too_large: 'Video must be under 50MB',
+    image_too_large: 'Image must be under 10MB',
+    video_too_long: 'Video must be 60 seconds or shorter',
+    uploading_media: 'Uploading media...',
+    media_permission_denied: 'Photo library access denied',
+    camera_permission_denied: 'Camera access denied',
+    not_authenticated: 'You must be signed in',
+  },
   onboarding: {
     skip: 'Skip',
     next: 'Next',

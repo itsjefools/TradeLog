@@ -436,6 +436,15 @@ export default {
     freePlanLimit: 'Límite del plan gratuito',
     seePremium: 'Ver Premium',
   },
+  post: {
+    video_too_large: 'El video debe ser menor a 50MB',
+    image_too_large: 'La imagen debe ser menor a 10MB',
+    video_too_long: 'El video debe durar 60 segundos o menos',
+    uploading_media: 'Subiendo contenido...',
+    media_permission_denied: 'Acceso a la biblioteca de fotos denegado',
+    camera_permission_denied: 'Acceso a la cámara denegado',
+    not_authenticated: 'Debes iniciar sesión',
+  },
   onboarding: {
     skip: 'Omitir',
     next: 'Siguiente',

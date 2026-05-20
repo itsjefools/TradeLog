@@ -483,6 +483,15 @@ export default {
     freePlanLimit: 'Free プランの上限',
     seePremium: 'Premium を見る',
   },
+  post: {
+    video_too_large: '動画は50MB以下にしてください',
+    image_too_large: '画像は10MB以下にしてください',
+    video_too_long: '動画は60秒以内にしてください',
+    uploading_media: 'メディアをアップロード中...',
+    media_permission_denied: '写真ライブラリへのアクセス許可がありません',
+    camera_permission_denied: 'カメラへのアクセス許可がありません',
+    not_authenticated: 'ログインが必要です',
+  },
   onboarding: {
     skip: 'スキップ',
     next: '次へ',

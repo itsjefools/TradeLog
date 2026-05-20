@@ -327,6 +327,20 @@ export default function FeedScreen() {
                 />
               </Pressable>
             </Link>
+            <Link href="/create-post" asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <Ionicons
+                  name="add-circle-outline"
+                  size={22}
+                  color={c.textPrimary}
+                />
+              </Pressable>
+            </Link>
             <Link href="/notifications" asChild>
               <Pressable
                 style={({ pressed }) => [

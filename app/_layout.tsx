@@ -17,10 +17,10 @@ import { I18nProvider } from '@/hooks/use-i18n';
 import { OnboardingProvider, useOnboarding } from '@/hooks/use-onboarding';
 import { ProfileProvider } from '@/hooks/use-profile';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
-import { RevenueCatProvider } from '@/hooks/use-revenue-cat';
 import { ThemeProvider, useTheme } from '@/hooks/use-theme';
 import { TradesProvider } from '@/hooks/use-trades';
 import { UnreadCountsProvider } from '@/hooks/use-unread-counts';
+import { endIAP, initIAP } from '@/lib/iap';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -75,6 +75,13 @@ function ThemedRoot() {
   useProtectedRoute(session, loading, onboardingCompleted);
   usePushNotifications();
 
+  useEffect(() => {
+    initIAP();
+    return () => {
+      endIAP();
+    };
+  }, []);
+
   // 認証 or オンボーディング判定がまだ済んでないならスプラッシュ
   if (loading || onboardingCompleted === null) {
     return (
@@ -97,7 +104,6 @@ function ThemedRoot() {
         <I18nProvider>
         <TradesProvider>
         <BlocksProvider>
-        <RevenueCatProvider>
         <UnreadCountsProvider>
         <ToastProvider>
           <Stack
@@ -157,6 +163,22 @@ function ThemedRoot() {
             <Stack.Screen
               name="premium"
               options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="school/premium"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="school/lesson/[lessonId]"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
             />
             <Stack.Screen
               name="glossary"
@@ -233,7 +255,6 @@ function ThemedRoot() {
           </Stack>
         </ToastProvider>
         </UnreadCountsProvider>
-        </RevenueCatProvider>
         </BlocksProvider>
         </TradesProvider>
         </I18nProvider>

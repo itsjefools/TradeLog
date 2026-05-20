@@ -1,6 +1,6 @@
 // Free / Premium プランの制限定義
-// 課金は RevenueCat 経由。profiles.is_premium は use-revenue-cat フックが
-// RevenueCat の entitlement を元に自動同期する
+// 課金は react-native-iap 経由 (lib/iap.ts)。Premium 判定は hooks/use-premium.ts が
+// user_subscriptions テーブルの status='active' かつ expires_at 未来を見る
 
 export const FREE_LIMITS = {
   monthlyTrades: 30,

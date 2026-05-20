@@ -147,6 +147,14 @@ function ThemedRoot() {
               options={{ headerShown: false }}
             />
             <Stack.Screen
+              name="trade/[id]"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
               name="premium"
               options={{ headerShown: false }}
             />

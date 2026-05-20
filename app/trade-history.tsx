@@ -134,7 +134,7 @@ export default function TradeHistoryScreen() {
             <TradeRow
               key={trade.id}
               trade={trade}
-              onPress={() => router.push(`/trade-edit?id=${trade.id}`)}
+              onPress={() => router.push(`/trade/${trade.id}`)}
               onLongPress={() => handleDelete(trade)}
             />
           ))

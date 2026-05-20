@@ -35,6 +35,7 @@ import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { getPlan } from '@/lib/premium';
+import { formatDate, pickerLocale } from '@/lib/format-date';
 import { Trade } from '@/lib/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -43,7 +44,7 @@ export default function AnalyticsScreen() {
   const c = useThemeColors();
   const { resolved } = useTheme();
   const isDark = resolved === 'dark';
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const { trades, loading, error, refresh, deleteTrade } = useTrades();
   const { profile } = useProfile();
@@ -191,7 +192,9 @@ export default function AnalyticsScreen() {
                 color={c.textPrimary}
               />
             </Pressable>
-            <Text style={styles.monthLabel}>{monthInfo.label}</Text>
+            <Text style={styles.monthLabel}>
+              {localizedMonthLabel(monthInfo.start, locale)}
+            </Text>
             <Pressable
               hitSlop={8}
               onPress={() => setMonthOffset((n) => Math.min(0, n + 1))}
@@ -277,7 +280,7 @@ export default function AnalyticsScreen() {
                     (t) => new Date(t.traded_at).getDate() === selectedDay,
                   )}
                   onTradePress={(trade) =>
-                    router.push(`/trade-edit?id=${trade.id}`)
+                    router.push(`/trade/${trade.id}`)
                   }
                   onRecordPress={() => {
                     const d = new Date(
@@ -740,7 +743,7 @@ function DayDetail({
   onClose: () => void;
 }) {
   const c = useThemeColors();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { profile } = useProfile();
   const currency = profile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
@@ -763,7 +766,9 @@ function DayDetail({
     <View style={styles.dayDetailCard}>
       <View style={styles.dayDetailHead}>
         <Text style={styles.dayDetailTitle}>
-          {year}年{month}月{day}日の取引
+          {t('analytics.dayDetailTitle', {
+            date: formatDate(new Date(year, month - 1, day), locale),
+          })}
         </Text>
         <Pressable onPress={onClose} hitSlop={10}>
           <Ionicons name="close" size={20} color={c.textSecondary} />
@@ -1028,8 +1033,24 @@ function getMonthRange(offset: number): MonthRange {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
   const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 1);
-  const label = `${start.getFullYear()}年${start.getMonth() + 1}月`;
+  // ロケール非依存の中性表記。表示時に locale で再整形する。
+  const label = `${start.getFullYear()}/${start.getMonth() + 1}`;
   return { start, end, label };
+}
+
+/** MonthRange.start を ロケールに合わせた「2026年5月 / May 2026」風表記にする */
+function localizedMonthLabel(
+  start: Date,
+  locale: string | null | undefined,
+): string {
+  try {
+    return new Intl.DateTimeFormat(pickerLocale(locale), {
+      year: 'numeric',
+      month: 'long',
+    }).format(start);
+  } catch {
+    return `${start.getFullYear()}/${start.getMonth() + 1}`;
+  }
 }
 
 function buildDailyPnl(monthly: Trade[], range: MonthRange) {

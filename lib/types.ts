@@ -34,6 +34,7 @@ export type Profile = {
   is_verified: boolean | null;
   monthly_pnl_goal: number | null;
   push_token: string | null;
+  total_trades: number | null;
   created_at: string | null;
 };
 
@@ -45,7 +46,7 @@ export type Profile = {
 export const PROFILE_COLUMNS = `
   id, email, username, display_name, avatar_url, bio,
   trade_style, language, currency, is_premium, nationality, is_verified,
-  monthly_pnl_goal, push_token, created_at
+  monthly_pnl_goal, push_token, total_trades, created_at
 `;
 
 // サポートする取引通貨。設定画面 → 通貨で選択し、profiles.currency に保存。

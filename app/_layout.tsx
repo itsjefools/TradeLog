@@ -189,6 +189,22 @@ function ThemedRoot() {
               }}
             />
             <Stack.Screen
+              name="school/community/create"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_bottom',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="school/community/[communityId]"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
               name="glossary"
               options={{ headerShown: false }}
             />

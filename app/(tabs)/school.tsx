@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SchoolBooks } from '@/components/school/school-books';
+import { SchoolCommunity } from '@/components/school/school-community';
 import { SchoolLessons } from '@/components/school/school-lessons';
 import { SchoolVideos } from '@/components/school/school-videos';
 import { ThemeColors } from '@/constants/theme';
@@ -33,7 +34,7 @@ export default function SchoolScreen() {
       case 'books':
         return <SchoolBooks />;
       case 'community':
-        return <ComingSoon label={t('school.tab_community')} />;
+        return <SchoolCommunity />;
     }
   };
 
@@ -78,18 +79,6 @@ export default function SchoolScreen() {
 
       <View style={styles.body}>{renderContent()}</View>
     </SafeAreaView>
-  );
-}
-
-function ComingSoon({ label }: { label: string }) {
-  const c = useThemeColors();
-  const styles = useMemo(() => makeStyles(c), [c]);
-  return (
-    <View style={styles.comingWrap}>
-      <Text style={styles.comingEmoji}>🚧</Text>
-      <Text style={styles.comingLabel}>{label}</Text>
-      <Text style={styles.comingHint}>Coming soon</Text>
-    </View>
   );
 }
 
@@ -145,22 +134,5 @@ function makeStyles(c: ThemeColors) {
       fontWeight: '500',
     },
     body: { flex: 1 },
-    comingWrap: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 40,
-    },
-    comingEmoji: { fontSize: 40, marginBottom: 12 },
-    comingLabel: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: c.textPrimary,
-      marginBottom: 6,
-    },
-    comingHint: {
-      fontSize: 13,
-      color: c.textSecondary,
-    },
   });
 }

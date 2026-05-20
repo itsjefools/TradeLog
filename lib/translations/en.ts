@@ -83,7 +83,6 @@ export default {
     title: 'New Trade',
     subtitle: "Log today's trade",
     dateLabel: 'Trade date',
-    timeLabel: 'Trade time',
     doneButton: 'Done',
     pairLabel: 'Currency pair',
     favHeader: '★ Favorites',

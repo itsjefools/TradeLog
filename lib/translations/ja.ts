@@ -134,7 +134,6 @@ export default {
     title: '取引記録',
     subtitle: '今日のトレードを記録しましょう',
     dateLabel: '取引日',
-    timeLabel: '取引時刻',
     doneButton: '完了',
     pairLabel: '通貨ペア',
     favHeader: '★ お気に入り',

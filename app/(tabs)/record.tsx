@@ -28,7 +28,7 @@ import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { useToast } from '@/components/toast';
-import { formatDate, formatTime, pickerLocale } from '@/lib/format-date';
+import { formatDate, pickerLocale } from '@/lib/format-date';
 import { notifyError, notifySuccess } from '@/lib/haptics';
 import { FREE_LIMITS, getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
@@ -77,7 +77,6 @@ export default function RecordScreen() {
     parseInitialDate(params.date),
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pairSearch, setPairSearch] = useState('');
 
@@ -320,27 +319,6 @@ export default function RecordScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.label}>{t('record.timeLabel')}</Text>
-            <Pressable
-              onPress={() => setShowTimePicker(true)}
-              disabled={loading}
-              style={({ pressed }) => [
-                styles.dateField,
-                pressed && styles.dateFieldPressed,
-              ]}
-            >
-              <Ionicons
-                name="time-outline"
-                size={18}
-                color={c.textSecondary}
-              />
-              <Text style={styles.dateFieldText}>
-                {formatTime(tradedAt, locale)}
-              </Text>
-            </Pressable>
-          </View>
-
           {Platform.OS === 'ios' && (
             <Modal
               transparent
@@ -386,54 +364,6 @@ export default function RecordScreen() {
               maximumDate={new Date()}
               onChange={(event, selected) => {
                 setShowDatePicker(false);
-                if (event.type === 'set' && selected) setTradedAt(selected);
-              }}
-            />
-          )}
-
-          {Platform.OS === 'ios' && (
-            <Modal
-              transparent
-              animationType="slide"
-              visible={showTimePicker}
-              onRequestClose={() => setShowTimePicker(false)}
-            >
-              <Pressable
-                style={styles.datePickerBackdrop}
-                onPress={() => setShowTimePicker(false)}
-              >
-                <Pressable
-                  style={styles.datePickerSheet}
-                  onPress={(e) => e.stopPropagation()}
-                >
-                  <View style={styles.datePickerHeader}>
-                    <Pressable onPress={() => setShowTimePicker(false)} hitSlop={12}>
-                      <Text style={styles.datePickerDone}>{t('record.doneButton')}</Text>
-                    </Pressable>
-                  </View>
-                  <DateTimePicker
-                    value={tradedAt}
-                    mode="time"
-                    display="spinner"
-                    locale={pickerLocale(locale)}
-                    is24Hour
-                    onChange={(_, selected) => {
-                      if (selected) setTradedAt(selected);
-                    }}
-                  />
-                </Pressable>
-              </Pressable>
-            </Modal>
-          )}
-
-          {Platform.OS === 'android' && showTimePicker && (
-            <DateTimePicker
-              value={tradedAt}
-              mode="time"
-              display="default"
-              is24Hour
-              onChange={(event, selected) => {
-                setShowTimePicker(false);
                 if (event.type === 'set' && selected) setTradedAt(selected);
               }}
             />

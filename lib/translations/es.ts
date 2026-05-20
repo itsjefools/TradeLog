@@ -86,7 +86,6 @@ export default {
     title: 'Nueva operación',
     subtitle: 'Registra la operación de hoy',
     dateLabel: 'Fecha',
-    timeLabel: 'Hora de la operación',
     doneButton: 'Listo',
     pairLabel: 'Par de divisas',
     favHeader: '★ Favoritos',

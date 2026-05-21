@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import ViewShot, { captureRef, type ViewShotRef } from 'react-native-view-shot';
+import ViewShot, { captureRef } from 'react-native-view-shot';
 
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
@@ -68,7 +68,7 @@ export function WallpaperEditor() {
   const { t, locale } = useI18n();
   const { session } = useAuth();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const viewShotRef = useRef<ViewShotRef>(null);
+  const viewShotRef = useRef<ViewShot>(null);
 
   const lang: Locale = (['ja', 'en', 'pt', 'es'] as const).includes(locale as Locale)
     ? (locale as Locale)

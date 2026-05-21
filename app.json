@@ -75,6 +75,14 @@
           "supportsPictureInPicture": false
         }
       ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "壁紙をカメラロールに保存するために写真へのアクセスが必要です。",
+          "savePhotosPermission": "壁紙をカメラロールに保存するために写真へのアクセスが必要です。",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
       "@react-native-community/datetimepicker"
     ],
     "experiments": {

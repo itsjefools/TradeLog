@@ -260,6 +260,11 @@ export default function SettingsScreen() {
           onPress={() => router.push('/economic-calendar')}
         />
         <SettingRow
+          icon="image-outline"
+          label={t('settings.wallpaper')}
+          onPress={() => router.push('/wallpaper')}
+        />
+        <SettingRow
           icon="book-outline"
           label={t('settings.glossary')}
           onPress={() => router.push('/glossary')}

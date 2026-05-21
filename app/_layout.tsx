@@ -205,6 +205,14 @@ function ThemedRoot() {
               }}
             />
             <Stack.Screen
+              name="wallpaper/index"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
               name="glossary"
               options={{ headerShown: false }}
             />

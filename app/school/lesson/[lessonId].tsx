@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -12,11 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { EnhancedMarkdown } from '@/components/school/enhanced-markdown';
 import { useToast } from '@/components/toast';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
-import { useThemeColors } from '@/hooks/use-theme';
+import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
 type Locale = 'ja' | 'en' | 'pt' | 'es';
@@ -50,6 +51,8 @@ function pickLocalized(lesson: Lesson, field: 'title' | 'content', lang: Locale)
 export default function LessonDetailScreen() {
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
   const c = useThemeColors();
+  const { resolved } = useTheme();
+  const isDark = resolved === 'dark';
   const { t, locale } = useI18n();
   const router = useRouter();
   const { session } = useAuth();
@@ -175,7 +178,7 @@ export default function LessonDetailScreen() {
 
         <View style={styles.contentWrap}>
           {content ? (
-            <EnhancedMarkdown text={content} c={c} />
+            <EnhancedMarkdown text={content} c={c} isDark={isDark} />
           ) : (
             <View style={styles.comingCard}>
               <Text style={styles.comingEmoji}>📝</Text>
@@ -223,95 +226,6 @@ export default function LessonDetailScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function EnhancedMarkdown({
-  text,
-  c,
-}: {
-  text: string;
-  c: ThemeColors;
-}) {
-  const styles = useMemo(() => makeMarkdownStyles(c), [c]);
-  const lines = text.split('\n');
-  const elements: ReactNode[] = [];
-  let listItems: string[] = [];
-  let listKey = 0;
-
-  const renderInline = (s: string): ReactNode => {
-    if (!s.includes('**')) return s;
-    const parts = s.split(/\*\*(.*?)\*\*/);
-    return parts.map((part, idx) =>
-      idx % 2 === 1 ? (
-        <Text key={idx} style={styles.bold}>
-          {part}
-        </Text>
-      ) : (
-        <Text key={idx}>{part}</Text>
-      ),
-    );
-  };
-
-  const flushList = () => {
-    if (listItems.length === 0) return;
-    elements.push(
-      <View key={`list-${listKey++}`} style={styles.listBlock}>
-        {listItems.map((item, i) => (
-          <View key={i} style={styles.listRow}>
-            <Text style={styles.listBullet}>•</Text>
-            <Text style={styles.listText}>{renderInline(item)}</Text>
-          </View>
-        ))}
-      </View>,
-    );
-    listItems = [];
-  };
-
-  lines.forEach((line, i) => {
-    if (line.startsWith('### ')) {
-      flushList();
-      elements.push(
-        <Text key={`h3-${i}`} style={styles.h3}>
-          {line.slice(4)}
-        </Text>,
-      );
-      return;
-    }
-    if (line.startsWith('## ')) {
-      flushList();
-      elements.push(
-        <Text
-          key={`h2-${i}`}
-          style={[styles.h2, i > 0 && styles.h2Spaced]}
-        >
-          {line.slice(3)}
-        </Text>,
-      );
-      return;
-    }
-    if (line.startsWith('# ')) {
-      // レッスンタイトルはヘッダーで表示済みなのでスキップ
-      flushList();
-      return;
-    }
-    if (line.startsWith('- ')) {
-      listItems.push(line.slice(2));
-      return;
-    }
-    flushList();
-    if (line.trim() === '') {
-      elements.push(<View key={`sp-${i}`} style={styles.spacer} />);
-      return;
-    }
-    elements.push(
-      <Text key={`p-${i}`} style={styles.paragraph}>
-        {renderInline(line)}
-      </Text>,
-    );
-  });
-  flushList();
-
-  return <View>{elements}</View>;
 }
 
 function makeStyles(c: ThemeColors) {
@@ -399,61 +313,6 @@ function makeStyles(c: ThemeColors) {
     },
     completeTextDone: {
       color: c.accent,
-    },
-  });
-}
-
-function makeMarkdownStyles(c: ThemeColors) {
-  return StyleSheet.create({
-    h2: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: c.textPrimary,
-      marginBottom: 14,
-      letterSpacing: -0.3,
-    },
-    h2Spaced: {
-      marginTop: 36,
-    },
-    h3: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: c.textPrimary,
-      marginTop: 20,
-      marginBottom: 10,
-      letterSpacing: -0.1,
-    },
-    paragraph: {
-      fontSize: 16,
-      color: c.textPrimary,
-      lineHeight: 28,
-      letterSpacing: 0.1,
-      marginBottom: 4,
-    },
-    spacer: { height: 12 },
-    listBlock: {
-      marginBottom: 20,
-    },
-    listRow: {
-      flexDirection: 'row',
-      marginBottom: 10,
-      paddingLeft: 4,
-    },
-    listBullet: {
-      fontSize: 16,
-      color: c.textSecondary,
-      marginRight: 12,
-      lineHeight: 26,
-    },
-    listText: {
-      flex: 1,
-      fontSize: 16,
-      color: c.textPrimary,
-      lineHeight: 26,
-      letterSpacing: 0.1,
-    },
-    bold: {
-      fontWeight: '600',
     },
   });
 }

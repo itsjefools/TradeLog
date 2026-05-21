@@ -57,10 +57,7 @@ export default function SchoolScreen() {
                 key={tab.key}
                 onPress={() => setActiveTab(tab.key)}
                 activeOpacity={0.7}
-                style={[
-                  styles.tabItem,
-                  isActive && styles.tabItemActive,
-                ]}
+                style={[styles.tabItem, isActive && styles.tabItemActive]}
               >
                 <Text
                   style={[
@@ -85,43 +82,45 @@ function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: c.background },
     header: {
-      paddingHorizontal: 20,
-      paddingTop: 12,
-      paddingBottom: 6,
+      paddingHorizontal: 24,
+      paddingTop: 16,
+      paddingBottom: 4,
     },
     title: {
-      fontSize: 28,
+      fontSize: 32,
       fontWeight: '800',
       color: c.textPrimary,
-      letterSpacing: -0.5,
+      letterSpacing: -0.8,
     },
     tabBarWrap: {
+      paddingHorizontal: 24,
+      marginTop: 12,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
     },
     tabBarContent: {
-      paddingHorizontal: 20,
+      // 横スクロール用。タブは marginRight で間隔
     },
     tabItem: {
-      paddingVertical: 14,
-      paddingHorizontal: 4,
-      marginRight: 24,
+      paddingBottom: 12,
+      marginRight: 28,
       borderBottomWidth: 2,
       borderBottomColor: 'transparent',
     },
     tabItemActive: {
-      borderBottomColor: c.accent,
+      borderBottomColor: c.textPrimary,
     },
     tabLabel: {
       fontSize: 15,
+      letterSpacing: 0.2,
     },
     tabLabelActive: {
       color: c.textPrimary,
-      fontWeight: '700',
+      fontWeight: '600',
     },
     tabLabelInactive: {
       color: c.textSecondary,
-      fontWeight: '500',
+      fontWeight: '400',
     },
     body: { flex: 1 },
   });

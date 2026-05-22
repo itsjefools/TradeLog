@@ -607,18 +607,19 @@ export default {
     skip: 'Pular',
     next: 'Próximo',
     start: 'Começar',
-    page1Title: 'Opere com mais inteligência',
-    page1Body:
-      'Diário, análise e comunidade para traders de FX, tudo em um único app.',
-    page2Title: 'Diário detalhado',
-    page2Body:
-      'Par de moedas, L&P, imagens do gráfico, notas. Capture cada detalhe de suas operações.',
-    page3Title: 'Análise poderosa',
-    page3Body:
-      'KPIs mensais, taxa de acerto, L&P por par, visão de calendário. Visualize seu crescimento com dados.',
-    page4Title: 'Conecte-se com traders',
-    page4Body:
-      'Aprenda com outros, interaja com curtidas e comentários. Cresça ao lado de traders do mundo todo.',
+    get_started: 'Começar',
+    slide1_title: 'Registre suas Operações',
+    slide1_desc:
+      'Registre cada operação facilmente. Acompanhe pares, P&L e notas rapidamente.',
+    slide2_title: 'Conecte-se com Traders',
+    slide2_desc:
+      'Junte-se a uma comunidade global de traders FX. Compartilhe ideias e cresça junto.',
+    slide3_title: 'Aprenda Trading FX',
+    slide3_desc:
+      'Do iniciante ao avançado. Aprimore suas habilidades com lições de especialistas.',
+    slide4_title: 'Seus Dados, Protegidos',
+    slide4_desc:
+      'Todos os seus dados são criptografados e seguros. Seus registros são somente seus.',
   },
   settings: {
     title: 'Configurações',

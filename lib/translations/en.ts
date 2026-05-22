@@ -603,17 +603,19 @@ export default {
     skip: 'Skip',
     next: 'Next',
     start: 'Get Started',
-    page1Title: 'Trade smarter',
-    page1Body: 'Journal, analytics, and community for FX traders — all in one app.',
-    page2Title: 'Detailed trade journal',
-    page2Body:
-      'Currency pair, P&L, chart images, notes. Capture every detail of your trades.',
-    page3Title: 'Powerful analytics',
-    page3Body:
-      'Monthly KPIs, win rate, per-pair P&L, calendar view. Visualize your growth with data.',
-    page4Title: 'Connect with traders',
-    page4Body:
-      'Learn from others, engage with likes and comments. Grow alongside traders worldwide.',
+    get_started: 'Get Started',
+    slide1_title: 'Log Your Trades',
+    slide1_desc:
+      'Easily record every trade. Track currency pairs, P&L, and notes at a glance.',
+    slide2_title: 'Connect with Traders',
+    slide2_desc:
+      'Join a global community of FX traders. Share ideas and grow together.',
+    slide3_title: 'Learn FX Trading',
+    slide3_desc:
+      'From beginner to advanced. Level up your skills with expert-curated lessons.',
+    slide4_title: 'Your Data, Protected',
+    slide4_desc:
+      'All your data is encrypted and secure. Your trading records belong to you.',
   },
   settings: {
     title: 'Settings',

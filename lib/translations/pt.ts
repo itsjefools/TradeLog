@@ -579,6 +579,12 @@ export default {
     agree_suffix: '',
     must_agree: 'Você precisa aceitar os Termos de Serviço e a Política de Privacidade',
   },
+  network: {
+    offline: 'Você está offline',
+    retry: 'Tentar novamente',
+    error_occurred: 'Ocorreu um erro',
+    connection_restored: 'Conexão restaurada',
+  },
   createPost: {
     title: 'Novo post',
     submit: 'Postar',

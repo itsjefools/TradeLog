@@ -628,6 +628,12 @@ export default {
     agree_suffix: ' に同意します',
     must_agree: '利用規約とプライバシーポリシーに同意してください',
   },
+  network: {
+    offline: 'オフラインです',
+    retry: '再試行',
+    error_occurred: 'エラーが発生しました',
+    connection_restored: '接続が復旧しました',
+  },
   createPost: {
     title: '新規投稿',
     submit: '投稿する',

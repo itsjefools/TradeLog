@@ -575,6 +575,12 @@ export default {
     agree_suffix: '',
     must_agree: 'You must agree to the Terms of Service and Privacy Policy',
   },
+  network: {
+    offline: 'You are offline',
+    retry: 'Retry',
+    error_occurred: 'An error occurred',
+    connection_restored: 'Connection restored',
+  },
   createPost: {
     title: 'New Post',
     submit: 'Post',

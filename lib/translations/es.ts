@@ -580,6 +580,12 @@ export default {
     agree_suffix: '',
     must_agree: 'Debes aceptar los Términos de Servicio y la Política de Privacidad',
   },
+  network: {
+    offline: 'Sin conexión',
+    retry: 'Reintentar',
+    error_occurred: 'Ocurrió un error',
+    connection_restored: 'Conexión restaurada',
+  },
   createPost: {
     title: 'Nueva publicación',
     submit: 'Publicar',

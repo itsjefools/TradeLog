@@ -10,6 +10,8 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { ErrorBoundary } from '@/components/error-boundary';
+import { OfflineBanner } from '@/components/offline-banner';
 import { ToastProvider } from '@/components/toast';
 import { useAuth } from '@/hooks/use-auth';
 import { BlocksProvider } from '@/hooks/use-blocks';
@@ -58,13 +60,15 @@ function useProtectedRoute(
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <OnboardingProvider>
-          <ThemedRoot />
-        </OnboardingProvider>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider>
+          <OnboardingProvider>
+            <ThemedRoot />
+          </OnboardingProvider>
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 
@@ -108,6 +112,7 @@ function ThemedRoot() {
         <BlocksProvider>
         <UnreadCountsProvider>
         <ToastProvider>
+          <OfflineBanner />
           <Stack
             screenOptions={{
               headerShown: false,

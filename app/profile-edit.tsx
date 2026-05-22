@@ -48,6 +48,10 @@ export default function ProfileEditScreen() {
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '');
   const [username, setUsername] = useState(profile?.username ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
+  const [website, setWebsite] = useState(profile?.website ?? '');
+  const [twitterHandle, setTwitterHandle] = useState(
+    profile?.twitter_handle ?? '',
+  );
   const [tradeStyle, setTradeStyle] = useState<string | null>(
     profile?.trade_style ?? null,
   );
@@ -154,6 +158,25 @@ export default function ProfileEditScreen() {
       );
       return;
     }
+    const trimmedWebsite = website.trim();
+    if (
+      trimmedWebsite !== '' &&
+      !/^https?:\/\/[^\s]+$/i.test(trimmedWebsite)
+    ) {
+      Alert.alert(
+        t('profileEdit.inputErrorTitle'),
+        t('profileEdit.inputErrorWebsite'),
+      );
+      return;
+    }
+    const cleanedHandle = twitterHandle.trim().replace(/^@+/, '');
+    if (cleanedHandle !== '' && !/^[A-Za-z0-9_]{1,15}$/.test(cleanedHandle)) {
+      Alert.alert(
+        t('profileEdit.inputErrorTitle'),
+        t('profileEdit.inputErrorTwitter'),
+      );
+      return;
+    }
     setSaving(true);
     try {
       await updateProfile({
@@ -162,6 +185,8 @@ export default function ProfileEditScreen() {
         bio: bio.trim() || null,
         trade_style: tradeStyle,
         nationality: nationality?.toUpperCase() ?? null,
+        website: trimmedWebsite || null,
+        twitter_handle: cleanedHandle || null,
       });
       router.back();
     } catch (e) {
@@ -280,6 +305,37 @@ export default function ProfileEditScreen() {
               numberOfLines={4}
               editable={!saving}
             />
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>{t('profileEdit.websiteLabel')}</Text>
+            <TextInput
+              style={styles.input}
+              value={website}
+              onChangeText={setWebsite}
+              placeholder={t('profileEdit.websitePlaceholder')}
+              placeholderTextColor={c.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              editable={!saving}
+            />
+            <Text style={styles.helper}>{t('profileEdit.websiteHelper')}</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>{t('profileEdit.twitterLabel')}</Text>
+            <TextInput
+              style={styles.input}
+              value={twitterHandle}
+              onChangeText={setTwitterHandle}
+              placeholder={t('profileEdit.twitterPlaceholder')}
+              placeholderTextColor={c.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!saving}
+            />
+            <Text style={styles.helper}>{t('profileEdit.twitterHelper')}</Text>
           </View>
 
           <View style={styles.section}>

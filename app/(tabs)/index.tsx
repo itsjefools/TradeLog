@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { EmailVerifyBanner } from '@/components/email-verify-banner';
 import { FeedCard, FeedCardItem } from '@/components/feed-card';
 import { FeedSkeletonList } from '@/components/skeleton';
 import { ThemeColors } from '@/constants/theme';
@@ -287,6 +288,7 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <EmailVerifyBanner />
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>

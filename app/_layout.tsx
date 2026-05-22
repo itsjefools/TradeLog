@@ -20,6 +20,7 @@ import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { ThemeProvider, useTheme } from '@/hooks/use-theme';
 import { TradesProvider } from '@/hooks/use-trades';
 import { UnreadCountsProvider } from '@/hooks/use-unread-counts';
+import { configureGoogleSignIn } from '@/lib/auth-google';
 import { endIAP, initIAP } from '@/lib/iap';
 
 export const unstable_settings = {
@@ -76,6 +77,7 @@ function ThemedRoot() {
   usePushNotifications();
 
   useEffect(() => {
+    configureGoogleSignIn();
     initIAP();
     return () => {
       endIAP();

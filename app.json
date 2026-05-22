@@ -12,6 +12,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.kingjay.tradelog",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "プロフィール画像や取引のチャート画像を撮影するためにカメラを使用します。",
@@ -81,6 +82,13 @@
           "photosPermission": "壁紙をカメラロールに保存するために写真へのアクセスが必要です。",
           "savePhotosPermission": "壁紙をカメラロールに保存するために写真へのアクセスが必要です。",
           "isAccessMediaLocationEnabled": false
+        }
+      ],
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_REVERSED_IOS_CLIENT_ID"
         }
       ],
       "@react-native-community/datetimepicker"

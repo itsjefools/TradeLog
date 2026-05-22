@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,8 @@ import { StatusBar } from 'expo-status-bar';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
+import { isAppleSignInAvailable, signInWithApple } from '@/lib/auth-apple';
+import { isGoogleSignInConfigured, signInWithGoogle } from '@/lib/auth-google';
 import { supabase } from '@/lib/supabase';
 import { TRADE_STYLE_OPTIONS, TradeStyle } from '@/lib/types';
 
@@ -51,6 +53,35 @@ export default function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [tradeStyle, setTradeStyle] = useState<TradeStyle | null>(null);
   const [loading, setLoading] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  const googleConfigured = isGoogleSignInConfigured();
+
+  useEffect(() => {
+    let cancelled = false;
+    isAppleSignInAvailable().then((ok) => {
+      if (!cancelled) setAppleAvailable(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const passwordStrength = useMemo(() => {
+    if (!password) return null;
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    if (score <= 1)
+      return { level: 1, label: t('auth.password_weak'), color: '#EF4444' };
+    if (score <= 2)
+      return { level: 2, label: t('auth.password_fair'), color: '#F59E0B' };
+    if (score <= 3)
+      return { level: 3, label: t('auth.password_good'), color: '#3B82F6' };
+    return { level: 4, label: t('auth.password_strong'), color: '#10B981' };
+  }, [password, t]);
 
   const validatePassword = (password: string): string | null => {
     if (password.length < 8) {
@@ -133,6 +164,39 @@ export default function LoginScreen() {
     setMode((prev) => (prev === 'signIn' ? 'signUp' : 'signIn'));
     setTradeStyle(null);
     setErrorMessage('');
+  };
+
+  const handleAppleSignIn = async () => {
+    if (loading) return;
+    setLoading(true);
+    setErrorMessage('');
+    try {
+      await signInWithApple();
+    } catch (e) {
+      const err = e as { code?: string; message?: string };
+      if (err.code !== 'ERR_REQUEST_CANCELED' && err.code !== 'ERR_CANCELED') {
+        Alert.alert(t('auth.error'), err.message ?? t('auth.errorSignInFailed'));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (loading) return;
+    setLoading(true);
+    setErrorMessage('');
+    try {
+      await signInWithGoogle();
+    } catch (e) {
+      const err = e as { code?: string | number; message?: string };
+      // Google: -5 / SIGN_IN_CANCELLED は無視
+      if (err.code !== -5 && err.code !== 'SIGN_IN_CANCELLED') {
+        Alert.alert(t('auth.error'), err.message ?? t('auth.errorSignInFailed'));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleTradeStyle = (value: TradeStyle) => {
@@ -243,6 +307,37 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
+          {!isSignIn && passwordStrength && (
+            <View style={styles.strengthWrap}>
+              <View style={styles.strengthBars}>
+                {[1, 2, 3, 4].map((i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.strengthBar,
+                      {
+                        backgroundColor:
+                          i <= passwordStrength.level
+                            ? passwordStrength.color
+                            : isDark
+                              ? 'rgba(255,255,255,0.08)'
+                              : 'rgba(0,0,0,0.06)',
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text
+                style={[
+                  styles.strengthLabel,
+                  { color: passwordStrength.color },
+                ]}
+              >
+                {passwordStrength.label}
+              </Text>
+            </View>
+          )}
+
           {hasError && <Text style={styles.errorText}>{errorMessage}</Text>}
 
           {!isSignIn && (
@@ -296,6 +391,74 @@ export default function LoginScreen() {
               </Text>
             )}
           </TouchableOpacity>
+
+          {(appleAvailable || googleConfigured) && (
+            <>
+              <View style={styles.socialDividerRow}>
+                <View style={styles.socialDividerLine} />
+                <Text style={styles.socialDividerText}>
+                  {t('auth.or_continue_with')}
+                </Text>
+                <View style={styles.socialDividerLine} />
+              </View>
+
+              {appleAvailable && (
+                <TouchableOpacity
+                  onPress={handleAppleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.socialButton,
+                    {
+                      backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                    },
+                    loading && styles.buttonDisabled,
+                  ]}
+                >
+                  <Ionicons
+                    name="logo-apple"
+                    size={20}
+                    color={isDark ? '#000000' : '#FFFFFF'}
+                  />
+                  <Text
+                    style={[
+                      styles.socialButtonText,
+                      { color: isDark ? '#000000' : '#FFFFFF' },
+                    ]}
+                  >
+                    {t('auth.continue_with_apple')}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {googleConfigured && (
+                <TouchableOpacity
+                  onPress={handleGoogleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.socialButton,
+                    {
+                      backgroundColor: inputBgColor,
+                      borderWidth: 1,
+                      borderColor: inputBorderColor,
+                    },
+                    loading && styles.buttonDisabled,
+                  ]}
+                >
+                  <Ionicons name="logo-google" size={18} color="#4285F4" />
+                  <Text
+                    style={[
+                      styles.socialButtonText,
+                      { color: c.textPrimary },
+                    ]}
+                  >
+                    {t('auth.continue_with_google')}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
 
           <View style={styles.switchRow}>
             <Text style={styles.switchText}>
@@ -384,6 +547,54 @@ function makeStyles(c: ThemeColors, _isDark: boolean) {
       fontSize: 13,
       marginBottom: 8,
       paddingLeft: 4,
+    },
+    strengthWrap: {
+      marginTop: 2,
+      marginBottom: 10,
+      paddingHorizontal: 4,
+    },
+    strengthBars: {
+      flexDirection: 'row',
+      gap: 4,
+    },
+    strengthBar: {
+      flex: 1,
+      height: 3,
+      borderRadius: 1.5,
+    },
+    strengthLabel: {
+      fontSize: 12,
+      marginTop: 4,
+      fontWeight: '500',
+    },
+    socialDividerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 24,
+      marginBottom: 16,
+    },
+    socialDividerLine: {
+      flex: 1,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+    },
+    socialDividerText: {
+      marginHorizontal: 16,
+      fontSize: 13,
+      color: c.textSecondary,
+    },
+    socialButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 12,
+      paddingVertical: 14,
+      gap: 10,
+      marginBottom: 10,
+    },
+    socialButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
     },
     primaryButton: {
       backgroundColor: _isDark ? '#FFFFFF' : '#111827',

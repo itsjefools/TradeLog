@@ -523,6 +523,7 @@ export default {
     mark_complete: 'レッスンを完了にする',
     completed: '完了しました',
     read_label: 'で読める',
+    disclaimer: '※ 本コンテンツは教育目的であり、投資助言ではありません。FX 取引には元本を超える損失が発生するリスクがあります。取引の判断はご自身の責任で行ってください。',
     featured_videos: 'おすすめ動画',
     recommended_books: 'おすすめの本',
     video_all: 'すべて',
@@ -618,6 +619,14 @@ export default {
     cat_exit: 'イグジット',
     cat_mindset: 'マインドセット',
     cat_discipline: '規律',
+  },
+  legal: {
+    terms_of_service: '利用規約',
+    privacy_policy: 'プライバシーポリシー',
+    last_updated: '最終更新日',
+    and: ' と ',
+    agree_suffix: ' に同意します',
+    must_agree: '利用規約とプライバシーポリシーに同意してください',
   },
   createPost: {
     title: '新規投稿',

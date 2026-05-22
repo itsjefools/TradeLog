@@ -475,6 +475,7 @@ export default {
     mark_complete: 'Marcar como Completado',
     completed: 'Completado',
     read_label: 'de lectura',
+    disclaimer: 'Aviso: Este contenido es solo con fines educativos y no constituye asesoramiento de inversión. El trading de FX implica riesgo de pérdida superior a la inversión inicial. Las decisiones son tu responsabilidad.',
     featured_videos: 'Videos Destacados',
     recommended_books: 'Libros Recomendados',
     video_all: 'Todos',
@@ -570,6 +571,14 @@ export default {
     cat_exit: 'Salida',
     cat_mindset: 'Mentalidad',
     cat_discipline: 'Disciplina',
+  },
+  legal: {
+    terms_of_service: 'Términos de Servicio',
+    privacy_policy: 'Política de Privacidad',
+    last_updated: 'Última actualización',
+    and: ' y ',
+    agree_suffix: '',
+    must_agree: 'Debes aceptar los Términos de Servicio y la Política de Privacidad',
   },
   createPost: {
     title: 'Nueva publicación',

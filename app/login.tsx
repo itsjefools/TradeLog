@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -54,6 +55,8 @@ export default function LoginScreen() {
   const [tradeStyle, setTradeStyle] = useState<TradeStyle | null>(null);
   const [loading, setLoading] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const router = useRouter();
   const googleConfigured = isGoogleSignInConfigured();
 
   useEffect(() => {
@@ -112,6 +115,10 @@ export default function LoginScreen() {
       }
       if (!tradeStyle) {
         setErrorMessage(t('auth.validationTradeStyle'));
+        return;
+      }
+      if (!agreedToTerms) {
+        setErrorMessage(t('legal.must_agree'));
         return;
       }
     }
@@ -377,11 +384,51 @@ export default function LoginScreen() {
             </View>
           )}
 
+          {!isSignIn && (
+            <View style={styles.agreeRow}>
+              <TouchableOpacity
+                onPress={() => setAgreedToTerms((prev) => !prev)}
+                disabled={loading}
+                hitSlop={8}
+                style={[
+                  styles.agreeCheckbox,
+                  {
+                    borderColor: agreedToTerms ? ACCENT : chipBorderIdle,
+                    backgroundColor: agreedToTerms ? ACCENT : 'transparent',
+                  },
+                ]}
+              >
+                {agreedToTerms && (
+                  <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+              <Text style={styles.agreeText}>
+                <Text
+                  onPress={() => router.push('/terms')}
+                  style={styles.agreeLink}
+                >
+                  {t('legal.terms_of_service')}
+                </Text>
+                {t('legal.and')}
+                <Text
+                  onPress={() => router.push('/privacy')}
+                  style={styles.agreeLink}
+                >
+                  {t('legal.privacy_policy')}
+                </Text>
+                {t('legal.agree_suffix')}
+              </Text>
+            </View>
+          )}
+
           <TouchableOpacity
             onPress={handleSubmit}
-            disabled={loading}
+            disabled={loading || (!isSignIn && !agreedToTerms)}
             activeOpacity={0.8}
-            style={[styles.primaryButton, loading && styles.buttonDisabled]}
+            style={[
+              styles.primaryButton,
+              (loading || (!isSignIn && !agreedToTerms)) && styles.buttonDisabled,
+            ]}
           >
             {loading ? (
               <ActivityIndicator color={isDark ? '#000000' : '#FFFFFF'} />
@@ -595,6 +642,32 @@ function makeStyles(c: ThemeColors, _isDark: boolean) {
     socialButtonText: {
       fontSize: 16,
       fontWeight: '600',
+    },
+    agreeRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginTop: 16,
+      marginBottom: 4,
+    },
+    agreeCheckbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 4,
+      borderWidth: 1.5,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 2,
+    },
+    agreeText: {
+      flex: 1,
+      marginLeft: 10,
+      fontSize: 13,
+      color: c.textSecondary,
+      lineHeight: 20,
+    },
+    agreeLink: {
+      color: c.textPrimary,
+      textDecorationLine: 'underline',
     },
     primaryButton: {
       backgroundColor: _isDark ? '#FFFFFF' : '#111827',

@@ -470,6 +470,7 @@ export default {
     mark_complete: 'Mark as Complete',
     completed: 'Completed',
     read_label: 'read',
+    disclaimer: 'Disclaimer: This content is for educational purposes only and does not constitute investment advice. FX trading involves risk of loss exceeding your initial investment. All trading decisions are your sole responsibility.',
     featured_videos: 'Featured Videos',
     recommended_books: 'Recommended Books',
     video_all: 'All',
@@ -565,6 +566,14 @@ export default {
     cat_exit: 'Exit',
     cat_mindset: 'Mindset',
     cat_discipline: 'Discipline',
+  },
+  legal: {
+    terms_of_service: 'Terms of Service',
+    privacy_policy: 'Privacy Policy',
+    last_updated: 'Last updated',
+    and: ' and ',
+    agree_suffix: '',
+    must_agree: 'You must agree to the Terms of Service and Privacy Policy',
   },
   createPost: {
     title: 'New Post',

@@ -126,6 +126,13 @@ export function SchoolLessons() {
       data={categories}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
+      ListFooterComponent={
+        <View style={styles.disclaimerWrap}>
+          <Text style={styles.disclaimerText}>
+            {t('school.disclaimer')}
+          </Text>
+        </View>
+      }
       renderItem={({ item: cat, index: catIndex }) => (
         <View style={styles.categoryBlock}>
           <View
@@ -249,5 +256,17 @@ function makeStyles(c: ThemeColors) {
     },
     iconChevron: { opacity: 0.3 },
     iconLocked: { opacity: 0.4 },
+    disclaimerWrap: {
+      paddingHorizontal: 24,
+      paddingVertical: 20,
+      marginTop: 16,
+    },
+    disclaimerText: {
+      fontSize: 11,
+      color: c.textSecondary,
+      lineHeight: 18,
+      opacity: 0.6,
+      textAlign: 'center',
+    },
   });
 }

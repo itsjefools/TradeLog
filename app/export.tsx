@@ -25,13 +25,21 @@ import { selectionFeedback, successNotification } from '@/lib/haptics';
 import { getPlan } from '@/lib/premium';
 import { StatsPeriod } from '@/hooks/use-trade-stats';
 
-const PERIODS: StatsPeriod[] = ['30d', '90d', '1y', 'all'];
+const PERIODS: StatsPeriod[] = ['1m', '3m', '6m', '1y', 'all'];
+
+const PERIOD_DAYS: Record<Exclude<StatsPeriod, 'all'>, number> = {
+  '1d': 1,
+  '1w': 7,
+  '1m': 30,
+  '3m': 90,
+  '6m': 180,
+  '1y': 365,
+};
 
 function periodStart(period: StatsPeriod): Date | null {
   if (period === 'all') return null;
-  const days = period === '30d' ? 30 : period === '90d' ? 90 : 365;
   const since = new Date();
-  since.setDate(since.getDate() - days);
+  since.setDate(since.getDate() - PERIOD_DAYS[period]);
   return since;
 }
 

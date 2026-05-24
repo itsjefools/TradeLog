@@ -25,7 +25,7 @@ import { selectionFeedback } from '@/lib/haptics';
 import { PRESET_TRADE_TAGS } from '@/lib/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const PERIODS: StatsPeriod[] = ['30d', '90d', '1y', 'all'];
+const PERIODS: StatsPeriod[] = ['1d', '1w', '1m', '3m', '6m', '1y', 'all'];
 
 // プリセットタグは翻訳ラベルに、カスタムタグはそのまま表示
 function tagLabel(tag: string, t: (k: string) => string): string {
@@ -440,10 +440,15 @@ function makeStyles(c: ThemeColors) {
     headerTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
     headerSpacer: { width: 26 },
     body: { padding: 20, paddingBottom: 60 },
-    periodRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+    periodRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 20,
+    },
     periodChip: {
-      flex: 1,
       paddingVertical: 9,
+      paddingHorizontal: 16,
       borderRadius: 10,
       alignItems: 'center',
     },

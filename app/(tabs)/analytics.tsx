@@ -27,6 +27,7 @@ if (
 }
 import { PieChart } from 'react-native-chart-kit';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-native-svg';
 
 import { PremiumTag } from '@/components/premium-tag';
 import { ThemeColors } from '@/constants/theme';
@@ -122,6 +123,11 @@ export default function AnalyticsScreen() {
   const dailyData = useMemo(
     () => buildDailyPnl(monthlyTrades, monthInfo),
     [monthlyTrades, monthInfo],
+  );
+
+  const projection = useMemo(
+    () => buildProjection(monthlyTrades, monthInfo, monthOffset === 0),
+    [monthlyTrades, monthInfo, monthOffset],
   );
 
   const pairData = useMemo(() => buildPairPnl(monthlyTrades), [monthlyTrades]);
@@ -343,8 +349,54 @@ export default function AnalyticsScreen() {
                     <PremiumTag />
                   </View>
                   <View style={styles.dataCard}>
-                    <DailyBars data={dailyData} />
+                    <DailyBars data={dailyData} currency={profile?.currency} />
                   </View>
+
+                  {projection && projection.today < projection.lastDay && (
+                    <>
+                      <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                        {t('analytics.projectionTitle')}
+                      </Text>
+                      <View style={styles.dataCard}>
+                        <Text style={styles.projCaption}>
+                          {t('analytics.projectionCaption')}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.projValue,
+                            {
+                              color:
+                                projection.projectedEnd >= 0 ? c.win : c.loss,
+                            },
+                          ]}
+                        >
+                          {formatPnl(projection.projectedEnd, profile?.currency)}
+                        </Text>
+                        <ProjectionChart
+                          proj={projection}
+                          color={projection.projectedEnd >= 0 ? c.win : c.loss}
+                        />
+                        <View style={styles.projChips}>
+                          <View style={styles.projChip}>
+                            <Text style={styles.projChipLabel}>
+                              {t('analytics.current')}
+                            </Text>
+                            <Text style={styles.projChipValue}>
+                              {formatPnl(projection.currentTotal, profile?.currency)}
+                            </Text>
+                          </View>
+                          <View style={styles.projChip}>
+                            <Text style={styles.projChipLabel}>
+                              {t('analytics.projectionPaceLabel')}
+                            </Text>
+                            <Text style={styles.projChipValue}>
+                              {formatPnl(projection.perDay, profile?.currency)}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </>
+                  )}
 
                   {pairData.labels.length > 0 && (
                     <>
@@ -896,46 +948,140 @@ function DayDetail({
   );
 }
 
-// 日別 P&L: ゼロ基準線を中心に上(緑)/下(赤)へ伸びる自作バーチャート
+// 日別 P&L: ゼロ基準線・Y軸目安・グリッド・日付ラベル・タップ数値表示つきバーチャート
 function DailyBars({
   data,
+  currency,
 }: {
   data: { labels: string[]; datasets: { data: number[] }[] };
+  currency?: string | null;
 }) {
   const c = useThemeColors();
+  const { t } = useI18n();
   const values = data.datasets[0]?.data ?? [];
-  const maxAbs = Math.max(1, ...values.map((v) => Math.abs(v)));
-  const H = 130;
-  const half = H / 2;
+  const labels = data.labels ?? [];
+  const [sel, setSel] = useState<number | null>(null);
+
+  const maxV = Math.max(0, ...values);
+  const minV = Math.min(0, ...values);
+  const range = maxV - minV || 1;
+  const H = 150;
+  const zeroY = (maxV / range) * H; // 上端からゼロ線までの距離(px)
+  const pxPerUnit = H / range;
+  const AXIS_W = 46;
+
+  const grid = (top: number, strong?: boolean) => (
+    <View
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top,
+        height: strong ? 1 : StyleSheet.hairlineWidth,
+        backgroundColor: strong ? c.textSecondary : c.border,
+        opacity: strong ? 0.5 : 1,
+      }}
+    />
+  );
+
   return (
-    <View style={{ height: H }}>
-      <View
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: half,
-          height: StyleSheet.hairlineWidth,
-          backgroundColor: c.border,
-        }}
-      />
-      <View style={{ flexDirection: 'row', height: H, gap: 3 }}>
-        {values.map((v, i) => {
-          const h = v === 0 ? 0 : Math.max(3, (Math.abs(v) / maxAbs) * (half - 8));
-          const positive = v >= 0;
-          return (
-            <View key={i} style={{ flex: 1, height: H }}>
-              <View
-                style={{
-                  height: h,
-                  borderRadius: 3,
-                  backgroundColor: positive ? c.win : c.loss,
-                  marginTop: positive ? half - h : half,
-                }}
-              />
+    <View>
+      {/* タップ時のキャプション */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 24, marginBottom: 6 }}>
+        {sel !== null ? (
+          <>
+            <View
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 6,
+                backgroundColor: c.surfaceAlt,
+              }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: c.textSecondary }}>
+                {labels[sel] || sel + 1}
+              </Text>
             </View>
-          );
-        })}
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '800',
+                color: values[sel] >= 0 ? c.win : c.loss,
+                fontVariant: ['tabular-nums'],
+              }}
+            >
+              {formatPnl(values[sel] ?? 0, currency)}
+            </Text>
+          </>
+        ) : (
+          <Text style={{ fontSize: 12, color: c.textSecondary }}>
+            {t('analytics.dailyTapHint')}
+          </Text>
+        )}
+      </View>
+
+      <View style={{ flexDirection: 'row' }}>
+        {/* Y軸の目安 */}
+        <View style={{ width: AXIS_W, height: H, position: 'relative' }}>
+          {maxV > 0 ? (
+            <Text style={{ position: 'absolute', top: -6, right: 6, fontSize: 10, color: c.textSecondary, fontVariant: ['tabular-nums'] }}>
+              {formatCompactPnl(maxV)}
+            </Text>
+          ) : null}
+          <Text style={{ position: 'absolute', top: zeroY - 7, right: 6, fontSize: 10, fontWeight: '700', color: c.textSecondary }}>
+            0
+          </Text>
+          {minV < 0 ? (
+            <Text style={{ position: 'absolute', top: H - 8, right: 6, fontSize: 10, color: c.textSecondary, fontVariant: ['tabular-nums'] }}>
+              {formatCompactPnl(minV)}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* チャート本体 */}
+        <View style={{ flex: 1 }}>
+          <View style={{ height: H, position: 'relative' }}>
+            {maxV > 0 ? grid(0) : null}
+            {grid(zeroY, true)}
+            {minV < 0 ? grid(H - StyleSheet.hairlineWidth) : null}
+            <View style={{ flexDirection: 'row', height: H, gap: 2 }}>
+              {values.map((v, i) => {
+                const barH = v === 0 ? 0 : Math.max(2, Math.abs(v) * pxPerUnit);
+                const positive = v >= 0;
+                const active = sel === i;
+                return (
+                  <Pressable
+                    key={i}
+                    style={{ flex: 1, height: H }}
+                    onPress={() => setSel(active ? null : i)}
+                    hitSlop={2}
+                  >
+                    <View
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        top: positive ? zeroY - barH : zeroY,
+                        height: barH,
+                        borderRadius: 2,
+                        backgroundColor: positive ? c.win : c.loss,
+                        opacity: sel === null || active ? 1 : 0.35,
+                      }}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          {/* 日付ラベル */}
+          <View style={{ flexDirection: 'row', gap: 2, marginTop: 4 }}>
+            {labels.map((lb, i) => (
+              <View key={i} style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={{ fontSize: 9, color: c.textSecondary }}>{lb}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -1252,6 +1398,105 @@ function buildDailyPnl(monthly: Trade[], range: MonthRange) {
   };
 }
 
+type Projection = {
+  actual: number[]; // 1日目..今日 の累積損益
+  today: number; // 今日の日付(当月) もしくは月末
+  lastDay: number; // 当月の日数
+  currentTotal: number; // 今日時点の累積
+  projectedEnd: number; // 月末予測
+  perDay: number; // 1日あたりの平均
+};
+
+function buildProjection(
+  monthly: Trade[],
+  range: MonthRange,
+  isCurrentMonth: boolean,
+): Projection | null {
+  const lastDay = new Date(
+    range.end.getTime() - 24 * 60 * 60 * 1000,
+  ).getDate();
+  const today = isCurrentMonth
+    ? Math.min(new Date().getDate(), lastDay)
+    : lastDay;
+
+  const dayPnl = new Map<number, number>();
+  for (const t of monthly) {
+    if (t.pnl === null) continue;
+    const day = new Date(t.traded_at).getDate();
+    dayPnl.set(day, (dayPnl.get(day) ?? 0) + t.pnl);
+  }
+  // 取引が無い、または当月でない(=予測不要)なら null
+  if (dayPnl.size === 0 || today < 1) return null;
+
+  const actual: number[] = [];
+  let acc = 0;
+  for (let d = 1; d <= today; d++) {
+    acc += dayPnl.get(d) ?? 0;
+    actual.push(acc);
+  }
+  const currentTotal = acc;
+  const perDay = currentTotal / today;
+  const projectedEnd = perDay * lastDay;
+  return { actual, today, lastDay, currentTotal, projectedEnd, perDay };
+}
+
+function ProjectionChart({
+  proj,
+  color,
+}: {
+  proj: Projection;
+  color: string;
+}) {
+  const W = SCREEN_WIDTH - 64;
+  const H = 120;
+  const pad = 6;
+  const innerH = H - pad * 2;
+
+  // 実績点 + 予測終点(月末)を結ぶ
+  const actualPts = proj.actual.map((v, i) => ({ day: i + 1, v }));
+  const all = [...proj.actual, proj.projectedEnd, 0];
+  const min = Math.min(...all);
+  const max = Math.max(...all);
+  const range = max - min || 1;
+  const xAt = (day: number) =>
+    proj.lastDay <= 1 ? 0 : ((day - 1) / (proj.lastDay - 1)) * W;
+  const yAt = (v: number) => pad + innerH - ((v - min) / range) * innerH;
+
+  const actualLine = actualPts
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.day).toFixed(1)},${yAt(p.v).toFixed(1)}`)
+    .join(' ');
+  const lastActual = actualPts[actualPts.length - 1];
+  const projLine = `M${xAt(lastActual.day).toFixed(1)},${yAt(lastActual.v).toFixed(1)} L${xAt(proj.lastDay).toFixed(1)},${yAt(proj.projectedEnd).toFixed(1)}`;
+  const zeroY = yAt(0);
+
+  return (
+    <Svg width={W} height={H}>
+      <Defs>
+        <SvgGradient id="projFill" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={color} stopOpacity={0.25} />
+          <Stop offset="1" stopColor={color} stopOpacity={0} />
+        </SvgGradient>
+      </Defs>
+      {min < 0 && max > 0 ? (
+        <Path
+          d={`M0,${zeroY.toFixed(1)} L${W},${zeroY.toFixed(1)}`}
+          stroke="rgba(127,127,127,0.4)"
+          strokeWidth={1}
+          strokeDasharray="3 4"
+        />
+      ) : null}
+      <Path
+        d={`${actualLine} L${xAt(lastActual.day).toFixed(1)},${(H - pad).toFixed(1)} L0,${(H - pad).toFixed(1)} Z`}
+        fill="url(#projFill)"
+      />
+      <Path d={actualLine} stroke={color} strokeWidth={2.5} fill="none" strokeLinejoin="round" />
+      <Path d={projLine} stroke={color} strokeWidth={2.5} strokeDasharray="5 5" fill="none" opacity={0.7} />
+      <Circle cx={xAt(lastActual.day)} cy={yAt(lastActual.v)} r={3.5} fill={color} />
+      <Circle cx={xAt(proj.lastDay)} cy={yAt(proj.projectedEnd)} r={4} fill={color} opacity={0.5} />
+    </Svg>
+  );
+}
+
 function buildPairPnl(monthly: Trade[]) {
   const pairPnl = new Map<string, number>();
   for (const t of monthly) {
@@ -1513,6 +1758,41 @@ function makeStyles(c: ThemeColors) {
       borderRadius: 16,
       padding: 16,
       marginTop: 4,
+    },
+    projCaption: {
+      fontSize: 12,
+      color: c.textSecondary,
+      marginBottom: 2,
+    },
+    projValue: {
+      fontSize: 30,
+      fontWeight: '800',
+      letterSpacing: -0.5,
+      marginBottom: 12,
+      fontVariant: ['tabular-nums'],
+    },
+    projChips: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 14,
+    },
+    projChip: {
+      flex: 1,
+      backgroundColor: c.surfaceAlt,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+    },
+    projChipLabel: {
+      fontSize: 11,
+      color: c.textSecondary,
+      marginBottom: 2,
+    },
+    projChipValue: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.textPrimary,
+      fontVariant: ['tabular-nums'],
     },
     chart: { borderRadius: 8 },
     heatmapWrap: {

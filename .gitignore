@@ -44,3 +44,9 @@ app-example
 
 # claude code session artifacts
 .claude/
+
+# 個人の取引データ投入用(検証) — コミットしない
+seed_mt5_import.sql
+ReportHistory-*.xlsx
+*.pdf
+_bugs_testflight.md

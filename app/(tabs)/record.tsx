@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -75,6 +75,7 @@ export default function RecordScreen() {
   const c = useThemeColors();
   const { t, locale } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
+  const router = useRouter();
   const params = useLocalSearchParams<{ date?: string }>();
   const [form, setForm] = useState(initialState);
   const [tradedAt, setTradedAt] = useState<Date>(() =>
@@ -322,8 +323,20 @@ export default function RecordScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('record.title')}</Text>
-        <Text style={styles.subtitle}>{t('record.subtitle')}</Text>
+        <View style={styles.flex}>
+          <Text style={styles.title}>{t('record.title')}</Text>
+          <Text style={styles.subtitle}>{t('record.subtitle')}</Text>
+        </View>
+        <Pressable
+          onPress={() => router.push('/import-trades')}
+          style={({ pressed }) => [
+            styles.importButton,
+            pressed && styles.importButtonPressed,
+          ]}
+        >
+          <Ionicons name="cloud-upload-outline" size={16} color={c.accent} />
+          <Text style={styles.importButtonText}>{t('record.importMt5')}</Text>
+        </Pressable>
       </View>
 
       <KeyboardAvoidingView
@@ -845,11 +858,32 @@ function makeStyles(c: ThemeColors) {
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
+  },
+  importButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: c.accent,
+    backgroundColor: c.surface,
+  },
+  importButtonPressed: {
+    opacity: 0.7,
+  },
+  importButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: c.accent,
   },
   title: {
     fontSize: 28,

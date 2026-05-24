@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient as SvgGradient, Line as SvgLine, Path, Stop } from 'react-native-svg';
 
 import { Avatar } from '@/components/avatar';
 import { EmptyState } from '@/components/empty-state';
@@ -398,7 +399,7 @@ export default function UserProfileScreen() {
             .eq('user_id', targetId)
             .eq('is_shared', true)
             .order('traded_at', { ascending: false })
-            .limit(20),
+            .limit(300),
           myId && !isMyself
             ? supabase
                 .from('follows')
@@ -725,7 +726,13 @@ export default function UserProfileScreen() {
                 subtitle=""
               />
             ) : (
-              trades.map((tr) => <TradeCard key={tr.id} trade={tr} />)
+              <>
+                <UserPerformance trades={trades} />
+                <Text style={styles.recentLabel}>{t('profile.recentTrades')}</Text>
+                {trades.slice(0, 8).map((tr) => (
+                  <TradeCard key={tr.id} trade={tr} />
+                ))}
+              </>
             )
           ) : tabLoading ? (
             <View style={styles.tabCenter}>
@@ -754,6 +761,140 @@ export default function UserProfileScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function EquityCurve({
+  points,
+  color,
+  width,
+  height,
+}: {
+  points: number[];
+  color: string;
+  width: number;
+  height: number;
+}) {
+  if (points.length < 2) return null;
+  const pad = 6;
+  const innerH = height - pad * 2;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 1;
+  const stepX = width / (points.length - 1);
+  const toY = (v: number) => pad + innerH - ((v - min) / range) * innerH;
+  const coords = points.map((v, i) => ({ x: i * stepX, y: toY(v) }));
+  const line = coords
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(' ');
+  const area = `${line} L${width},${height} L0,${height} Z`;
+  const zeroY = toY(0);
+  return (
+    <Svg width={width} height={height}>
+      <Defs>
+        <SvgGradient id="userEquityFill" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={color} stopOpacity={0.28} />
+          <Stop offset="1" stopColor={color} stopOpacity={0} />
+        </SvgGradient>
+      </Defs>
+      {min < 0 && max > 0 ? (
+        <SvgLine
+          x1={0}
+          y1={zeroY}
+          x2={width}
+          y2={zeroY}
+          stroke="rgba(127,127,127,0.4)"
+          strokeWidth={1}
+          strokeDasharray="3 4"
+        />
+      ) : null}
+      <Path d={area} fill="url(#userEquityFill)" />
+      <Path
+        d={line}
+        stroke={color}
+        strokeWidth={2.5}
+        fill="none"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+function UserPerformance({ trades }: { trades: Trade[] }) {
+  const c = useThemeColors();
+  const { t } = useI18n();
+  const { profile: viewer } = useProfile();
+  const currency = viewer?.currency;
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const cardWidth = Dimensions.get('window').width - 64;
+
+  const s = useMemo(() => {
+    const withPnl = trades.filter((t) => t.pnl !== null);
+    const sorted = [...withPnl].sort(
+      (a, b) => new Date(a.traded_at).getTime() - new Date(b.traded_at).getTime(),
+    );
+    const total = withPnl.reduce((x, t) => x + (t.pnl ?? 0), 0);
+    const withResult = trades.filter((t) => t.result !== null);
+    const wins = withResult.filter((t) => t.result === 'win').length;
+    const winRate =
+      withResult.length > 0 ? Math.round((wins / withResult.length) * 100) : null;
+    const grossWin = withPnl
+      .filter((t) => (t.pnl ?? 0) > 0)
+      .reduce((x, t) => x + (t.pnl ?? 0), 0);
+    const grossLoss = Math.abs(
+      withPnl.filter((t) => (t.pnl ?? 0) < 0).reduce((x, t) => x + (t.pnl ?? 0), 0),
+    );
+    const pf = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Infinity : null;
+    const curve: number[] = [0];
+    let acc = 0;
+    for (const t of sorted) {
+      acc += t.pnl ?? 0;
+      curve.push(acc);
+    }
+    return { count: trades.length, total, winRate, pf, curve, hasPnl: withPnl.length > 0 };
+  }, [trades]);
+
+  const totalColor = s.total > 0 ? c.win : s.total < 0 ? c.loss : c.textPrimary;
+  const curveColor = s.total >= 0 ? c.win : c.loss;
+
+  return (
+    <View style={styles.perfCard}>
+      {s.curve.length >= 3 ? (
+        <View style={styles.perfCurveWrap}>
+          <EquityCurve
+            points={s.curve}
+            color={curveColor}
+            width={cardWidth - 32}
+            height={110}
+          />
+        </View>
+      ) : null}
+      <View style={styles.perfGrid}>
+        <View style={styles.perfCell}>
+          <Text style={styles.perfLabel}>{t('stats.total_pnl')}</Text>
+          <Text style={[styles.perfValue, { color: totalColor }]}>
+            {s.hasPnl ? formatPnlWithCurrency(s.total, currency) : '—'}
+          </Text>
+        </View>
+        <View style={styles.perfCell}>
+          <Text style={styles.perfLabel}>{t('stats.win_rate')}</Text>
+          <Text style={styles.perfValue}>
+            {s.winRate === null ? '—' : `${s.winRate}%`}
+          </Text>
+        </View>
+        <View style={styles.perfCell}>
+          <Text style={styles.perfLabel}>{t('profile.sharedTrades')}</Text>
+          <Text style={styles.perfValue}>{s.count}</Text>
+        </View>
+        <View style={styles.perfCell}>
+          <Text style={styles.perfLabel}>{t('stats.profit_factor')}</Text>
+          <Text style={styles.perfValue}>
+            {s.pf === null ? '—' : s.pf === Infinity ? '∞' : s.pf.toFixed(2)}
+          </Text>
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -900,6 +1041,32 @@ function makeStyles(c: ThemeColors) {
     },
     badgeEmoji: { fontSize: 13 },
     badgeLabel: { fontSize: 11, fontWeight: '700' },
+    perfCard: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+    },
+    perfCurveWrap: { alignItems: 'center', marginBottom: 12 },
+    perfGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    perfCell: { width: '50%', paddingVertical: 8 },
+    perfLabel: { fontSize: 12, color: c.textSecondary, marginBottom: 2 },
+    perfValue: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: c.textPrimary,
+      fontVariant: ['tabular-nums'],
+    },
+    recentLabel: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.textPrimary,
+      marginBottom: 10,
+      marginTop: 4,
+    },
     verifiedBadge: {
       width: 20,
       height: 20,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { checkPremiumStatus } from '@/lib/iap';
+import { TEST_UNLOCK_PREMIUM } from '@/lib/premium';
 
 import { useAuth } from './use-auth';
 import { useProfile } from './use-profile';
@@ -38,8 +39,15 @@ export function usePremium() {
     refresh();
   }, [refresh]);
 
+  const realPremium = dbPremium || profileFlag;
+
   return {
-    isPremium: dbPremium || profileFlag,
+    // 機能の解放判定。テスト解放フラグが立っていれば全員解放。
+    isPremium: realPremium || TEST_UNLOCK_PREMIUM,
+    // 実際に課金しているか（表示の出し分け用）
+    realPremium,
+    // テスト解放で開いているだけの状態か（バナー/タグ表示用）
+    testUnlock: TEST_UNLOCK_PREMIUM && !realPremium,
     loading,
     refresh,
   };

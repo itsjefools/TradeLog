@@ -23,6 +23,8 @@ import {
   setupPurchaseListeners,
   PRODUCT_IDS,
 } from '@/lib/iap';
+import { AnalyticsEvents } from '@/lib/analytics';
+import { PREMIUM_FEATURES } from '@/lib/premium-features';
 
 type Plan = 'monthly' | 'yearly';
 
@@ -59,6 +61,7 @@ export default function SchoolPremiumScreen() {
   const [selectedPlan, setSelectedPlan] = useState<Plan>('monthly');
 
   useEffect(() => {
+    AnalyticsEvents.paywallViewed('school');
     let cancelled = false;
     (async () => {
       const subs = await getSubscriptionProducts();
@@ -107,6 +110,7 @@ export default function SchoolPremiumScreen() {
       selectedPlan === 'yearly'
         ? PRODUCT_IDS.PREMIUM_YEARLY
         : PRODUCT_IDS.PREMIUM_MONTHLY;
+    AnalyticsEvents.subscriptionStarted(selectedPlan);
     setPurchasing(true);
     await purchaseSubscription(productId);
     // 結果は setupPurchaseListeners が拾う
@@ -151,21 +155,22 @@ export default function SchoolPremiumScreen() {
         </View>
 
         <View style={styles.benefitList}>
-          {[
-            { icon: 'school', text: t('premium.benefit_lessons') },
-            { icon: 'flash', text: t('premium.benefit_strategies') },
-            { icon: 'people', text: t('premium.benefit_community') },
-            { icon: 'star', text: t('premium.benefit_badge') },
-          ].map((item) => (
-            <View key={item.text} style={styles.benefitRow}>
+          {PREMIUM_FEATURES.map((feature) => (
+            <View key={feature.titleKey} style={styles.benefitRow}>
               <View style={styles.benefitIconWrap}>
-                <Ionicons
-                  name={item.icon as keyof typeof Ionicons.glyphMap}
-                  size={18}
-                  color={c.accent}
-                />
+                <Ionicons name={feature.iconName} size={18} color={c.accent} />
               </View>
-              <Text style={styles.benefitText}>{item.text}</Text>
+              <View style={styles.benefitTextWrap}>
+                <Text style={styles.benefitTitle}>{t(feature.titleKey)}</Text>
+                <Text style={styles.benefitDesc}>
+                  {t(feature.descriptionKey)}
+                </Text>
+              </View>
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={c.accent}
+              />
             </View>
           ))}
         </View>
@@ -195,7 +200,12 @@ export default function SchoolPremiumScreen() {
             ]}
           >
             <View>
-              <Text style={styles.planLabel}>{t('premium.yearly')}</Text>
+              <View style={styles.planLabelRow}>
+                <Text style={styles.planLabel}>{t('premium.yearly')}</Text>
+                <View style={styles.saveBadge}>
+                  <Text style={styles.saveBadgeText}>{t('premium.save_34')}</Text>
+                </View>
+              </View>
               <Text style={styles.planSave}>{t('premium.yearly_save')}</Text>
             </View>
             <Text style={styles.planPrice}>
@@ -287,10 +297,36 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       marginRight: 14,
     },
-    benefitText: {
+    benefitTextWrap: {
       flex: 1,
+      marginRight: 10,
+    },
+    benefitTitle: {
       fontSize: 15,
+      fontWeight: '600',
       color: c.textPrimary,
+    },
+    benefitDesc: {
+      fontSize: 13,
+      color: c.textSecondary,
+      marginTop: 2,
+      lineHeight: 19,
+    },
+    planLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    saveBadge: {
+      backgroundColor: c.accent,
+      borderRadius: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+    },
+    saveBadgeText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: '#fff',
     },
     plansWrap: {
       gap: 10,

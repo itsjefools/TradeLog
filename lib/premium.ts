@@ -7,21 +7,23 @@ export const FREE_LIMITS = {
   monthlyPosts: 5,
 };
 
+/**
+ * ⚠️ テスト期間用フラグ ⚠️
+ * true の間は、課金していなくても全プレミアム機能を解放する（審査・社内テスト用）。
+ * 本番リリース前に必ず false に戻すこと。
+ *
+ * これが true でも、各プレミアム箇所には「PRO」タグやテスト解放バナーを表示するので、
+ * どこが本来プレミアム機能かは画面上で分かるようにしてある。
+ */
+export const TEST_UNLOCK_PREMIUM = true;
+
 export type Plan = 'free' | 'premium';
 
 export function getPlan(isPremium: boolean | null | undefined): Plan {
+  if (TEST_UNLOCK_PREMIUM) return 'premium';
   return isPremium ? 'premium' : 'free';
 }
 
 export function planLabel(plan: Plan): string {
   return plan === 'premium' ? 'Premium' : 'Free';
 }
-
-export const PREMIUM_FEATURES = [
-  '取引記録の無制限化（Free は月30件まで）',
-  '投稿数の無制限化（Free は月5件まで）',
-  '高度な分析（複数月比較・カスタムKPI）',
-  'CSVエクスポート',
-  '広告なしの体験',
-  'Premium バッジ',
-];

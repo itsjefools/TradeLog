@@ -334,12 +334,10 @@ function OrderTypesDiagram({ isDark }: { isDark: boolean }) {
         <SvgText x="224" y="80" fontSize="9" fill={colors.sub}>150.50 で指値売り</SvgText>
 
         <Line x1="40" y1="200" x2="200" y2="200" stroke={AMBER} strokeWidth="1.5" />
-        <SvgText x="8" y="204" fontSize="9" fill={AMBER}>SL</SvgText>
         <SvgText x="224" y="197" fontSize="10" fontWeight="600" fill={AMBER}>Stop Loss</SvgText>
         <SvgText x="224" y="210" fontSize="9" fill={colors.sub}>149.30 で損切り</SvgText>
 
         <Line x1="40" y1="40" x2="200" y2="40" stroke={GREEN} strokeWidth="1.5" />
-        <SvgText x="8" y="44" fontSize="9" fill={GREEN}>TP</SvgText>
         <SvgText x="224" y="37" fontSize="10" fontWeight="600" fill={GREEN}>Take Profit</SvgText>
         <SvgText x="224" y="50" fontSize="9" fill={colors.sub}>151.00 で利確</SvgText>
 
@@ -390,13 +388,13 @@ function SupportResistanceDiagram({ isDark }: { isDark: boolean }) {
   return (
     <View style={diagramWrap}>
       <Svg width={300} height={200} viewBox="0 0 300 200">
-        <Rect x="20" y="30" width="260" height="20" rx="4" fill={RED} opacity="0.08" />
-        <Line x1="20" y1="40" x2="280" y2="40" stroke={RED} strokeWidth="1.5" strokeDasharray="6,3" />
-        <SvgText x="285" y="44" fontSize="10" fontWeight="600" fill={RED}>レジスタンス</SvgText>
+        <Rect x="20" y="34" width="260" height="20" rx="4" fill={RED} opacity="0.08" />
+        <Line x1="20" y1="44" x2="280" y2="44" stroke={RED} strokeWidth="1.5" strokeDasharray="6,3" />
+        <SvgText x="280" y="30" textAnchor="end" fontSize="10" fontWeight="600" fill={RED}>レジスタンス</SvgText>
 
         <Rect x="20" y="150" width="260" height="20" rx="4" fill={GREEN} opacity="0.08" />
         <Line x1="20" y1="160" x2="280" y2="160" stroke={GREEN} strokeWidth="1.5" strokeDasharray="6,3" />
-        <SvgText x="285" y="164" fontSize="10" fontWeight="600" fill={GREEN}>サポート</SvgText>
+        <SvgText x="280" y="186" textAnchor="end" fontSize="10" fontWeight="600" fill={GREEN}>サポート</SvgText>
 
         <Path
           d="M 30 100 L 60 55 L 85 90 L 110 50 L 135 85 L 155 45 L 175 95 L 200 55 L 220 150 L 240 95 L 260 155 L 275 110"

@@ -17,6 +17,13 @@ import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
 type Locale = 'ja' | 'en' | 'pt' | 'es';
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+const DIFFICULTY_COLOR: Record<Lesson['difficulty'], string> = {
+  beginner: '#10B981',
+  intermediate: '#F59E0B',
+  advanced: '#EF4444',
+};
 
 type Category = {
   id: string;
@@ -133,63 +140,100 @@ export function SchoolLessons() {
           </Text>
         </View>
       }
-      renderItem={({ item: cat, index: catIndex }) => (
-        <View style={styles.categoryBlock}>
-          <View
-            style={[
-              styles.categoryHead,
-              catIndex > 0 && styles.categoryHeadSpaced,
-            ]}
-          >
-            <Text style={styles.categoryName}>
-              {pickLocalized(cat, 'name', lang)}
-            </Text>
-            <Text style={styles.categoryMeta}>
-              {cat.lessons.length} {t('school.lessons')}
-            </Text>
-          </View>
-
-          {cat.lessons.map((lesson, index) => {
-            const locked = !lesson.is_free && !isPremium;
-            const isLast = index === cat.lessons.length - 1;
-            return (
-              <TouchableOpacity
-                key={lesson.id}
-                onPress={() => handleLessonPress(lesson)}
-                activeOpacity={0.5}
-                style={[
-                  styles.lessonRow,
-                  !isLast && styles.lessonRowDivider,
-                ]}
+      renderItem={({ item: cat, index: catIndex }) => {
+        const catColor = cat.color || c.accent;
+        return (
+          <View style={styles.categoryBlock}>
+            <View
+              style={[
+                styles.categoryHead,
+                catIndex > 0 && styles.categoryHeadSpaced,
+              ]}
+            >
+              <View
+                style={[styles.catIcon, { backgroundColor: `${catColor}1F` }]}
               >
-                <Text style={styles.lessonNum}>
-                  {String(index + 1).padStart(2, '0')}
-                </Text>
-                <View style={styles.lessonBody}>
-                  <Text
-                    style={[
-                      styles.lessonTitle,
-                      locked && styles.lessonTitleLocked,
-                    ]}
-                  >
-                    {pickLocalized(lesson, 'title', lang)}
-                  </Text>
-                  <Text style={styles.lessonMeta}>
-                    {lesson.duration_minutes}
-                    {t('school.minutes')}
-                  </Text>
-                </View>
                 <Ionicons
-                  name={locked ? 'lock-closed-outline' : 'chevron-forward'}
-                  size={15}
-                  color={c.textSecondary}
-                  style={locked ? styles.iconLocked : styles.iconChevron}
+                  name={(cat.icon as IoniconName) || 'school-outline'}
+                  size={20}
+                  color={catColor}
                 />
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
+              </View>
+              <View style={styles.flex}>
+                <Text style={styles.categoryName}>
+                  {pickLocalized(cat, 'name', lang)}
+                </Text>
+                <Text style={styles.categoryMeta}>
+                  {cat.lessons.length} {t('school.lessons')}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.lessonCard}>
+              {cat.lessons.map((lesson, index) => {
+                const locked = !lesson.is_free && !isPremium;
+                const isLast = index === cat.lessons.length - 1;
+                const diffColor = DIFFICULTY_COLOR[lesson.difficulty];
+                return (
+                  <TouchableOpacity
+                    key={lesson.id}
+                    onPress={() => handleLessonPress(lesson)}
+                    activeOpacity={0.6}
+                    style={[styles.lessonRow, !isLast && styles.lessonRowDivider]}
+                  >
+                    <View
+                      style={[styles.lessonDot, { backgroundColor: catColor }]}
+                    />
+                    <View style={styles.lessonBody}>
+                      <Text
+                        style={[
+                          styles.lessonTitle,
+                          locked && styles.lessonTitleLocked,
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {pickLocalized(lesson, 'title', lang)}
+                      </Text>
+                      <View style={styles.lessonMetaRow}>
+                        <View
+                          style={[
+                            styles.diffBadge,
+                            { backgroundColor: `${diffColor}1A` },
+                          ]}
+                        >
+                          <Text style={[styles.diffText, { color: diffColor }]}>
+                            {t(`school.${lesson.difficulty}`)}
+                          </Text>
+                        </View>
+                        <Ionicons
+                          name="time-outline"
+                          size={12}
+                          color={c.textSecondary}
+                        />
+                        <Text style={styles.lessonMeta}>
+                          {lesson.duration_minutes}
+                          {t('school.minutes')}
+                        </Text>
+                        {lesson.is_free && (
+                          <View style={styles.freeBadge}>
+                            <Text style={styles.freeText}>FREE</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    <Ionicons
+                      name={locked ? 'lock-closed' : 'chevron-forward'}
+                      size={16}
+                      color={locked ? catColor : c.textSecondary}
+                      style={locked ? undefined : styles.iconChevron}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        );
+      }}
     />
   );
 }
@@ -197,65 +241,107 @@ export function SchoolLessons() {
 function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    flex: { flex: 1 },
     listContent: {
-      paddingTop: 8,
+      paddingTop: 12,
+      paddingHorizontal: 16,
       paddingBottom: 56,
     },
     categoryBlock: {},
     categoryHead: {
-      paddingHorizontal: 24,
-      marginBottom: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 12,
+      paddingHorizontal: 4,
     },
     categoryHeadSpaced: {
-      marginTop: 36,
+      marginTop: 32,
+    },
+    catIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     categoryName: {
-      fontSize: 20,
-      fontWeight: '700',
+      fontSize: 19,
+      fontWeight: '800',
       color: c.textPrimary,
       letterSpacing: -0.3,
     },
     categoryMeta: {
-      fontSize: 13,
+      fontSize: 12,
       color: c.textSecondary,
-      marginTop: 2,
+      marginTop: 1,
+    },
+    lessonCard: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      overflow: 'hidden',
     },
     lessonRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 16,
-      paddingHorizontal: 24,
+      gap: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
     },
     lessonRowDivider: {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
     },
-    lessonNum: {
-      fontSize: 13,
-      fontWeight: '400',
-      color: c.textSecondary,
-      width: 28,
-      fontVariant: ['tabular-nums'],
-      opacity: 0.6,
+    lessonDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
     },
-    lessonBody: { flex: 1 },
+    lessonBody: { flex: 1, gap: 6 },
     lessonTitle: {
-      fontSize: 16,
-      fontWeight: '400',
+      fontSize: 15,
+      fontWeight: '600',
       color: c.textPrimary,
       letterSpacing: -0.1,
+      lineHeight: 20,
     },
     lessonTitleLocked: {
       color: c.textSecondary,
     },
+    lessonMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    diffBadge: {
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    diffText: {
+      fontSize: 10,
+      fontWeight: '700',
+    },
     lessonMeta: {
       fontSize: 12,
       color: c.textSecondary,
-      marginTop: 4,
-      opacity: 0.7,
     },
-    iconChevron: { opacity: 0.3 },
-    iconLocked: { opacity: 0.4 },
+    freeBadge: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: `${c.accent}1A`,
+      marginLeft: 'auto',
+    },
+    freeText: {
+      fontSize: 9,
+      fontWeight: '800',
+      color: c.accent,
+      letterSpacing: 0.5,
+    },
+    iconChevron: { opacity: 0.4 },
     disclaimerWrap: {
       paddingHorizontal: 24,
       paddingVertical: 20,

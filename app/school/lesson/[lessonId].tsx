@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,11 +14,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EnhancedMarkdown } from '@/components/school/enhanced-markdown';
-import { useToast } from '@/components/toast';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
+import { notifySuccess } from '@/lib/haptics';
 import { supabase } from '@/lib/supabase';
 
 type Locale = 'ja' | 'en' | 'pt' | 'es';
@@ -56,11 +57,11 @@ export default function LessonDetailScreen() {
   const { t, locale } = useI18n();
   const router = useRouter();
   const { session } = useAuth();
-  const toast = useToast();
   const styles = useMemo(() => makeStyles(c), [c]);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [completed, setCompleted] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
 
   const lang: Locale = (['ja', 'en', 'pt', 'es'] as const).includes(
     locale as Locale,
@@ -126,8 +127,13 @@ export default function LessonDetailScreen() {
         },
         { onConflict: 'user_id,lesson_id' },
       );
-    if (next) toast.success(t('school.completed'));
-  }, [completed, lessonId, session?.user.id, t, toast]);
+    if (next) {
+      // 達成感の演出: ハプティクス + お祝いオーバーレイ
+      notifySuccess();
+      setCelebrate(true);
+      setTimeout(() => setCelebrate(false), 2200);
+    }
+  }, [completed, lessonId, session?.user.id]);
 
   if (loading) {
     return (
@@ -224,6 +230,21 @@ export default function LessonDetailScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <Modal transparent visible={celebrate} animationType="fade">
+        <View style={styles.celebrateBackdrop}>
+          <View style={styles.celebrateCard}>
+            <Text style={styles.celebrateEmoji}>🎉</Text>
+            <View style={styles.celebrateCheck}>
+              <Ionicons name="checkmark" size={34} color="#fff" />
+            </View>
+            <Text style={styles.celebrateTitle}>
+              {t('school.congratsTitle')}
+            </Text>
+            <Text style={styles.celebrateBody}>{t('school.congratsBody')}</Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -275,6 +296,45 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
+    },
+    celebrateBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 40,
+    },
+    celebrateCard: {
+      width: '100%',
+      maxWidth: 320,
+      backgroundColor: c.surface,
+      borderRadius: 24,
+      paddingVertical: 32,
+      paddingHorizontal: 24,
+      alignItems: 'center',
+    },
+    celebrateEmoji: { fontSize: 44, marginBottom: 8 },
+    celebrateCheck: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: c.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    celebrateTitle: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: c.textPrimary,
+      textAlign: 'center',
+      marginBottom: 6,
+    },
+    celebrateBody: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      lineHeight: 20,
     },
     comingEmoji: { fontSize: 40, marginBottom: 12 },
     comingTitle: {

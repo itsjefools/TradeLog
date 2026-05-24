@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 
+import { compressAvatarImage, compressPostImage } from './image';
 import { supabase } from './supabase';
 
 /**
@@ -26,7 +27,10 @@ export async function pickAndUploadImage(opts: {
   if (result.canceled) return null;
 
   const asset = result.assets[0];
-  const uri = asset.uri;
+  // アップロード前に圧縮 (アバターは正方形400px、それ以外は幅1200px)。出力は JPEG。
+  const uri = opts.aspect
+    ? await compressAvatarImage(asset.uri)
+    : await compressPostImage(asset.uri);
 
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
@@ -35,9 +39,8 @@ export async function pickAndUploadImage(opts: {
   const response = await fetch(uri);
   const arrayBuffer = await response.arrayBuffer();
 
-  const mime = asset.mimeType ?? 'image/jpeg';
-  const ext = (mime.split('/')[1] ?? 'jpg').replace('jpeg', 'jpg');
-  const fileName = `${opts.pathPrefix}-${Date.now()}.${ext}`;
+  const mime = 'image/jpeg';
+  const fileName = `${opts.pathPrefix}-${Date.now()}.jpg`;
 
   const { error: uploadError } = await supabase.storage
     .from(opts.bucket)

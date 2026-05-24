@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 
+import { compressPostImage } from './image';
 import { supabase } from './supabase';
 
 export type MediaKind = 'image' | 'video';
@@ -151,7 +152,11 @@ async function uploadOne(
   userId: string,
   index: number,
 ): Promise<UploadedMedia> {
-  const size = await getFileSize(media.uri);
+  // 画像はアップロード前に圧縮 (最大幅1200px, JPEG)。動画はそのまま。
+  const sourceUri =
+    media.kind === 'image' ? await compressPostImage(media.uri) : media.uri;
+
+  const size = await getFileSize(sourceUri);
   if (media.kind === 'video' && size !== undefined && size > VIDEO_MAX_BYTES) {
     throw new Error('video_too_large');
   }
@@ -159,11 +164,11 @@ async function uploadOne(
     throw new Error('image_too_large');
   }
 
-  const response = await fetch(media.uri);
+  const response = await fetch(sourceUri);
   const arrayBuffer = await response.arrayBuffer();
 
   const mime =
-    media.mimeType ?? (media.kind === 'video' ? 'video/mp4' : 'image/jpeg');
+    media.kind === 'video' ? (media.mimeType ?? 'video/mp4') : 'image/jpeg';
   const extFromMime = mime.split('/')[1] ?? (media.kind === 'video' ? 'mp4' : 'jpg');
   const ext = extFromMime.replace('jpeg', 'jpg').replace('quicktime', 'mov');
   const bucket = media.kind === 'video' ? POST_VIDEO_BUCKET : POST_IMAGE_BUCKET;

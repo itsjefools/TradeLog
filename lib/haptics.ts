@@ -46,3 +46,28 @@ export function notifyWarning() {
     () => undefined,
   );
 }
+
+// --- 意味ベースのエイリアス (指示_23 の命名規約に対応) ---
+
+/** 軽いタップ (ボタン押下・タブ切替) */
+export function lightImpact() {
+  if (Platform.OS === 'web') return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+}
+
+/** 中程度のフィードバック (プルリフレッシュ完了など) */
+export function mediumImpact() {
+  if (Platform.OS === 'web') return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
+    () => undefined,
+  );
+}
+
+/** 成功通知 (保存・投稿・購入完了) */
+export const successNotification = notifySuccess;
+
+/** エラー通知 */
+export const errorNotification = notifyError;
+
+/** 選択フィードバック (ピッカー・期間フィルター) */
+export const selectionFeedback = tapLight;

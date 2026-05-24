@@ -396,7 +396,7 @@ export default function ProfileEditScreen() {
               <View style={[styles.chipsRow, styles.chipsRowMt]}>
                 {filteredCountries.length === 0 ? (
                   <Text style={styles.noMatchText}>
-                    該当する国がありません
+                    {t('profileEdit.noCountryFound')}
                   </Text>
                 ) : (
                   filteredCountries.slice(0, 30).map((c) => {
@@ -434,7 +434,7 @@ export default function ProfileEditScreen() {
           {profile?.is_verified && (
             <View style={styles.verifiedNotice}>
               <Text style={styles.verifiedNoticeText}>
-                ✓ 本人確認済みアカウント
+                {t('profileEdit.verifiedNotice')}
               </Text>
             </View>
           )}

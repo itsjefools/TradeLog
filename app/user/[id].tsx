@@ -5,6 +5,7 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  Dimensions,
   Platform,
   Pressable,
   ScrollView,
@@ -16,6 +17,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { EmptyState } from '@/components/empty-state';
+import { FeedCard, FeedCardItem } from '@/components/feed-card';
+import { ProfileLinks } from '@/components/profile-links';
 import { ReportModal } from '@/components/report-modal';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
@@ -26,7 +30,17 @@ import { useThemeColors } from '@/hooks/use-theme';
 import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
-import { PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
+import { Post, PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const TAB_WIDTH = SCREEN_WIDTH / 4;
+
+type TabKey = 'posts' | 'trades' | 'shares' | 'likes';
+
+type RawPost = Post & {
+  trade: Trade | null;
+  profile: Profile | null;
+};
 
 export default function UserProfileScreen() {
   const c = useThemeColors();
@@ -115,6 +129,248 @@ export default function UserProfileScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [tab, setTab] = useState<TabKey>('posts');
+  const [items, setItems] = useState<FeedCardItem[]>([]);
+  const [tabLoading, setTabLoading] = useState(false);
+
+  const decorateItems = useCallback(
+    async (rawPosts: RawPost[]): Promise<FeedCardItem[]> => {
+      if (!myId || rawPosts.length === 0) {
+        return rawPosts.map((p) => ({
+          ...p,
+          is_liked: false,
+          is_bookmarked: false,
+          is_reposted: false,
+        }));
+      }
+      const postIds = rawPosts.map((p) => p.id);
+      const [likesRes, bmRes, rpRes] = await Promise.all([
+        supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', myId)
+          .in('post_id', postIds),
+        supabase
+          .from('bookmarks')
+          .select('post_id')
+          .eq('user_id', myId)
+          .in('post_id', postIds),
+        supabase
+          .from('reposts')
+          .select('post_id')
+          .eq('user_id', myId)
+          .in('post_id', postIds),
+      ]);
+      const likedSet = new Set(
+        (likesRes.data ?? []).map((l: { post_id: string }) => l.post_id),
+      );
+      const bookmarkedSet = new Set(
+        (bmRes.data ?? []).map((l: { post_id: string }) => l.post_id),
+      );
+      const repostedSet = new Set(
+        (rpRes.data ?? []).map((l: { post_id: string }) => l.post_id),
+      );
+      return rawPosts.map((p) => ({
+        ...p,
+        is_liked: likedSet.has(p.id),
+        is_bookmarked: bookmarkedSet.has(p.id),
+        is_reposted: repostedSet.has(p.id),
+      }));
+    },
+    [myId],
+  );
+
+  const loadTab = useCallback(
+    async (which: TabKey) => {
+      if (!targetId || which === 'trades') {
+        setItems([]);
+        return;
+      }
+      setTabLoading(true);
+      try {
+        if (which === 'posts') {
+          const { data } = await supabase
+            .from('posts')
+            .select(
+              `*,
+              trade:trades!posts_trade_id_fkey (*),
+              profile:profiles!posts_user_id_fkey (${PROFILE_COLUMNS})`,
+            )
+            .eq('user_id', targetId)
+            .in('post_type', ['text', 'strategy'])
+            .order('created_at', { ascending: false })
+            .limit(50);
+          const decorated = await decorateItems((data ?? []) as RawPost[]);
+          setItems(decorated);
+        } else if (which === 'likes') {
+          // 他人のいいねはRLSで読めない場合がある → 空表示で握りつぶす
+          try {
+            const { data, error: likesError } = await supabase
+              .from('likes')
+              .select(
+                `created_at,
+                post:posts!likes_post_id_fkey (
+                  *,
+                  trade:trades!posts_trade_id_fkey (*),
+                  profile:profiles!posts_user_id_fkey (${PROFILE_COLUMNS})
+                )`,
+              )
+              .eq('user_id', targetId)
+              .order('created_at', { ascending: false })
+              .limit(50);
+            if (likesError) {
+              setItems([]);
+            } else {
+              type Row = { post: RawPost | null };
+              const posts = ((data ?? []) as unknown as Row[])
+                .map((r) => r.post)
+                .filter((p): p is RawPost => p !== null);
+              const decorated = await decorateItems(posts);
+              setItems(decorated);
+            }
+          } catch {
+            setItems([]);
+          }
+        } else {
+          // shares (reposts)
+          const { data } = await supabase
+            .from('reposts')
+            .select(
+              `created_at,
+              post:posts!reposts_post_id_fkey (
+                *,
+                trade:trades!posts_trade_id_fkey (*),
+                profile:profiles!posts_user_id_fkey (${PROFILE_COLUMNS})
+              )`,
+            )
+            .eq('user_id', targetId)
+            .order('created_at', { ascending: false })
+            .limit(50);
+          type Row = { post: RawPost | null };
+          const posts = ((data ?? []) as unknown as Row[])
+            .map((r) => r.post)
+            .filter((p): p is RawPost => p !== null);
+          const decorated = await decorateItems(posts);
+          setItems(decorated);
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        Alert.alert(t('profile.loadFail'), msg);
+      } finally {
+        setTabLoading(false);
+      }
+    },
+    [targetId, decorateItems, t],
+  );
+
+  const switchTab = (next: TabKey) => {
+    if (next === tab) return;
+    setTab(next);
+    setItems([]);
+    loadTab(next);
+  };
+
+  const toggleLike = async (item: FeedCardItem) => {
+    if (!myId) return;
+    const wasLiked = item.is_liked;
+    setItems((prev) =>
+      prev.map((p) =>
+        p.id === item.id
+          ? {
+              ...p,
+              is_liked: !wasLiked,
+              likes_count: Math.max(0, p.likes_count + (wasLiked ? -1 : 1)),
+            }
+          : p,
+      ),
+    );
+    try {
+      if (wasLiked) {
+        await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', myId)
+          .eq('post_id', item.id);
+      } else {
+        await supabase.from('likes').insert({ user_id: myId, post_id: item.id });
+      }
+    } catch (e) {
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === item.id
+            ? {
+                ...p,
+                is_liked: wasLiked,
+                likes_count: Math.max(0, p.likes_count + (wasLiked ? 1 : -1)),
+              }
+            : p,
+        ),
+      );
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const toggleBookmark = async (item: FeedCardItem) => {
+    if (!myId) return;
+    const was = item.is_bookmarked;
+    setItems((prev) =>
+      prev.map((p) => (p.id === item.id ? { ...p, is_bookmarked: !was } : p)),
+    );
+    try {
+      if (was) {
+        await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('user_id', myId)
+          .eq('post_id', item.id);
+      } else {
+        await supabase
+          .from('bookmarks')
+          .insert({ user_id: myId, post_id: item.id });
+      }
+    } catch (e) {
+      setItems((prev) =>
+        prev.map((p) => (p.id === item.id ? { ...p, is_bookmarked: was } : p)),
+      );
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const toggleRepost = async (item: FeedCardItem) => {
+    if (!myId) return;
+    const was = item.is_reposted;
+    if (!was) {
+      const ok = await new Promise<boolean>((resolve) => {
+        Alert.alert(t('feed.confirmRepostTitle'), t('feed.confirmRepostBody'), [
+          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('feed.repost'), onPress: () => resolve(true) },
+        ]);
+      });
+      if (!ok) return;
+    }
+    setItems((prev) =>
+      prev.map((p) => (p.id === item.id ? { ...p, is_reposted: !was } : p)),
+    );
+    try {
+      if (was) {
+        await supabase
+          .from('reposts')
+          .delete()
+          .eq('user_id', myId)
+          .eq('post_id', item.id);
+      } else {
+        await supabase
+          .from('reposts')
+          .insert({ user_id: myId, post_id: item.id });
+      }
+    } catch (e) {
+      setItems((prev) =>
+        prev.map((p) => (p.id === item.id ? { ...p, is_reposted: was } : p)),
+      );
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const load = useCallback(async () => {
     if (!targetId) {
       setError(t('user.idNotSpecified'));
@@ -171,7 +427,8 @@ export default function UserProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load]),
+      loadTab(tab);
+    }, [load, loadTab, tab]),
   );
 
   const toggleFollow = async () => {
@@ -247,6 +504,30 @@ export default function UserProfileScreen() {
   const country = findCountry(profile.nationality ?? null);
   const styleText = profile.trade_style ? tradeStyleLabel(profile.trade_style) : '';
 
+  const tabs: {
+    key: TabKey;
+    icon: React.ComponentProps<typeof Ionicons>['name'];
+  }[] = [
+    { key: 'posts', icon: 'grid-outline' },
+    { key: 'trades', icon: 'bar-chart-outline' },
+    { key: 'shares', icon: 'repeat' },
+    { key: 'likes', icon: 'heart-outline' },
+  ];
+
+  const emptyIcon: React.ComponentProps<typeof Ionicons>['name'] =
+    tab === 'posts'
+      ? 'grid-outline'
+      : tab === 'shares'
+        ? 'repeat'
+        : 'heart-outline';
+
+  const emptyTitle =
+    tab === 'posts'
+      ? t('profile.emptyPosts')
+      : tab === 'shares'
+        ? t('profile.emptyShares')
+        : t('profile.emptyLikes');
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -316,6 +597,11 @@ export default function UserProfileScreen() {
           {profile.bio && profile.bio.trim() !== '' && (
             <Text style={styles.bio}>{profile.bio}</Text>
           )}
+
+          <ProfileLinks
+            website={profile.website}
+            twitter={profile.twitter_handle}
+          />
 
           {!isMyself && (
             <View style={styles.actionRow}>
@@ -392,17 +678,62 @@ export default function UserProfileScreen() {
           </Pressable>
         </View>
 
-        <Text style={styles.sectionLabel}>{t('user.sharedTradesTitle')}</Text>
+        <View style={styles.tabBar}>
+          {tabs.map((tb) => {
+            const active = tab === tb.key;
+            return (
+              <Pressable
+                key={tb.key}
+                onPress={() => switchTab(tb.key)}
+                style={[styles.tabButton, active && styles.tabButtonActive]}
+                hitSlop={4}
+              >
+                <Ionicons
+                  name={tb.icon}
+                  size={22}
+                  color={active ? c.accent : c.textSecondary}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
 
-        {trades.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>
-              共有された取引はまだありません。
-            </Text>
-          </View>
-        ) : (
-          trades.map((t) => <TradeCard key={t.id} trade={t} />)
-        )}
+        <View style={styles.tabContent}>
+          {tab === 'trades' ? (
+            trades.length === 0 ? (
+              <EmptyState
+                icon="bar-chart-outline"
+                title={t('profile.emptyTrades')}
+                subtitle=""
+              />
+            ) : (
+              trades.map((tr) => <TradeCard key={tr.id} trade={tr} />)
+            )
+          ) : tabLoading ? (
+            <View style={styles.tabCenter}>
+              <ActivityIndicator color={c.accent} />
+            </View>
+          ) : items.length === 0 ? (
+            <EmptyState
+              icon={emptyIcon}
+              title={emptyTitle}
+              subtitle=""
+            />
+          ) : (
+            items.map((item) => (
+              <FeedCard
+                key={`${tab}-${item.id}`}
+                item={item}
+                onToggleLike={toggleLike}
+                onToggleBookmark={toggleBookmark}
+                onToggleRepost={toggleRepost}
+                onDeleted={(postId) =>
+                  setItems((prev) => prev.filter((p) => p.id !== postId))
+                }
+              />
+            ))
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -666,6 +997,36 @@ function makeStyles(c: ThemeColors) {
       fontWeight: '600',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
+    },
+    tabBar: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      width: SCREEN_WIDTH,
+      height: 52,
+      marginHorizontal: -16,
+      backgroundColor: c.background,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    tabButton: {
+      width: TAB_WIDTH,
+      height: 52,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+    },
+    tabButtonActive: {
+      borderBottomColor: c.accent,
+    },
+    tabContent: {
+      gap: 10,
+    },
+    tabCenter: {
+      paddingVertical: 40,
+      alignItems: 'center',
     },
     emptyBox: {
       backgroundColor: c.surface,

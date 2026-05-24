@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { FeedCard, FeedCardItem } from '@/components/feed-card';
+import { ProfileLinks } from '@/components/profile-links';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
@@ -27,6 +28,7 @@ import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { computeBadges, tierColor } from '@/lib/badges';
 import { findCountry, flagEmoji } from '@/lib/countries';
+import { computeStreak } from '@/lib/streak';
 import { supabase } from '@/lib/supabase';
 import { Post, PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
@@ -44,7 +46,11 @@ export default function ProfileScreen() {
   const { session } = useAuth();
   const { profile, loading, refresh } = useProfile();
   const { trades } = useTrades();
-  const badges = useMemo(() => computeBadges(trades), [trades]);
+  const badges = useMemo(
+    () => computeBadges(trades, profile?.currency),
+    [trades, profile?.currency],
+  );
+  const streak = useMemo(() => computeStreak(trades), [trades]);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [tradeCount, setTradeCount] = useState(0);
@@ -439,6 +445,20 @@ export default function ProfileScreen() {
               <Text style={styles.bio}>{profile.bio}</Text>
             )}
 
+            <ProfileLinks
+              website={profile?.website}
+              twitter={profile?.twitter_handle}
+            />
+
+            {streak >= 1 && (
+              <View style={styles.streakChip}>
+                <Text style={styles.streakEmoji}>🔥</Text>
+                <Text style={styles.streakText}>
+                  {t('profile.streak', { count: streak })}
+                </Text>
+              </View>
+            )}
+
             {badges.length > 0 && (
               <View style={styles.badgesRow}>
                 {badges.map((b) => (
@@ -456,7 +476,7 @@ export default function ProfileScreen() {
                         { color: tierColor(b.tier) },
                       ]}
                     >
-                      {b.label}
+                      {t(b.labelKey, b.labelParams)}
                     </Text>
                   </View>
                 ))}
@@ -661,6 +681,24 @@ function makeStyles(c: ThemeColors) {
       marginTop: 12,
       textAlign: 'center',
       lineHeight: 20,
+    },
+    streakChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      marginTop: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 999,
+      borderWidth: 1.5,
+      borderColor: '#F97316',
+      backgroundColor: c.surfaceAlt,
+    },
+    streakEmoji: { fontSize: 14 },
+    streakText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#F97316',
     },
     badgesRow: {
       flexDirection: 'row',

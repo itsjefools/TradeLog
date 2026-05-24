@@ -1,16 +1,20 @@
 // 称号（バッジ）システム
-// 取引数・連勝・勝率・利益などから称号を計算
+// 取引数・連勝・勝率・利益などから称号を計算する。
+// ラベル/説明は i18n キー + パラメータで返す（表示側で t() する）。
 
+import { formatPnlWithCurrency } from './format-currency';
 import { Trade } from './types';
 
 export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
 export type Badge = {
   id: string;
-  label: string;
-  description: string;
   tier: BadgeTier;
   emoji: string;
+  labelKey: string;
+  labelParams?: Record<string, string | number>;
+  descKey: string;
+  descParams?: Record<string, string | number>;
 };
 
 const TIER_COLORS: Record<BadgeTier, string> = {
@@ -39,22 +43,45 @@ const STREAK_TIERS: { streak: number; tier: BadgeTier; emoji: string }[] = [
   { streak: 5, tier: 'silver', emoji: '🔥' },
 ];
 
-export function computeBadges(trades: Trade[]): Badge[] {
+const PNL_TIERS: { amount: number; tier: BadgeTier }[] = [
+  { amount: 1_000_000, tier: 'diamond' },
+  { amount: 500_000, tier: 'platinum' },
+  { amount: 100_000, tier: 'gold' },
+  { amount: 10_000, tier: 'bronze' },
+];
+
+export function computeBadges(
+  trades: Trade[],
+  currency?: string | null,
+): Badge[] {
   const badges: Badge[] = [];
+
+  // 初トレード（最初の一歩）
+  if (trades.length >= 1) {
+    badges.push({
+      id: 'first',
+      tier: 'bronze',
+      emoji: '🌱',
+      labelKey: 'badges.first',
+      descKey: 'badges.first_desc',
+    });
+  }
 
   // 取引数バッジ
   const countTier = COUNT_TIERS.find((t) => trades.length >= t.count);
   if (countTier) {
     badges.push({
       id: `count_${countTier.tier}`,
-      label: `${countTier.count}+ 取引`,
-      description: `累計 ${countTier.count} 取引以上を達成`,
       tier: countTier.tier,
       emoji: countTier.emoji,
+      labelKey: 'badges.count',
+      labelParams: { count: countTier.count },
+      descKey: 'badges.count_desc',
+      descParams: { count: countTier.count },
     });
   }
 
-  // 連勝バッジ（traded_at 順、勝ち=win, 負け=loss でリセット）
+  // 連勝バッジ（traded_at 順、勝ち=win で加算、負け=loss でリセット）
   const sorted = [...trades]
     .filter((t) => t.result !== null)
     .sort(
@@ -75,10 +102,12 @@ export function computeBadges(trades: Trade[]): Badge[] {
   if (streakTier) {
     badges.push({
       id: `streak_${streakTier.tier}`,
-      label: `${streakTier.streak}連勝`,
-      description: `${streakTier.streak}回連続で利確を達成`,
       tier: streakTier.tier,
       emoji: streakTier.emoji,
+      labelKey: 'badges.streak',
+      labelParams: { count: streakTier.streak },
+      descKey: 'badges.streak_desc',
+      descParams: { count: streakTier.streak },
     });
   }
 
@@ -87,66 +116,40 @@ export function computeBadges(trades: Trade[]): Badge[] {
   if (withResult.length >= 10) {
     const wins = withResult.filter((t) => t.result === 'win').length;
     const winRate = wins / withResult.length;
-    if (winRate >= 0.7) {
+    const rateTier =
+      winRate >= 0.7
+        ? { tier: 'diamond' as BadgeTier, rate: 70 }
+        : winRate >= 0.6
+          ? { tier: 'gold' as BadgeTier, rate: 60 }
+          : winRate >= 0.5
+            ? { tier: 'silver' as BadgeTier, rate: 50 }
+            : null;
+    if (rateTier) {
       badges.push({
-        id: 'winrate_diamond',
-        label: '勝率70%+',
-        description: '最低10取引で勝率70%以上',
-        tier: 'diamond',
+        id: `winrate_${rateTier.tier}`,
+        tier: rateTier.tier,
         emoji: '🎯',
-      });
-    } else if (winRate >= 0.6) {
-      badges.push({
-        id: 'winrate_gold',
-        label: '勝率60%+',
-        description: '最低10取引で勝率60%以上',
-        tier: 'gold',
-        emoji: '🎯',
-      });
-    } else if (winRate >= 0.5) {
-      badges.push({
-        id: 'winrate_silver',
-        label: '勝率50%+',
-        description: '最低10取引で勝率50%以上',
-        tier: 'silver',
-        emoji: '🎯',
+        labelKey: 'badges.winrate',
+        labelParams: { rate: rateTier.rate },
+        descKey: 'badges.winrate_desc',
+        descParams: { rate: rateTier.rate },
       });
     }
   }
 
-  // 累計利益バッジ
+  // 累計利益バッジ（口座通貨で表示）
   const totalPnl = trades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
-  if (totalPnl >= 1_000_000) {
+  const pnlTier = PNL_TIERS.find((t) => totalPnl >= t.amount);
+  if (pnlTier) {
+    const amount = formatPnlWithCurrency(pnlTier.amount, currency);
     badges.push({
-      id: 'pnl_diamond',
-      label: '+100万円達成',
-      description: '累計利益100万円以上',
-      tier: 'diamond',
+      id: `pnl_${pnlTier.tier}`,
+      tier: pnlTier.tier,
       emoji: '💰',
-    });
-  } else if (totalPnl >= 500_000) {
-    badges.push({
-      id: 'pnl_gold',
-      label: '+50万円達成',
-      description: '累計利益50万円以上',
-      tier: 'gold',
-      emoji: '💰',
-    });
-  } else if (totalPnl >= 100_000) {
-    badges.push({
-      id: 'pnl_silver',
-      label: '+10万円達成',
-      description: '累計利益10万円以上',
-      tier: 'silver',
-      emoji: '💰',
-    });
-  } else if (totalPnl >= 10_000) {
-    badges.push({
-      id: 'pnl_bronze',
-      label: '+1万円達成',
-      description: '累計利益1万円以上',
-      tier: 'bronze',
-      emoji: '💰',
+      labelKey: 'badges.pnl',
+      labelParams: { amount },
+      descKey: 'badges.pnl_desc',
+      descParams: { amount },
     });
   }
 

@@ -19,20 +19,76 @@ const COLUMNS = [
   'is_shared',
 ] as const;
 
-const HEADERS_JA: Record<(typeof COLUMNS)[number], string> = {
-  traded_at: '取引日時',
-  currency_pair: '通貨ペア',
-  direction: '方向',
-  result: '結果',
-  entry_price: 'エントリー価格',
-  exit_price: 'エグジット価格',
-  lot_size: 'ロット数',
-  pnl: '損益(円)',
-  pnl_pips: '損益(pips)',
-  memo: 'エントリー前メモ',
-  post_memo: 'エグジット後メモ',
-  review_memo: '振り返り',
-  is_shared: 'フィード共有',
+type Col = (typeof COLUMNS)[number];
+
+const HEADERS: Record<string, Record<Col, string>> = {
+  ja: {
+    traded_at: '取引日時',
+    currency_pair: '通貨ペア',
+    direction: '方向',
+    result: '結果',
+    entry_price: 'エントリー価格',
+    exit_price: 'エグジット価格',
+    lot_size: 'ロット数',
+    pnl: '損益',
+    pnl_pips: '損益(pips)',
+    memo: 'エントリー前メモ',
+    post_memo: 'エグジット後メモ',
+    review_memo: '振り返り',
+    is_shared: 'フィード共有',
+  },
+  en: {
+    traded_at: 'Date',
+    currency_pair: 'Pair',
+    direction: 'Direction',
+    result: 'Result',
+    entry_price: 'Entry Price',
+    exit_price: 'Exit Price',
+    lot_size: 'Lot',
+    pnl: 'P&L',
+    pnl_pips: 'P&L (Pips)',
+    memo: 'Pre-Entry Note',
+    post_memo: 'Post-Exit Note',
+    review_memo: 'Review',
+    is_shared: 'Shared',
+  },
+  pt: {
+    traded_at: 'Data',
+    currency_pair: 'Par',
+    direction: 'Direção',
+    result: 'Resultado',
+    entry_price: 'Preço de Entrada',
+    exit_price: 'Preço de Saída',
+    lot_size: 'Lote',
+    pnl: 'P&L',
+    pnl_pips: 'P&L (Pips)',
+    memo: 'Nota Pré-Entrada',
+    post_memo: 'Nota Pós-Saída',
+    review_memo: 'Revisão',
+    is_shared: 'Compartilhado',
+  },
+  es: {
+    traded_at: 'Fecha',
+    currency_pair: 'Par',
+    direction: 'Dirección',
+    result: 'Resultado',
+    entry_price: 'Precio de Entrada',
+    exit_price: 'Precio de Salida',
+    lot_size: 'Lote',
+    pnl: 'P&L',
+    pnl_pips: 'P&L (Pips)',
+    memo: 'Nota Pre-Entrada',
+    post_memo: 'Nota Post-Salida',
+    review_memo: 'Revisión',
+    is_shared: 'Compartido',
+  },
+};
+
+const DIALOG_TITLE: Record<string, string> = {
+  ja: '取引データをエクスポート',
+  en: 'Export trade data',
+  pt: 'Exportar dados de operações',
+  es: 'Exportar datos de operaciones',
 };
 
 function escapeCell(value: unknown): string {
@@ -53,19 +109,23 @@ function tradeToRow(t: Trade): string {
   }).join(',');
 }
 
-export function buildTradesCsv(trades: Trade[]): string {
-  const header = COLUMNS.map((c) => escapeCell(HEADERS_JA[c])).join(',');
+export function buildTradesCsv(trades: Trade[], locale = 'ja'): string {
+  const headerMap = HEADERS[locale] ?? HEADERS.en;
+  const header = COLUMNS.map((c) => escapeCell(headerMap[c])).join(',');
   const rows = trades.map(tradeToRow);
   // BOM 付き UTF-8 で Excel が文字化けしないように
   return '﻿' + [header, ...rows].join('\r\n');
 }
 
-export async function exportTradesCsv(trades: Trade[]): Promise<void> {
+export async function exportTradesCsv(
+  trades: Trade[],
+  locale = 'ja',
+): Promise<void> {
   if (trades.length === 0) {
     throw new Error('エクスポートする取引がありません');
   }
 
-  const csv = buildTradesCsv(trades);
+  const csv = buildTradesCsv(trades, locale);
   const date = new Date();
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -86,7 +146,7 @@ export async function exportTradesCsv(trades: Trade[]): Promise<void> {
 
   await Sharing.shareAsync(file.uri, {
     mimeType: 'text/csv',
-    dialogTitle: '取引データをエクスポート',
+    dialogTitle: DIALOG_TITLE[locale] ?? DIALOG_TITLE.en,
     UTI: 'public.comma-separated-values-text',
   });
 }

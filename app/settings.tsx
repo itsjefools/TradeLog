@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -17,6 +18,11 @@ import { useAuth } from '@/hooks/use-auth';
 import { SUPPORTED_LOCALES, useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
+import {
+  disableDailyReminder,
+  enableDailyReminder,
+  isDailyReminderEnabled,
+} from '@/lib/reminder';
 import { supabase } from '@/lib/supabase';
 import { getCurrencyInfo } from '@/lib/types';
 
@@ -29,6 +35,32 @@ export default function SettingsScreen() {
   const { profile } = useProfile();
   const { mode, setMode } = useTheme();
   const { locale, t } = useI18n();
+
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    isDailyReminderEnabled().then((enabled) => {
+      if (!cancelled) setReminderEnabled(enabled);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleToggleReminder = async (next: boolean) => {
+    // 楽観的に反映しつつ、失敗/拒否時は静かに元へ戻す
+    setReminderEnabled(next);
+    if (next) {
+      const ok = await enableDailyReminder(
+        t('reminder.title'),
+        t('reminder.body'),
+      );
+      if (!ok) setReminderEnabled(false);
+    } else {
+      await disableDailyReminder();
+    }
+  };
 
   const email = session?.user.email ?? '';
   const fallbackName = email.split('@')[0] || t('settings.defaultName');
@@ -240,6 +272,11 @@ export default function SettingsScreen() {
           label={t('settings.bookmarks')}
           onPress={() => router.push('/bookmarks')}
         />
+        <SettingRow
+          icon="download-outline"
+          label={t('settings.exportData')}
+          onPress={() => router.push('/export')}
+        />
 
         <Divider />
 
@@ -268,6 +305,22 @@ export default function SettingsScreen() {
           icon="book-outline"
           label={t('settings.glossary')}
           onPress={() => router.push('/glossary')}
+        />
+        <SettingRow
+          icon="chatbox-ellipses-outline"
+          label={t('settings.feedback')}
+          onPress={() => router.push('/feedback')}
+        />
+        <SettingRow
+          icon="notifications-outline"
+          label={t('settings.reminder')}
+          rightElement={
+            <Switch
+              value={reminderEnabled}
+              onValueChange={handleToggleReminder}
+              trackColor={{ false: c.surfaceAlt, true: c.accent }}
+            />
+          }
         />
 
         <Divider />

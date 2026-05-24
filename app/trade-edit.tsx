@@ -30,6 +30,7 @@ import {
 } from '@/lib/trade-math';
 import {
   ALL_CURRENCY_PAIRS,
+  PRESET_TRADE_TAGS,
   Trade,
   TradeDirection,
   TradeResult,
@@ -46,6 +47,7 @@ type FormState = {
   pnlPips: string;
   memo: string;
   isShared: boolean;
+  tags: string[];
 };
 
 function tradeToForm(t: Trade): FormState {
@@ -64,6 +66,7 @@ function tradeToForm(t: Trade): FormState {
     pnlPips: t.pnl_pips !== null ? String(t.pnl_pips) : '',
     memo: merged,
     isShared: t.is_shared,
+    tags: t.tags ?? [],
   };
 }
 
@@ -81,6 +84,7 @@ export default function TradeEditScreen() {
     original ? tradeToForm(original) : null,
   );
   const [pairSearch, setPairSearch] = useState('');
+  const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
 
   // 取引が context 未取得の場合に直接フェッチ
@@ -162,6 +166,35 @@ export default function TradeEditScreen() {
     });
   };
 
+  const toggleTag = (tag: string) => {
+    const value = tag.trim();
+    if (!value) return;
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            tags: prev.tags.includes(value)
+              ? prev.tags.filter((x) => x !== value)
+              : [...prev.tags, value],
+          }
+        : prev,
+    );
+  };
+
+  const addCustomTag = () => {
+    const value = tagInput.trim();
+    if (!value) return;
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            tags: prev.tags.includes(value) ? prev.tags : [...prev.tags, value],
+          }
+        : prev,
+    );
+    setTagInput('');
+  };
+
   const handleSave = async () => {
     if (!form || !id) return;
     const lotSize = parseNumOrNull(form.lotSize);
@@ -191,6 +224,7 @@ export default function TradeEditScreen() {
           post_memo: null,
           review_memo: null,
           is_shared: form.isShared,
+          tags: form.tags,
         })
         .eq('id', id);
       if (error) throw new Error(error.message);
@@ -244,7 +278,8 @@ export default function TradeEditScreen() {
               editable={!saving}
             />
             <Text style={styles.selectedPairText}>
-              選択中: <Text style={styles.selectedPairValue}>{form.currencyPair}</Text>
+              {t('record.selectedPrefix')}
+              <Text style={styles.selectedPairValue}>{form.currencyPair}</Text>
             </Text>
             {!isSearching && favorites.length > 0 && (
               <Text style={styles.favHeader}>{t('record.favHeader')}</Text>
@@ -308,7 +343,7 @@ export default function TradeEditScreen() {
                     form.direction === 'long' && styles.segmentTextActive,
                   ]}
                 >
-                  ロング（買い）
+                  {t('record.long')}
                 </Text>
               </Pressable>
               <Pressable
@@ -325,7 +360,7 @@ export default function TradeEditScreen() {
                     form.direction === 'short' && styles.segmentTextActive,
                   ]}
                 >
-                  ショート（売り）
+                  {t('record.short')}
                 </Text>
               </Pressable>
             </View>
@@ -350,7 +385,7 @@ export default function TradeEditScreen() {
                     form.result === 'win' && styles.resultButtonTextSelected,
                   ]}
                 >
-                  利確
+                  {t('record.win')}
                 </Text>
               </Pressable>
               <Pressable
@@ -369,7 +404,7 @@ export default function TradeEditScreen() {
                     form.result === 'loss' && styles.resultButtonTextSelected,
                   ]}
                 >
-                  損切り
+                  {t('record.loss')}
                 </Text>
               </Pressable>
             </View>
@@ -456,6 +491,78 @@ export default function TradeEditScreen() {
             />
           </View>
 
+          <View style={styles.section}>
+            <Text style={styles.label}>{t('record.tagsLabel')}</Text>
+            <View style={styles.chipsRow}>
+              {PRESET_TRADE_TAGS.map((tag) => {
+                const selected = form.tags.includes(tag);
+                return (
+                  <Pressable
+                    key={tag}
+                    style={[styles.tagChip, selected && styles.tagChipSelected]}
+                    onPress={() => toggleTag(tag)}
+                    disabled={saving}
+                  >
+                    <Text
+                      style={[
+                        styles.tagChipText,
+                        selected && styles.tagChipTextSelected,
+                      ]}
+                    >
+                      {t(`tags.${tag}`)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {form.tags.filter((tag) => !PRESET_TRADE_TAGS.includes(tag as never))
+              .length > 0 && (
+              <View style={[styles.chipsRow, styles.chipsRowMt]}>
+                {form.tags
+                  .filter((tag) => !PRESET_TRADE_TAGS.includes(tag as never))
+                  .map((tag) => (
+                    <Pressable
+                      key={tag}
+                      style={[styles.tagChip, styles.tagChipSelected]}
+                      onPress={() => toggleTag(tag)}
+                      disabled={saving}
+                    >
+                      <Text style={[styles.tagChipText, styles.tagChipTextSelected]}>
+                        {tag}
+                      </Text>
+                      <Ionicons name="close" size={13} color="#fff" />
+                    </Pressable>
+                  ))}
+              </View>
+            )}
+            <View style={styles.tagInputRow}>
+              <TextInput
+                style={[styles.input, styles.flex]}
+                value={tagInput}
+                onChangeText={setTagInput}
+                placeholder={t('record.tagsPlaceholder')}
+                placeholderTextColor={c.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={addCustomTag}
+                editable={!saving}
+              />
+              <Pressable
+                onPress={addCustomTag}
+                disabled={saving || tagInput.trim() === ''}
+                style={({ pressed }) => [
+                  styles.tagAddButton,
+                  (saving || tagInput.trim() === '') &&
+                    styles.tagAddButtonDisabled,
+                  pressed && styles.tagAddButtonPressed,
+                ]}
+              >
+                <Ionicons name="add" size={22} color="#fff" />
+              </Pressable>
+            </View>
+          </View>
+
           <View style={[styles.section, styles.switchRow]}>
             <View style={styles.flex}>
               <Text style={styles.label}>{t('record.shareFeedLabel')}</Text>
@@ -537,6 +644,36 @@ function makeStyles(c: ThemeColors) {
       borderColor: c.border,
     },
     chipSelected: { backgroundColor: c.accent, borderColor: c.accent },
+    tagChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    tagChipSelected: { backgroundColor: c.accent, borderColor: c.accent },
+    tagChipText: { fontSize: 13, color: c.textPrimary, fontWeight: '500' },
+    tagChipTextSelected: { color: '#fff', fontWeight: '600' },
+    tagInputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 12,
+    },
+    tagAddButton: {
+      width: 46,
+      height: 46,
+      borderRadius: 10,
+      backgroundColor: c.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tagAddButtonDisabled: { opacity: 0.5 },
+    tagAddButtonPressed: { opacity: 0.85 },
     chipText: { fontSize: 13, color: c.textPrimary, fontWeight: '500' },
     chipTextSelected: { color: '#fff', fontWeight: '600' },
     starIcon: { fontSize: 14, color: c.textSecondary, marginLeft: 6 },

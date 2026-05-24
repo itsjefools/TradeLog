@@ -25,9 +25,10 @@ if (
 ) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-import { BarChart, PieChart } from 'react-native-chart-kit';
+import { PieChart } from 'react-native-chart-kit';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PremiumTag } from '@/components/premium-tag';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
@@ -154,8 +155,26 @@ export default function AnalyticsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('analytics.title')}</Text>
-        <Text style={styles.subtitle}>{t('analytics.subtitle')}</Text>
+        <View style={styles.headerText}>
+          <Text style={styles.title}>{t('analytics.title')}</Text>
+          <Text style={styles.subtitle}>{t('analytics.subtitle')}</Text>
+        </View>
+        <View style={styles.headerActions}>
+          <Pressable
+            onPress={() => router.push('/share-card')}
+            hitSlop={8}
+            style={styles.statsButton}
+          >
+            <Ionicons name="share-social-outline" size={20} color={c.textPrimary} />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/trade-stats')}
+            hitSlop={8}
+            style={styles.statsButton}
+          >
+            <Ionicons name="stats-chart" size={20} color={c.textPrimary} />
+          </Pressable>
+        </View>
       </View>
 
       {loading ? (
@@ -255,6 +274,22 @@ export default function AnalyticsScreen() {
                 {stats.avgPipsDisplay}
               </Text>
             </View>
+            <View style={styles.kpiRow}>
+              <Text style={styles.kpiRowLabel}>{t('stats.profit_factor')}</Text>
+              <Text style={styles.kpiRowValue}>{stats.pfDisplay}</Text>
+            </View>
+            <View style={styles.kpiRow}>
+              <Text style={styles.kpiRowLabel}>{t('stats.max_win')}</Text>
+              <Text style={[styles.kpiRowValue, stats.bestStyle]}>
+                {stats.bestDisplay}
+              </Text>
+            </View>
+            <View style={styles.kpiRow}>
+              <Text style={styles.kpiRowLabel}>{t('stats.max_loss')}</Text>
+              <Text style={[styles.kpiRowValue, stats.worstStyle]}>
+                {stats.worstDisplay}
+              </Text>
+            </View>
           </View>
 
           {monthlyTrades.length > 0 ? (
@@ -301,22 +336,14 @@ export default function AnalyticsScreen() {
 
               <View style={styles.lockedWrap}>
                 <View pointerEvents={isPremium ? 'auto' : 'none'}>
-                  <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                    {t('analytics.dailyPnl')}
-                  </Text>
-                  <View style={styles.chartCard}>
-                    <BarChart
-                      data={dailyData}
-                      width={SCREEN_WIDTH - 64}
-                      height={200}
-                      chartConfig={chartConfig}
-                      fromZero
-                      showValuesOnTopOfBars={false}
-                      yAxisLabel=""
-                      yAxisSuffix=""
-                      withInnerLines
-                      style={styles.chart}
-                    />
+                  <View style={styles.premiumSectionHead}>
+                    <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                      {t('analytics.dailyPnl')}
+                    </Text>
+                    <PremiumTag />
+                  </View>
+                  <View style={styles.dataCard}>
+                    <DailyBars data={dailyData} />
                   </View>
 
                   {pairData.labels.length > 0 && (
@@ -324,18 +351,8 @@ export default function AnalyticsScreen() {
                       <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
                         {t('analytics.pairBreakdown')}
                       </Text>
-                      <View style={styles.chartCard}>
-                        <BarChart
-                          data={pairData}
-                          width={SCREEN_WIDTH - 64}
-                          height={Math.max(200, pairData.labels.length * 36)}
-                          chartConfig={chartConfig}
-                          fromZero
-                          yAxisLabel=""
-                          yAxisSuffix=""
-                          verticalLabelRotation={30}
-                          style={styles.chart}
-                        />
+                      <View style={styles.dataCard}>
+                        <PairBars data={pairData} currency={profile?.currency} />
                       </View>
                     </>
                   )}
@@ -596,7 +613,11 @@ function WeekdayPerf({ trades }: { trades: Trade[] }) {
                 {v.count > 0 ? formatPnl(v.pnl, currency) : '—'}
               </Text>
               <Text style={styles.weekdaySub}>
-                {v.count}回{winRate !== null ? ` · 勝率${winRate}%` : ''}
+                {v.count}
+                {t('analytics.tradeCountUnit')}
+                {winRate !== null
+                  ? ` · ${t('analytics.winRate')} ${winRate}%`
+                  : ''}
               </Text>
             </View>
           </View>
@@ -875,11 +896,125 @@ function DayDetail({
   );
 }
 
+// 日別 P&L: ゼロ基準線を中心に上(緑)/下(赤)へ伸びる自作バーチャート
+function DailyBars({
+  data,
+}: {
+  data: { labels: string[]; datasets: { data: number[] }[] };
+}) {
+  const c = useThemeColors();
+  const values = data.datasets[0]?.data ?? [];
+  const maxAbs = Math.max(1, ...values.map((v) => Math.abs(v)));
+  const H = 130;
+  const half = H / 2;
+  return (
+    <View style={{ height: H }}>
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: half,
+          height: StyleSheet.hairlineWidth,
+          backgroundColor: c.border,
+        }}
+      />
+      <View style={{ flexDirection: 'row', height: H, gap: 3 }}>
+        {values.map((v, i) => {
+          const h = v === 0 ? 0 : Math.max(3, (Math.abs(v) / maxAbs) * (half - 8));
+          const positive = v >= 0;
+          return (
+            <View key={i} style={{ flex: 1, height: H }}>
+              <View
+                style={{
+                  height: h,
+                  borderRadius: 3,
+                  backgroundColor: positive ? c.win : c.loss,
+                  marginTop: positive ? half - h : half,
+                }}
+              />
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+// 通貨ペア別: 損益の絶対値に比例した横棒リスト（洗練版）
+function PairBars({
+  data,
+  currency,
+}: {
+  data: { labels: string[]; datasets: { data: number[] }[] };
+  currency?: string | null;
+}) {
+  const c = useThemeColors();
+  const rows = data.labels.map((label, i) => ({
+    label,
+    value: data.datasets[0]?.data[i] ?? 0,
+  }));
+  const maxAbs = Math.max(1, ...rows.map((r) => Math.abs(r.value)));
+  return (
+    <View style={{ gap: 14, width: '100%' }}>
+      {rows.map((r) => {
+        const positive = r.value >= 0;
+        const color = positive ? c.win : c.loss;
+        return (
+          <View key={r.label} style={{ gap: 6 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{ fontSize: 14, fontWeight: '700', color: c.textPrimary }}
+              >
+                {r.label}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '700',
+                  color,
+                  fontVariant: ['tabular-nums'],
+                }}
+              >
+                {formatPnl(r.value, currency)}
+              </Text>
+            </View>
+            <View
+              style={{
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: c.surfaceAlt,
+                overflow: 'hidden',
+              }}
+            >
+              <View
+                style={{
+                  height: '100%',
+                  width: `${Math.max(3, (Math.abs(r.value) / maxAbs) * 100)}%`,
+                  borderRadius: 4,
+                  backgroundColor: color,
+                }}
+              />
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 function formatCompactPnl(n: number): string {
   const abs = Math.abs(n);
   let str: string;
-  if (abs >= 10000) {
-    str = `${(n / 10000).toFixed(1)}万`;
+  // 言語非依存の短縮表記（万→k/M をやめて全言語共通に）
+  if (abs >= 1000000) {
+    str = `${(n / 1000000).toFixed(1)}M`;
   } else if (abs >= 1000) {
     str = `${(n / 1000).toFixed(1)}k`;
   } else {
@@ -929,7 +1064,29 @@ function TradeRow({
     <View style={styles.tradeRow}>
       <View style={styles.tradeRowTop}>
         <Text style={styles.tradePair}>{trade.currency_pair}</Text>
-        <Text style={styles.tradeDirection}>{directionLabel}</Text>
+        <View
+          style={[
+            styles.dirPill,
+            {
+              backgroundColor:
+                trade.direction === 'long' ? `${c.win}1A` : `${c.loss}1A`,
+            },
+          ]}
+        >
+          <Ionicons
+            name={trade.direction === 'long' ? 'arrow-up' : 'arrow-down'}
+            size={11}
+            color={trade.direction === 'long' ? c.win : c.loss}
+          />
+          <Text
+            style={[
+              styles.dirPillText,
+              { color: trade.direction === 'long' ? c.win : c.loss },
+            ]}
+          >
+            {directionLabel}
+          </Text>
+        </View>
         {resultLabel && (
           <View
             style={[
@@ -978,6 +1135,11 @@ type Stats = {
   rrDisplay: string;
   avgPipsDisplay: string;
   avgPipsStyle?: TextStyle;
+  pfDisplay: string;
+  bestDisplay: string;
+  bestStyle?: TextStyle;
+  worstDisplay: string;
+  worstStyle?: TextStyle;
 };
 
 function computeStats(monthly: Trade[], c: ThemeColors, currency: string | null | undefined): Stats {
@@ -1004,6 +1166,14 @@ function computeStats(monthly: Trade[], c: ThemeColors, currency: string | null 
       : 0;
   const rr = avgLoss !== 0 ? Math.abs(avgWin / avgLoss) : null;
 
+  const totalWin = wins.reduce((s, t) => s + (t.pnl ?? 0), 0);
+  const totalLoss = Math.abs(losses.reduce((s, t) => s + (t.pnl ?? 0), 0));
+  const pf =
+    totalLoss > 0 ? totalWin / totalLoss : totalWin > 0 ? Infinity : null;
+  const best = wins.length > 0 ? Math.max(...wins.map((t) => t.pnl ?? 0)) : null;
+  const worst =
+    losses.length > 0 ? Math.min(...losses.map((t) => t.pnl ?? 0)) : null;
+
   const withPips = monthly.filter((t) => t.pnl_pips !== null);
   const avgPips =
     withPips.length > 0
@@ -1020,6 +1190,11 @@ function computeStats(monthly: Trade[], c: ThemeColors, currency: string | null 
     rrDisplay: rr === null ? '—' : rr.toFixed(2),
     avgPipsDisplay: avgPips === null ? '—' : formatPips(avgPips),
     avgPipsStyle: avgPips === null ? undefined : pnlColor(avgPips, c),
+    pfDisplay: pf === null ? '—' : pf === Infinity ? '∞' : pf.toFixed(2),
+    bestDisplay: best === null ? '—' : formatPnl(best, currency),
+    bestStyle: best === null ? undefined : pnlColor(best, c),
+    worstDisplay: worst === null ? '—' : formatPnl(worst, currency),
+    worstStyle: worst === null ? undefined : pnlColor(worst, c),
   };
 }
 
@@ -1175,11 +1350,24 @@ function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: c.background },
     header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: 20,
       paddingTop: 12,
       paddingBottom: 16,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
+    },
+    headerText: { flex: 1 },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    statsButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surfaceAlt,
     },
     title: {
       fontSize: 28,
@@ -1203,6 +1391,11 @@ function makeStyles(c: ThemeColors) {
       letterSpacing: 0.5,
     },
     sectionLabelMt: { marginTop: 28 },
+    premiumSectionHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
     monthRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1314,6 +1507,12 @@ function makeStyles(c: ThemeColors) {
       paddingVertical: 8,
       paddingHorizontal: 0,
       alignItems: 'center',
+    },
+    dataCard: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginTop: 4,
     },
     chart: { borderRadius: 8 },
     heatmapWrap: {
@@ -1606,6 +1805,15 @@ function makeStyles(c: ThemeColors) {
     },
     tradePair: { fontSize: 15, fontWeight: '700', color: c.textPrimary },
     tradeDirection: { fontSize: 13, color: c.textSecondary },
+    dirPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    dirPillText: { fontSize: 11, fontWeight: '700' },
     resultBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
     resultBadgeWin: { backgroundColor: c.win },
     resultBadgeLoss: { backgroundColor: c.loss },

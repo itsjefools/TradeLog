@@ -116,6 +116,9 @@ export type Trade = {
   traded_at: string;
   is_shared: boolean;
   image_urls: string[] | null;
+  tags: string[] | null;
+  external_id: string | null;
+  source: string | null;
   created_at: string;
 };
 
@@ -134,7 +137,21 @@ export type TradeInsert = {
   traded_at?: string;
   is_shared?: boolean;
   image_urls?: string[];
+  tags?: string[];
+  external_id?: string | null;
+  source?: string;
 };
+
+// 記録フォームで提示する手法タグのプリセット（翻訳キー tags.<value>）
+export const PRESET_TRADE_TAGS = [
+  'breakout',
+  'pullback',
+  'trend',
+  'range',
+  'news',
+  'scalp',
+  'reversal',
+] as const;
 
 export const COMMON_CURRENCY_PAIRS = [
   'USD/JPY',

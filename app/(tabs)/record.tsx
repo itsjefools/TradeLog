@@ -29,7 +29,9 @@ import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { useToast } from '@/components/toast';
 import { formatDate, pickerLocale } from '@/lib/format-date';
+import { AnalyticsEvents } from '@/lib/analytics';
 import { notifyError, notifySuccess } from '@/lib/haptics';
+import { checkRatingPrompt } from '@/lib/rating';
 import { FREE_LIMITS, getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
 import {
@@ -41,6 +43,7 @@ import {
 import { pickAndUploadImage } from '@/lib/upload-image';
 import {
   ALL_CURRENCY_PAIRS,
+  PRESET_TRADE_TAGS,
   Trade,
   TradeDirection,
   TradeInsert,
@@ -59,6 +62,7 @@ const initialState = {
   memo: '',
   isShared: false,
   imageUrls: [] as string[],
+  tags: [] as string[],
 };
 
 function parseInitialDate(raw: string | string[] | undefined): Date {
@@ -79,6 +83,7 @@ export default function RecordScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pairSearch, setPairSearch] = useState('');
+  const [tagInput, setTagInput] = useState('');
 
   // カレンダーから日付パラメータが渡されたら反映（URL変更時）
   useEffect(() => {
@@ -95,6 +100,7 @@ export default function RecordScreen() {
   const pnlRef = useRef<TextInput>(null);
   const pnlPipsRef = useRef<TextInput>(null);
   const memoRef = useRef<TextInput>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const { addTrade, trades } = useTrades();
   const { favorites, isFavorite, toggleFavorite } = useFavoritePairs();
   const { profile } = useProfile();
@@ -169,7 +175,31 @@ export default function RecordScreen() {
     setPairSearch('');
   };
 
-  const resetForm = () => setForm(initialState);
+  const toggleTag = (tag: string) => {
+    const value = tag.trim();
+    if (!value) return;
+    setForm((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(value)
+        ? prev.tags.filter((x) => x !== value)
+        : [...prev.tags, value],
+    }));
+  };
+
+  const addCustomTag = () => {
+    const value = tagInput.trim();
+    if (!value) return;
+    setForm((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(value) ? prev.tags : [...prev.tags, value],
+    }));
+    setTagInput('');
+  };
+
+  const resetForm = () => {
+    setForm(initialState);
+    setTagInput('');
+  };
 
   const parseNum = parseNumOrNull;
 
@@ -190,8 +220,8 @@ export default function RecordScreen() {
     }
     if (isOverFreeLimit) {
       Alert.alert(
-        'Free プランの上限',
-        `Free プランでは月${FREE_LIMITS.monthlyTrades}件まで記録できます。\nPremium にアップグレードすると無制限になります。`,
+        t('record.freePlanLimit'),
+        t('record.freeLimitBody', { count: FREE_LIMITS.monthlyTrades }),
       );
       return;
     }
@@ -202,13 +232,13 @@ export default function RecordScreen() {
       const { data: userData, error: userError } = await supabase.auth.getUser();
 
       if (userError) {
-        Alert.alert('認証エラー', `getUser失敗: ${userError.message}`);
+        Alert.alert(t('record.authError'), `getUser: ${userError.message}`);
         return;
       }
 
       const user = userData?.user;
       if (!user) {
-        Alert.alert('エラー', 'ログインセッションが見つかりません。再度ログインしてください。');
+        Alert.alert(t('record.genericError'), t('record.sessionNotFound'));
         return;
       }
 
@@ -227,6 +257,7 @@ export default function RecordScreen() {
         review_memo: null,
         is_shared: form.isShared,
         image_urls: form.imageUrls,
+        tags: form.tags,
         traded_at: tradedAt.toISOString(),
       };
 
@@ -238,9 +269,9 @@ export default function RecordScreen() {
 
       if (insertError) {
         Alert.alert(
-          '保存失敗',
-          `${insertError.message}\n\nコード: ${insertError.code ?? '不明'}\n詳細: ${
-            insertError.details ?? 'なし'
+          t('record.saveFail'),
+          `${insertError.message}\n\n${insertError.code ?? ''}${
+            insertError.details ? `\n${insertError.details}` : ''
           }`,
         );
         return;
@@ -250,13 +281,15 @@ export default function RecordScreen() {
         addTrade(insertedRow as Trade);
       }
 
+      AnalyticsEvents.tradeRecorded(payload.currency_pair, payload.pnl ?? 0);
       notifySuccess();
       toast.success(t('record.saveSuccess'));
       resetForm();
+      checkRatingPrompt();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       notifyError();
-      Alert.alert('予期せぬエラー', message);
+      Alert.alert(t('record.unexpectedError'), message);
     } finally {
       setLoading(false);
     }
@@ -299,10 +332,12 @@ export default function RecordScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <ScrollView
+          ref={scrollRef}
           style={styles.flex}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
           bounces={false}
         >
           <View style={styles.section}>
@@ -329,7 +364,7 @@ export default function RecordScreen() {
           {Platform.OS === 'ios' && (
             <Modal
               transparent
-              animationType="slide"
+              animationType="fade"
               visible={showDatePicker}
               onRequestClose={() => setShowDatePicker(false)}
             >
@@ -380,26 +415,26 @@ export default function RecordScreen() {
             <Text style={styles.label}>{t('record.pairLabel')}</Text>
 
             {form.currencyPair ? (
-              <View style={styles.selectedPairCard}>
+              // カード全体をタップしても選び直せる（バグ#9）。x ボタンは従来通り。
+              <Pressable
+                onPress={() => {
+                  updateCurrencyPair('');
+                  setPairSearch('');
+                  setTimeout(() => pairSearchRef.current?.focus(), 50);
+                }}
+                style={styles.selectedPairCard}
+              >
                 <Text style={styles.selectedPairCardText}>
                   {form.currencyPair}
                 </Text>
-                <Pressable
-                  onPress={() => {
-                    updateCurrencyPair('');
-                    setPairSearch('');
-                    setTimeout(() => pairSearchRef.current?.focus(), 50);
-                  }}
-                  hitSlop={8}
-                  style={styles.selectedPairClear}
-                >
+                <View style={styles.selectedPairClear}>
                   <Ionicons
                     name="close-circle"
                     size={22}
                     color={c.textSecondary}
                   />
-                </Pressable>
-              </View>
+                </View>
+              </Pressable>
             ) : (
               <TextInput
                 ref={pairSearchRef}
@@ -641,6 +676,12 @@ export default function RecordScreen() {
               style={[styles.input, styles.inputMultiline]}
               value={form.memo}
               onChangeText={(t) => setField('memo', t)}
+              onFocus={() =>
+                setTimeout(
+                  () => scrollRef.current?.scrollToEnd({ animated: true }),
+                  120,
+                )
+              }
               placeholder={t('record.memoPlaceholder')}
               placeholderTextColor={c.textSecondary}
               keyboardType="default"
@@ -649,6 +690,79 @@ export default function RecordScreen() {
               maxLength={1000}
               editable={!loading}
             />
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>{t('record.tagsLabel')}</Text>
+            <View style={styles.chipsRow}>
+              {PRESET_TRADE_TAGS.map((tag) => {
+                const selected = form.tags.includes(tag);
+                return (
+                  <Pressable
+                    key={tag}
+                    style={[styles.tagChip, selected && styles.tagChipSelected]}
+                    onPress={() => toggleTag(tag)}
+                    disabled={loading}
+                  >
+                    <Text
+                      style={[
+                        styles.tagChipText,
+                        selected && styles.tagChipTextSelected,
+                      ]}
+                    >
+                      {t(`tags.${tag}`)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {/* 自由入力で追加したカスタムタグ（プリセット以外）も表示 */}
+            {form.tags.filter((tag) => !PRESET_TRADE_TAGS.includes(tag as never))
+              .length > 0 && (
+              <View style={[styles.chipsRow, styles.chipsRowMt]}>
+                {form.tags
+                  .filter((tag) => !PRESET_TRADE_TAGS.includes(tag as never))
+                  .map((tag) => (
+                    <Pressable
+                      key={tag}
+                      style={[styles.tagChip, styles.tagChipSelected]}
+                      onPress={() => toggleTag(tag)}
+                      disabled={loading}
+                    >
+                      <Text style={[styles.tagChipText, styles.tagChipTextSelected]}>
+                        {tag}
+                      </Text>
+                      <Ionicons name="close" size={13} color="#fff" />
+                    </Pressable>
+                  ))}
+              </View>
+            )}
+            <View style={styles.tagInputRow}>
+              <TextInput
+                style={[styles.input, styles.flex]}
+                value={tagInput}
+                onChangeText={setTagInput}
+                placeholder={t('record.tagsPlaceholder')}
+                placeholderTextColor={c.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={addCustomTag}
+                editable={!loading}
+              />
+              <Pressable
+                onPress={addCustomTag}
+                disabled={loading || tagInput.trim() === ''}
+                style={({ pressed }) => [
+                  styles.tagAddButton,
+                  (loading || tagInput.trim() === '') &&
+                    styles.tagAddButtonDisabled,
+                  pressed && styles.tagAddButtonPressed,
+                ]}
+              >
+                <Ionicons name="add" size={22} color="#fff" />
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.section}>
@@ -805,14 +919,18 @@ function makeStyles(c: ThemeColors) {
   },
   datePickerBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   datePickerSheet: {
+    width: '100%',
+    maxWidth: 380,
     backgroundColor: c.surface,
-    paddingBottom: 24,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    paddingBottom: 16,
+    borderRadius: 18,
+    overflow: 'hidden',
   },
   datePickerHeader: {
     flexDirection: 'row',
@@ -897,6 +1015,50 @@ function makeStyles(c: ThemeColors) {
   chipSelected: {
     backgroundColor: c.accent,
     borderColor: c.accent,
+  },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  tagChipSelected: {
+    backgroundColor: c.accent,
+    borderColor: c.accent,
+  },
+  tagChipText: {
+    fontSize: 13,
+    color: c.textPrimary,
+    fontWeight: '500',
+  },
+  tagChipTextSelected: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  tagInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  tagAddButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 10,
+    backgroundColor: c.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tagAddButtonDisabled: {
+    opacity: 0.5,
+  },
+  tagAddButtonPressed: {
+    opacity: 0.85,
   },
   chipText: {
     fontSize: 13,

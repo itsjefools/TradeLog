@@ -26,7 +26,7 @@ import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
-import { computeBadges, tierColor } from '@/lib/badges';
+import { badgesByIds, computeBadges, tierColor } from '@/lib/badges';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { computeStreak } from '@/lib/streak';
 import { supabase } from '@/lib/supabase';
@@ -46,10 +46,15 @@ export default function ProfileScreen() {
   const { session } = useAuth();
   const { profile, loading, refresh } = useProfile();
   const { trades } = useTrades();
-  const badges = useMemo(
-    () => computeBadges(trades, profile?.currency),
-    [trades, profile?.currency],
-  );
+  // 表示バッジ: 装着(showcase)があればそれを優先、無ければ獲得済みの最上位を自動表示
+  const badges = useMemo(() => {
+    if (profile?.show_badges === false) return [];
+    const showcase = profile?.showcase_badges;
+    if (showcase && showcase.length > 0) {
+      return badgesByIds(showcase, profile?.currency);
+    }
+    return computeBadges(trades, profile?.currency);
+  }, [trades, profile?.currency, profile?.show_badges, profile?.showcase_badges]);
   const streak = useMemo(() => computeStreak(trades), [trades]);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
@@ -459,29 +464,42 @@ export default function ProfileScreen() {
               </View>
             )}
 
-            {badges.length > 0 && (
-              <View style={styles.badgesRow}>
-                {badges.map((b) => (
-                  <View
-                    key={b.id}
+            <Pressable
+              style={styles.badgesRow}
+              onPress={() => router.push('/badges')}
+            >
+              {badges.map((b) => (
+                <View
+                  key={b.id}
+                  style={[
+                    styles.badgeChip,
+                    { borderColor: tierColor(b.tier) },
+                  ]}
+                >
+                  <Text style={styles.badgeEmoji}>{b.emoji}</Text>
+                  <Text
                     style={[
-                      styles.badgeChip,
-                      { borderColor: tierColor(b.tier) },
+                      styles.badgeLabel,
+                      { color: tierColor(b.tier) },
                     ]}
                   >
-                    <Text style={styles.badgeEmoji}>{b.emoji}</Text>
-                    <Text
-                      style={[
-                        styles.badgeLabel,
-                        { color: tierColor(b.tier) },
-                      ]}
-                    >
-                      {t(b.labelKey, b.labelParams)}
-                    </Text>
-                  </View>
-                ))}
+                    {t(b.labelKey, b.labelParams)}
+                  </Text>
+                </View>
+              ))}
+              <View style={styles.badgeManageChip}>
+                <Ionicons
+                  name={badges.length > 0 ? 'create-outline' : 'ribbon-outline'}
+                  size={14}
+                  color={c.textSecondary}
+                />
+                <Text style={styles.badgeManageText}>
+                  {badges.length > 0
+                    ? t('badges.edit')
+                    : t('badges.manageTitle')}
+                </Text>
               </View>
-            )}
+            </Pressable>
           </View>
 
           <View style={styles.statsRow}>
@@ -719,6 +737,18 @@ function makeStyles(c: ThemeColors) {
     },
     badgeEmoji: { fontSize: 13 },
     badgeLabel: { fontSize: 11, fontWeight: '700' },
+    badgeManageChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderStyle: 'dashed',
+    },
+    badgeManageText: { fontSize: 11, fontWeight: '600', color: c.textSecondary },
     statsRow: {
       flexDirection: 'row',
       backgroundColor: c.surface,

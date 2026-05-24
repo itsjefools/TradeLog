@@ -15,7 +15,10 @@ export type Badge = {
   labelParams?: Record<string, string | number>;
   descKey: string;
   descParams?: Record<string, string | number>;
+  earned?: boolean;
 };
+
+export const MAX_SHOWCASE_BADGES = 3;
 
 const TIER_COLORS: Record<BadgeTier, string> = {
   bronze: '#B45309',
@@ -154,4 +157,145 @@ export function computeBadges(
   }
 
   return badges;
+}
+
+const WINRATE_TIERS: { tier: BadgeTier; rate: number }[] = [
+  { tier: 'silver', rate: 50 },
+  { tier: 'gold', rate: 60 },
+  { tier: 'diamond', rate: 70 },
+];
+
+/**
+ * 全バッジの定義（プレゼンテーションのみ・獲得状態は持たない）。
+ * バッジ選択画面や、他ユーザーの装着バッジ表示（取引にアクセスできない）で使う。
+ */
+export function allBadgeDefs(currency?: string | null): Badge[] {
+  const defs: Badge[] = [];
+
+  defs.push({
+    id: 'first',
+    tier: 'bronze',
+    emoji: '🌱',
+    labelKey: 'badges.first',
+    descKey: 'badges.first_desc',
+  });
+
+  for (const ct of [...COUNT_TIERS].reverse()) {
+    defs.push({
+      id: `count_${ct.tier}`,
+      tier: ct.tier,
+      emoji: ct.emoji,
+      labelKey: 'badges.count',
+      labelParams: { count: ct.count },
+      descKey: 'badges.count_desc',
+      descParams: { count: ct.count },
+    });
+  }
+
+  for (const st of [...STREAK_TIERS].reverse()) {
+    defs.push({
+      id: `streak_${st.tier}`,
+      tier: st.tier,
+      emoji: st.emoji,
+      labelKey: 'badges.streak',
+      labelParams: { count: st.streak },
+      descKey: 'badges.streak_desc',
+      descParams: { count: st.streak },
+    });
+  }
+
+  for (const rt of WINRATE_TIERS) {
+    defs.push({
+      id: `winrate_${rt.tier}`,
+      tier: rt.tier,
+      emoji: '🎯',
+      labelKey: 'badges.winrate',
+      labelParams: { rate: rt.rate },
+      descKey: 'badges.winrate_desc',
+      descParams: { rate: rt.rate },
+    });
+  }
+
+  for (const pt of [...PNL_TIERS].reverse()) {
+    const amount = formatPnlWithCurrency(pt.amount, currency);
+    defs.push({
+      id: `pnl_${pt.tier}`,
+      tier: pt.tier,
+      emoji: '💰',
+      labelKey: 'badges.pnl',
+      labelParams: { amount },
+      descKey: 'badges.pnl_desc',
+      descParams: { amount },
+    });
+  }
+
+  return defs;
+}
+
+/** 取引から「獲得済み」バッジ id の集合を求める。 */
+export function earnedBadgeIds(trades: Trade[]): Set<string> {
+  const ids = new Set<string>();
+  if (trades.length >= 1) ids.add('first');
+
+  for (const ct of COUNT_TIERS) {
+    if (trades.length >= ct.count) ids.add(`count_${ct.tier}`);
+  }
+
+  const sorted = [...trades]
+    .filter((t) => t.result !== null)
+    .sort(
+      (a, b) =>
+        new Date(a.traded_at).getTime() - new Date(b.traded_at).getTime(),
+    );
+  let maxStreak = 0;
+  let cur = 0;
+  for (const t of sorted) {
+    if (t.result === 'win') {
+      cur++;
+      if (cur > maxStreak) maxStreak = cur;
+    } else if (t.result === 'loss') {
+      cur = 0;
+    }
+  }
+  for (const st of STREAK_TIERS) {
+    if (maxStreak >= st.streak) ids.add(`streak_${st.tier}`);
+  }
+
+  const withResult = trades.filter((t) => t.result !== null);
+  if (withResult.length >= 10) {
+    const wins = withResult.filter((t) => t.result === 'win').length;
+    const rate = (wins / withResult.length) * 100;
+    for (const rt of WINRATE_TIERS) {
+      if (rate >= rt.rate) ids.add(`winrate_${rt.tier}`);
+    }
+  }
+
+  const totalPnl = trades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
+  for (const pt of PNL_TIERS) {
+    if (totalPnl >= pt.amount) ids.add(`pnl_${pt.tier}`);
+  }
+
+  return ids;
+}
+
+/** 全バッジ定義に獲得状態を付与して返す（バッジ選択画面用）。 */
+export function computeAllBadges(
+  trades: Trade[],
+  currency?: string | null,
+): Badge[] {
+  const earned = earnedBadgeIds(trades);
+  return allBadgeDefs(currency).map((b) => ({ ...b, earned: earned.has(b.id) }));
+}
+
+/** 装着バッジ id 配列 → 表示用バッジ定義（順序は配列通り）。 */
+export function badgesByIds(
+  ids: string[] | null | undefined,
+  currency?: string | null,
+): Badge[] {
+  if (!ids || ids.length === 0) return [];
+  const defs = allBadgeDefs(currency);
+  const map = new Map(defs.map((b) => [b.id, b]));
+  return ids
+    .map((id) => map.get(id))
+    .filter((b): b is Badge => b !== undefined);
 }

@@ -30,6 +30,7 @@ import { useThemeColors } from '@/hooks/use-theme';
 import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
+import { badgesByIds, tierColor } from '@/lib/badges';
 import { Post, PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -502,6 +503,7 @@ export default function UserProfileScreen() {
   const username = profile.username?.trim() || fallbackName;
   const flag = profile.nationality ? flagEmoji(profile.nationality) : '';
   const country = findCountry(profile.nationality ?? null);
+  const showcaseBadges = badgesByIds(profile.showcase_badges, profile.currency);
   const styleText = profile.trade_style ? tradeStyleLabel(profile.trade_style) : '';
 
   const tabs: {
@@ -602,6 +604,22 @@ export default function UserProfileScreen() {
             website={profile.website}
             twitter={profile.twitter_handle}
           />
+
+          {profile.show_badges !== false && showcaseBadges.length > 0 && (
+            <View style={styles.badgesRow}>
+              {showcaseBadges.map((b) => (
+                <View
+                  key={b.id}
+                  style={[styles.badgeChip, { borderColor: tierColor(b.tier) }]}
+                >
+                  <Text style={styles.badgeEmoji}>{b.emoji}</Text>
+                  <Text style={[styles.badgeLabel, { color: tierColor(b.tier) }]}>
+                    {t(b.labelKey, b.labelParams)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {!isMyself && (
             <View style={styles.actionRow}>
@@ -863,6 +881,25 @@ function makeStyles(c: ThemeColors) {
       fontWeight: '700',
       color: c.textPrimary,
     },
+    badgesRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginTop: 14,
+      justifyContent: 'center',
+    },
+    badgeChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+      borderWidth: 1.5,
+      backgroundColor: c.surfaceAlt,
+    },
+    badgeEmoji: { fontSize: 13 },
+    badgeLabel: { fontSize: 11, fontWeight: '700' },
     verifiedBadge: {
       width: 20,
       height: 20,

@@ -37,6 +37,8 @@ export type Profile = {
   total_trades: number | null;
   website: string | null;
   twitter_handle: string | null;
+  showcase_badges: string[] | null;
+  show_badges: boolean | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -50,7 +52,8 @@ export const PROFILE_COLUMNS = `
   id, email, username, display_name, avatar_url, bio,
   trade_style, language, currency, is_premium, nationality, is_verified,
   monthly_pnl_goal, push_token, total_trades,
-  website, twitter_handle, created_at, updated_at
+  website, twitter_handle, showcase_badges, show_badges,
+  created_at, updated_at
 `;
 
 // サポートする取引通貨。設定画面 → 通貨で選択し、profiles.currency に保存。

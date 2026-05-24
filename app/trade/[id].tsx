@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ImageViewer } from '@/components/image-viewer';
+import { VerifiedTradeBadge } from '@/components/verified-trade-badge';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
@@ -151,6 +152,7 @@ export default function TradeDetailScreen() {
         {/* 通貨ペア + 方向 */}
         <View style={styles.titleRow}>
           <Text style={styles.pair}>{trade.currency_pair}</Text>
+          {trade.source === 'mt5_import' && <VerifiedTradeBadge />}
           <View
             style={[
               styles.directionChip,

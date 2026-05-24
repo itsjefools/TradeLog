@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -40,6 +40,7 @@ import { tapSuccess } from '@/lib/haptics';
 import { supabase } from '@/lib/supabase';
 import { isVideoUrl } from '@/lib/upload-media';
 import { Post, Profile, Trade, tradeStyleLabel } from '@/lib/types';
+import { VerifiedTradeBadge } from '@/components/verified-trade-badge';
 
 export type FeedCardItem = Post & {
   trade: Trade | null;
@@ -51,7 +52,7 @@ export type FeedCardItem = Post & {
   reposted_by?: Profile | null;
 };
 
-export function FeedCard({
+function FeedCardBase({
   item,
   onToggleLike,
   onToggleBookmark,
@@ -330,6 +331,7 @@ export function FeedCard({
           <Text style={styles.compactTime}>{dateStr}</Text>
           <Text style={styles.compactPair}>{trade.currency_pair}</Text>
           <Text style={[styles.compactDir, { color: dirColor }]}>{dirShort}</Text>
+          {trade.source === 'mt5_import' && <VerifiedTradeBadge compact />}
           <Text style={styles.compactPriceFlow}>{priceFlow}</Text>
           <TouchableOpacity
             onPress={handleMenu}
@@ -628,6 +630,8 @@ export function FeedCard({
     </View>
   );
 }
+
+export const FeedCard = memo(FeedCardBase);
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_PADDING = 14;

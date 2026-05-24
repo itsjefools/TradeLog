@@ -15,11 +15,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
+import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
+import { getCurrencySymbol } from '@/lib/format-currency';
 
 export default function RiskCalculatorScreen() {
   const c = useThemeColors();
   const { t } = useI18n();
+  const { profile } = useProfile();
+  const currencySymbol = getCurrencySymbol(profile?.currency);
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
 
@@ -111,28 +115,31 @@ export default function RiskCalculatorScreen() {
             <Text style={styles.label}>{t('riskCalc.pipValueLabel')}</Text>
             <View style={styles.presetRow}>
               {[
-                { label: t('riskCalc.pipValueJpy'), value: '1000' },
-                { label: t('riskCalc.pipValueUsd'), value: '1500' },
-                { label: t('riskCalc.pipValueCustom'), value: '' },
-              ].map((p) => (
-                <Pressable
-                  key={p.label}
-                  onPress={() => p.value && setPipValue(p.value)}
-                  style={[
-                    styles.preset,
-                    pipValue === p.value && styles.presetActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.presetText,
-                      pipValue === p.value && styles.presetTextActive,
-                    ]}
+                { label: t('riskCalc.pipValueJpy'), value: '1000', isCustom: false },
+                { label: t('riskCalc.pipValueUsd'), value: '1500', isCustom: false },
+                { label: t('riskCalc.pipValueCustom'), value: '', isCustom: true },
+              ].map((p) => {
+                // カスタムは「プリセット以外の値が入っている時」にアクティブ
+                const active = p.isCustom
+                  ? pipValue !== '1000' && pipValue !== '1500'
+                  : pipValue === p.value;
+                return (
+                  <Pressable
+                    key={p.label}
+                    onPress={() => setPipValue(p.value)}
+                    style={[styles.preset, active && styles.presetActive]}
                   >
-                    {p.label}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      style={[
+                        styles.presetText,
+                        active && styles.presetTextActive,
+                      ]}
+                    >
+                      {p.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
             <TextInput
               style={[styles.input, styles.inputMt]}
@@ -150,7 +157,8 @@ export default function RiskCalculatorScreen() {
               <View style={styles.resultRow}>
                 <Text style={styles.resultLabel}>{t('riskCalc.riskAllowed')}</Text>
                 <Text style={styles.resultValue}>
-                  {Math.round(result.riskAmount).toLocaleString('ja-JP')} 円
+                  {currencySymbol}
+                  {Math.round(result.riskAmount).toLocaleString()}
                 </Text>
               </View>
               <View style={styles.divider} />

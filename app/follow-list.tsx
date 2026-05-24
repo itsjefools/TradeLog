@@ -112,6 +112,8 @@ export default function FollowListScreen() {
 
   const toggleFollow = async (target: Profile) => {
     if (!myId || target.id === myId) return;
+    // 同一ユーザーへの連打を無視（処理中の重複リクエストでクラッシュするのを防ぐ）
+    if (pendingId === target.id) return;
     const wasFollowing = followingSet.has(target.id);
     // 楽観的更新
     setFollowingSet((prev) => {
@@ -132,7 +134,10 @@ export default function FollowListScreen() {
       } else {
         const { error } = await supabase
           .from('follows')
-          .insert({ follower_id: myId, following_id: target.id });
+          .upsert(
+            { follower_id: myId, following_id: target.id },
+            { onConflict: 'follower_id,following_id', ignoreDuplicates: true },
+          );
         if (error) throw new Error(error.message);
       }
     } catch (e) {
@@ -186,7 +191,7 @@ export default function FollowListScreen() {
               tab === 'followers' && styles.tabTextActive,
             ]}
           >
-            フォロワー
+            {t('followList.followersTitle')}
           </Text>
         </Pressable>
         <Pressable
@@ -203,7 +208,7 @@ export default function FollowListScreen() {
               tab === 'following' && styles.tabTextActive,
             ]}
           >
-            フォロー中
+            {t('followList.followingTitle')}
           </Text>
         </Pressable>
       </View>

@@ -96,9 +96,7 @@ export default function BlockedUsersScreen() {
             color={c.textSecondary}
           />
           <Text style={styles.emptyTitle}>{t('blockedUsers.empty')}</Text>
-          <Text style={styles.emptyText}>
-            ユーザープロフィールの「⋯」メニューから{'\n'}ブロックできます。
-          </Text>
+          <Text style={styles.emptyText}>{t('blockedUsers.emptyHint')}</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.body}>

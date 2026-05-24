@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import { EmptyState } from '@/components/empty-state';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
@@ -177,10 +178,11 @@ export function WallpaperGallery() {
         );
       }}
       ListEmptyComponent={
-        <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>📱</Text>
-          <Text style={styles.emptyHint}>{t('wallpaper.gallery_empty')}</Text>
-        </View>
+        <EmptyState
+          icon="image-outline"
+          title={t('empty.wallpaper_title')}
+          subtitle={t('empty.wallpaper_subtitle')}
+        />
       }
     />
   );
@@ -219,19 +221,6 @@ function makeStyles(c: ThemeColors) {
       fontSize: 11,
       color: c.textSecondary,
       maxWidth: 80,
-    },
-    empty: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingTop: 60,
-      paddingHorizontal: 32,
-    },
-    emptyEmoji: { fontSize: 40, marginBottom: 8 },
-    emptyHint: {
-      fontSize: 14,
-      color: c.textSecondary,
-      textAlign: 'center',
     },
   });
 }

@@ -21,6 +21,19 @@ import {
 } from '@/lib/glossary';
 
 type CategoryFilter = 'all' | GlossaryTerm['category'];
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+// カテゴリごとの色とアイコン（視認性・回遊性アップ）
+const CATEGORY_META: Record<
+  GlossaryTerm['category'],
+  { color: string; icon: IoniconName }
+> = {
+  basic: { color: '#6366F1', icon: 'book-outline' },
+  order: { color: '#3B82F6', icon: 'swap-horizontal-outline' },
+  analysis: { color: '#10B981', icon: 'trending-up-outline' },
+  risk: { color: '#F59E0B', icon: 'shield-checkmark-outline' },
+  psychology: { color: '#8B5CF6', icon: 'sparkles-outline' },
+};
 
 export default function GlossaryScreen() {
   const c = useThemeColors();
@@ -62,6 +75,7 @@ export default function GlossaryScreen() {
       </View>
 
       <View style={styles.searchBox}>
+        <Ionicons name="search" size={18} color={c.textSecondary} />
         <TextInput
           style={styles.searchInput}
           value={query}
@@ -70,6 +84,11 @@ export default function GlossaryScreen() {
           placeholderTextColor={c.textSecondary}
           autoCorrect={false}
         />
+        {query !== '' && (
+          <Pressable onPress={() => setQuery('')} hitSlop={8}>
+            <Ionicons name="close-circle" size={18} color={c.textSecondary} />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView
@@ -80,17 +99,27 @@ export default function GlossaryScreen() {
       >
         {categories.map((cat) => {
           const selected = filter === cat.value;
+          const meta =
+            cat.value === 'all' ? null : CATEGORY_META[cat.value];
+          const accent = meta?.color ?? c.accent;
           return (
             <Pressable
               key={cat.value}
-              style={[styles.tab, selected && styles.tabSelected]}
+              style={[
+                styles.tab,
+                selected && { backgroundColor: accent, borderColor: accent },
+              ]}
               onPress={() => setFilter(cat.value)}
             >
+              {meta && (
+                <Ionicons
+                  name={meta.icon}
+                  size={13}
+                  color={selected ? '#fff' : accent}
+                />
+              )}
               <Text
-                style={[
-                  styles.tabText,
-                  selected && styles.tabTextSelected,
-                ]}
+                style={[styles.tabText, selected && styles.tabTextSelected]}
               >
                 {cat.label}
               </Text>
@@ -100,25 +129,48 @@ export default function GlossaryScreen() {
       </ScrollView>
 
       <ScrollView contentContainerStyle={styles.body}>
+        <Text style={styles.count}>
+          {t('glossary.count', { count: filtered.length })}
+        </Text>
         {filtered.length === 0 ? (
-          <Text style={styles.empty}>{t('glossary.empty')}</Text>
+          <View style={styles.emptyWrap}>
+            <Ionicons
+              name="search-outline"
+              size={36}
+              color={c.textSecondary}
+              style={{ opacity: 0.4 }}
+            />
+            <Text style={styles.empty}>{t('glossary.empty')}</Text>
+          </View>
         ) : (
-          filtered.map((g) => (
-            <View key={g.term} style={styles.termCard}>
-              <View style={styles.termHead}>
-                <Text style={styles.termText}>{g.term}</Text>
-                <View style={styles.categoryChip}>
-                  <Text style={styles.categoryChipText}>
-                    {GLOSSARY_CATEGORIES[g.category]}
-                  </Text>
+          filtered.map((g) => {
+            const meta = CATEGORY_META[g.category];
+            return (
+              <View key={g.term} style={styles.termCard}>
+                <View style={[styles.accentBar, { backgroundColor: meta.color }]} />
+                <View style={styles.termInner}>
+                  <View style={styles.termHead}>
+                    <Text style={styles.termText}>{g.term}</Text>
+                    <View
+                      style={[
+                        styles.categoryChip,
+                        { backgroundColor: `${meta.color}1A` },
+                      ]}
+                    >
+                      <Ionicons name={meta.icon} size={11} color={meta.color} />
+                      <Text style={[styles.categoryChipText, { color: meta.color }]}>
+                        {GLOSSARY_CATEGORIES[g.category]}
+                      </Text>
+                    </View>
+                  </View>
+                  {g.reading && (
+                    <Text style={styles.termReading}>{g.reading}</Text>
+                  )}
+                  <Text style={styles.termDef}>{g.definition}</Text>
                 </View>
               </View>
-              {g.reading && (
-                <Text style={styles.termReading}>{g.reading}</Text>
-              )}
-              <Text style={styles.termDef}>{g.definition}</Text>
-            </View>
-          ))
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
@@ -137,85 +189,110 @@ function makeStyles(c: ThemeColors) {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
     },
-    headerLink: { fontSize: 15, color: c.textSecondary },
     headerTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
     headerSpacer: { width: 40 },
     searchBox: {
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-    },
-    searchInput: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginHorizontal: 16,
+      marginTop: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 11,
       backgroundColor: c.surface,
+      borderRadius: 14,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: 10,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      fontSize: 14,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 15,
       color: c.textPrimary,
+      padding: 0,
     },
-    tabsScroll: {
-      flexGrow: 0,
-    },
+    tabsScroll: { flexGrow: 0, marginTop: 12 },
     tabsContent: {
       paddingHorizontal: 16,
-      gap: 6,
-      paddingBottom: 8,
+      gap: 8,
+      paddingVertical: 8,
+      alignItems: 'center',
     },
     tab: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
       paddingHorizontal: 14,
-      paddingVertical: 6,
+      height: 36,
       borderRadius: 999,
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
     },
-    tabSelected: { backgroundColor: c.accent, borderColor: c.accent },
-    tabText: { fontSize: 12, color: c.textPrimary, fontWeight: '600' },
-    tabTextSelected: { color: '#fff' },
-    body: { padding: 16, paddingBottom: 40, gap: 8 },
-    empty: {
-      paddingVertical: 32,
-      textAlign: 'center',
+    tabText: {
       fontSize: 13,
+      lineHeight: 17,
+      color: c.textPrimary,
+      fontWeight: '600',
+      includeFontPadding: false,
+    },
+    tabTextSelected: { color: '#fff' },
+    body: { padding: 16, paddingBottom: 40, gap: 12 },
+    count: {
+      fontSize: 12,
+      color: c.textSecondary,
+      fontWeight: '600',
+      marginBottom: 2,
+    },
+    emptyWrap: { alignItems: 'center', paddingVertical: 48, gap: 12 },
+    empty: {
+      textAlign: 'center',
+      fontSize: 14,
       color: c.textSecondary,
     },
     termCard: {
+      flexDirection: 'row',
       backgroundColor: c.surface,
-      borderRadius: 10,
-      padding: 14,
-      gap: 6,
+      borderRadius: 16,
+      overflow: 'hidden',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
     },
+    accentBar: { width: 4 },
+    termInner: { flex: 1, padding: 16, gap: 6 },
     termHead: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
     },
     termText: {
-      fontSize: 16,
-      fontWeight: '700',
+      flex: 1,
+      fontSize: 17,
+      fontWeight: '800',
       color: c.textPrimary,
+      letterSpacing: -0.3,
     },
     categoryChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
       paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 10,
-      backgroundColor: c.surfaceAlt,
-      marginLeft: 'auto',
+      paddingVertical: 3,
+      borderRadius: 8,
     },
     categoryChipText: {
       fontSize: 10,
-      color: c.textSecondary,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     termReading: {
       fontSize: 12,
       color: c.textSecondary,
+      fontWeight: '500',
     },
     termDef: {
-      fontSize: 13,
+      fontSize: 14,
       color: c.textPrimary,
-      lineHeight: 19,
+      lineHeight: 21,
+      opacity: 0.85,
     },
   });
 }

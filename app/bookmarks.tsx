@@ -101,10 +101,7 @@ export default function BookmarksScreen() {
                 color={c.textSecondary}
               />
               <Text style={styles.emptyTitle}>{t('bookmarks.empty')}</Text>
-              <Text style={styles.emptyText}>
-                フィードの投稿でブックマークアイコンをタップすると{'\n'}
-                ここに保存されます。
-              </Text>
+              <Text style={styles.emptyText}>{t('bookmarks.emptyHint')}</Text>
             </View>
           )}
 

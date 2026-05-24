@@ -104,7 +104,9 @@ export default function AccountDeleteScreen() {
           </View>
           <Text style={styles.warningTitle}>{t('accountDelete.warningTitle')}</Text>
           <Text style={styles.warningBody}>
-            アカウントを削除すると、{email && `${email} に関連する `}以下のデータが完全に削除されます。
+            {email
+              ? t('accountDelete.warningBodyWithEmail', { email })
+              : t('accountDelete.warningBody')}
           </Text>
         </View>
 
@@ -128,13 +130,12 @@ export default function AccountDeleteScreen() {
             color={c.textSecondary}
           />
           <Text style={styles.subscriptionNoteText}>
-            Premium サブスクリプションは自動解約されません。{'\n'}
-            App Store / Google Play の設定からご自身で解約してください。
+            {t('accountDelete.subscriptionNote')}
           </Text>
         </View>
 
         <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-          確認のため「{CONFIRM_PHRASE}」と入力してください
+          {t('accountDelete.confirmInstruction', { phrase: CONFIRM_PHRASE })}
         </Text>
         <TextInput
           style={[

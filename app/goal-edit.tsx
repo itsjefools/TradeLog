@@ -87,10 +87,7 @@ export default function GoalEditScreen() {
           keyboardShouldPersistTaps="handled"
           bounces={false}
         >
-          <Text style={styles.intro}>
-            月間のP&L目標を円で設定すると、{'\n'}
-            分析画面に進捗バーが表示されます。
-          </Text>
+          <Text style={styles.intro}>{t('goalEdit.intro')}</Text>
 
           <View style={styles.section}>
             <Text style={styles.label}>{t('goalEdit.amountLabel')}</Text>
@@ -103,9 +100,7 @@ export default function GoalEditScreen() {
               placeholderTextColor={c.textSecondary}
               editable={!saving}
             />
-            <Text style={styles.helper}>
-              空欄のまま保存すると目標を解除できます。
-            </Text>
+            <Text style={styles.helper}>{t('goalEdit.clearHint')}</Text>
           </View>
 
           {profile?.monthly_pnl_goal != null && (

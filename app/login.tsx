@@ -19,6 +19,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
+import { AnalyticsEvents } from '@/lib/analytics';
 import { isAppleSignInAvailable, signInWithApple } from '@/lib/auth-apple';
 import { isGoogleSignInConfigured, signInWithGoogle } from '@/lib/auth-google';
 import { supabase } from '@/lib/supabase';
@@ -138,6 +139,8 @@ export default function LoginScreen() {
           } else {
             setErrorMessage(t('auth.errorSignInFailed'));
           }
+        } else {
+          AnalyticsEvents.login('email');
         }
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -153,11 +156,14 @@ export default function LoginScreen() {
           } else {
             setErrorMessage(t('auth.errorSignUpFailed'));
           }
-        } else if (!data.session) {
-          Alert.alert(
-            t('auth.confirmationEmailTitle'),
-            t('auth.confirmationEmailBody'),
-          );
+        } else {
+          AnalyticsEvents.signUp('email');
+          if (!data.session) {
+            Alert.alert(
+              t('auth.confirmationEmailTitle'),
+              t('auth.confirmationEmailBody'),
+            );
+          }
         }
       }
     } catch {
@@ -307,7 +313,7 @@ export default function LoginScreen() {
               style={styles.eyeButton}
             >
               <Ionicons
-                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                 size={20}
                 color={c.textSecondary}
               />

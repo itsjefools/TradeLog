@@ -3,7 +3,8 @@ import {
   DefaultTheme,
   ThemeProvider as RNThemeProvider,
 } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -22,12 +23,16 @@ import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { ThemeProvider, useTheme } from '@/hooks/use-theme';
 import { TradesProvider } from '@/hooks/use-trades';
 import { UnreadCountsProvider } from '@/hooks/use-unread-counts';
+import { setAnalyticsUserId, trackScreen } from '@/lib/analytics';
 import { configureGoogleSignIn } from '@/lib/auth-google';
 import { endIAP, initIAP } from '@/lib/iap';
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
+
+// 初期化が完了するまでネイティブのスプラッシュを表示し続ける
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 function useProtectedRoute(
   session: ReturnType<typeof useAuth>['session'],
@@ -43,14 +48,17 @@ function useProtectedRoute(
     const first = segments[0];
     const inAuthScreen = first === 'login';
     const inOnboarding = first === 'onboarding';
+    // 未ログインでも閲覧できる公開画面（規約・プライバシー）。
+    // 新規登録画面からここへ遷移してもログイン画面へ蹴り返さない。
+    const inPublicScreen = first === 'terms' || first === 'privacy';
 
     // 未オンボーディング & 未ログインなら強制的にオンボーディングへ
-    if (!onboardingCompleted && !session && !inOnboarding) {
+    if (!onboardingCompleted && !session && !inOnboarding && !inPublicScreen) {
       router.replace('/onboarding');
       return;
     }
 
-    if (!session && !inAuthScreen && !inOnboarding) {
+    if (!session && !inAuthScreen && !inOnboarding && !inPublicScreen) {
       router.replace('/login');
     } else if (session && (inAuthScreen || inOnboarding)) {
       router.replace('/');
@@ -79,6 +87,22 @@ function ThemedRoot() {
 
   useProtectedRoute(session, loading, onboardingCompleted);
   usePushNotifications();
+
+  const pathname = usePathname();
+  useEffect(() => {
+    if (pathname) trackScreen(pathname);
+  }, [pathname]);
+
+  useEffect(() => {
+    setAnalyticsUserId(session?.user.id ?? null);
+  }, [session?.user.id]);
+
+  // 認証・オンボーディング判定が済んだらスプラッシュを閉じる
+  useEffect(() => {
+    if (!loading && onboardingCompleted !== null) {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [loading, onboardingCompleted]);
 
   useEffect(() => {
     configureGoogleSignIn();
@@ -158,6 +182,54 @@ function ThemedRoot() {
             <Stack.Screen
               name="trade-edit"
               options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="trade-stats"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="ai-review"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="export"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="import-trades"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="share-card"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="feedback"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
             />
             <Stack.Screen
               name="trade/[id]"

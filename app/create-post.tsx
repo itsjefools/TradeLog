@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
+import { AnalyticsEvents } from '@/lib/analytics';
 import { notifyError, notifySuccess, notifyWarning } from '@/lib/haptics';
 import { FREE_LIMITS, getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
@@ -146,7 +147,7 @@ export default function CreatePostScreen() {
       notifyWarning();
       Alert.alert(
         t('createPost.freePlanLimit'),
-        `Free プランでは月 ${FREE_LIMITS.monthlyPosts} 件まで投稿できます。Premium で無制限になります。`,
+        t('createPost.freePlanLimitBody', { count: FREE_LIMITS.monthlyPosts }),
         [
           { text: t('common.cancel'), style: 'cancel' },
           {
@@ -175,6 +176,7 @@ export default function CreatePostScreen() {
       });
       if (error) throw new Error(error.message);
 
+      AnalyticsEvents.postCreated(imageUrls.length > 0, videoUrls.length > 0);
       notifySuccess();
       toast.success(t('createPost.postSuccess'));
       router.back();
@@ -293,7 +295,9 @@ export default function CreatePostScreen() {
             <View style={styles.warningBox}>
               <Ionicons name="lock-closed" size={16} color={c.danger} />
               <Text style={styles.warningText}>
-                今月の投稿上限（{FREE_LIMITS.monthlyPosts}件）に達しました。Premium で無制限になります。
+                {t('createPost.limitReachedBanner', {
+                  count: FREE_LIMITS.monthlyPosts,
+                })}
               </Text>
             </View>
           )}

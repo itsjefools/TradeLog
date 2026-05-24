@@ -120,7 +120,7 @@ export default function SearchScreen() {
           <Text
             style={[styles.tabText, mode === 'users' && styles.tabTextActive]}
           >
-            ユーザー
+            {t('search.tabUsers')}
           </Text>
         </Pressable>
         <Pressable
@@ -130,7 +130,7 @@ export default function SearchScreen() {
           <Text
             style={[styles.tabText, mode === 'tags' && styles.tabTextActive]}
           >
-            ハッシュタグ
+            {t('search.tabTags')}
           </Text>
         </Pressable>
       </View>

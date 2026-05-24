@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useScrollToTop } from '@react-navigation/native';
-import { Link, useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmailVerifyBanner } from '@/components/email-verify-banner';
+import { EmptyState } from '@/components/empty-state';
 import { FeedCard, FeedCardItem } from '@/components/feed-card';
 import { FeedSkeletonList } from '@/components/skeleton';
 import { ThemeColors } from '@/constants/theme';
@@ -29,10 +30,13 @@ type FeedItem = FeedCardItem;
 export default function FeedScreen() {
   const c = useThemeColors();
   const { t } = useI18n();
+  const router = useRouter();
   const styles = useMemo(() => makeStyles(c), [c]);
   const { session } = useAuth();
   const { isBlocked } = useBlocks();
   const listRef = useRef<FlatList<FeedItem>>(null);
+  // いいね処理中の post_id（連打での重複リクエスト/クラッシュ防止）
+  const likeInFlight = useRef<Set<string>>(new Set());
   useScrollToTop(listRef);
   const myId = session?.user.id ?? null;
 
@@ -241,6 +245,9 @@ export default function FeedScreen() {
       Alert.alert(t('feed.loginRequired'));
       return;
     }
+    // 同一投稿のいいね処理が進行中なら無視（連打クラッシュ防止）
+    if (likeInFlight.current.has(item.id)) return;
+    likeInFlight.current.add(item.id);
     const wasLiked = item.is_liked;
     setItems((prev) =>
       prev.map((p) =>
@@ -265,7 +272,10 @@ export default function FeedScreen() {
       } else {
         const { error: insertError } = await supabase
           .from('likes')
-          .insert({ user_id: myId, post_id: item.id });
+          .upsert(
+            { user_id: myId, post_id: item.id },
+            { onConflict: 'user_id,post_id', ignoreDuplicates: true },
+          );
         if (insertError) throw new Error(insertError.message);
       }
     } catch (e) {
@@ -283,6 +293,8 @@ export default function FeedScreen() {
       );
       const msg = e instanceof Error ? e.message : String(e);
       Alert.alert(t('feed.likeFailed'), msg);
+    } finally {
+      likeInFlight.current.delete(item.id);
     }
   };
 
@@ -292,7 +304,9 @@ export default function FeedScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
-            <Text style={styles.title}>{t('feed.title')}</Text>
+            <Text style={styles.logo}>
+              Trade<Text style={styles.logoAccent}>Log</Text>
+            </Text>
           </View>
           <View style={styles.headerActions}>
             <Link href="/search" asChild>
@@ -401,10 +415,13 @@ export default function FeedScreen() {
             ) : null
           }
           ListEmptyComponent={
-            <View style={styles.emptyBox}>
-              <Text style={styles.emptyTitle}>{t('feed.emptyTitle')}</Text>
-              <Text style={styles.emptyText}>{t('feed.emptyText')}</Text>
-            </View>
+            <EmptyState
+              icon="newspaper-outline"
+              title={t('empty.feed_title')}
+              subtitle={t('empty.feed_subtitle')}
+              actionLabel={t('empty.feed_action')}
+              onAction={() => router.push('/create-post')}
+            />
           }
           windowSize={7}
           initialNumToRender={6}
@@ -469,6 +486,16 @@ function makeStyles(c: ThemeColors) {
       fontWeight: '700',
       color: c.textPrimary,
       letterSpacing: -0.5,
+    },
+    logo: {
+      fontSize: 26,
+      fontWeight: '800',
+      color: c.textPrimary,
+      letterSpacing: -0.8,
+    },
+    logoAccent: {
+      color: '#10B981',
+      fontWeight: '800',
     },
     center: {
       flex: 1,

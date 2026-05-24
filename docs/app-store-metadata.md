@@ -106,7 +106,7 @@ TradeLog は、FX取引の記録と分析、そしてトレーダー同士の交
 
 ■ 多言語対応
 
-日本語 / 英語 / ポルトガル語 / 中国語 / スペイン語
+日本語 / 英語 / ポルトガル語 / スペイン語
 
 
 ■ サポート
@@ -161,7 +161,7 @@ TradeLog is a comprehensive platform combining FX trade journaling with a social
 
 ■ Languages
 
-Japanese / English / Portuguese / Chinese / Spanish
+Japanese / English / Portuguese / Spanish
 
 
 ■ Support
@@ -169,6 +169,112 @@ Japanese / English / Portuguese / Chinese / Spanish
 Questions or feedback: trilionbrothers@gmail.com
 
 Take your trading journey to the next level with TradeLog.
+```
+
+---
+
+### Español (under 4000 chars)
+
+```
+■ TradeLog — La red social para traders de FX
+
+TradeLog es una plataforma que combina un diario de trading de FX con una red social para traders. Registra tus operaciones, visualiza tu rendimiento y comparte estrategias con la comunidad.
+
+
+■ Funciones principales
+
+【Diario de trading】
+・Registra par de divisas, precios de entrada/salida, tamaño de lote, P&L y notas
+・Más de 43 pares de divisas con entrada de búsqueda
+・Favoritos para tus pares más operados
+・Cálculo automático de pips
+・Botones rápidos de ganancia/pérdida
+
+【Panel de análisis】
+・P&L mensual, tasa de acierto, número de operaciones y pips promedio de un vistazo
+・Vista de calendario del historial diario
+・Ratio RR y métricas detalladas
+
+【Funciones sociales】
+・Comparte resultados y estrategias
+・Sistema de seguidores
+・Me gusta, comentarios, reposts, guardados
+・Búsqueda por hashtags
+・Ranking mensual de P&L
+
+【Perfil】
+・Bandera del país, estilo de trading, insignia de verificación e historial público
+
+
+■ Privacidad y seguridad
+
+・Datos de operaciones cifrados
+・Elige qué operaciones compartes
+・Funciones de bloqueo y reporte
+
+
+■ Idiomas
+
+Japonés / Inglés / Portugués / Español
+
+
+■ Soporte
+
+Preguntas o comentarios: trilionbrothers@gmail.com
+
+Lleva tu trading al siguiente nivel con TradeLog.
+```
+
+### Português (under 4000 chars)
+
+```
+■ TradeLog — A rede social para traders de FX
+
+TradeLog é uma plataforma que combina um diário de trading de FX com uma rede social para traders. Registre suas operações, visualize seu desempenho e compartilhe estratégias com a comunidade.
+
+
+■ Principais funções
+
+【Diário de trading】
+・Registre par de moedas, preços de entrada/saída, tamanho do lote, P&L e notas
+・Mais de 43 pares de moedas com entrada por busca
+・Favoritos para seus pares mais operados
+・Cálculo automático de pips
+・Botões rápidos de ganho/perda
+
+【Painel de análise】
+・P&L mensal, taxa de acerto, número de operações e pips médios de relance
+・Visualização em calendário do histórico diário
+・Razão RR e métricas detalhadas
+
+【Funções sociais】
+・Compartilhe resultados e estratégias
+・Sistema de seguidores
+・Curtidas, comentários, reposts, salvos
+・Busca por hashtags
+・Ranking mensal de P&L
+
+【Perfil】
+・Bandeira do país, estilo de trading, selo de verificação e histórico público
+
+
+■ Privacidade e segurança
+
+・Dados de operações criptografados
+・Escolha quais operações compartilhar
+・Funções de bloqueio e denúncia
+
+
+■ Idiomas
+
+Japonês / Inglês / Português / Espanhol
+
+
+■ Suporte
+
+Perguntas ou comentários: trilionbrothers@gmail.com
+
+Leve seu trading ao próximo nível com o TradeLog.
 ```
 
 ---
@@ -185,6 +291,16 @@ FX,トレード,投資,取引記録,SNS,通貨,為替,USD,JPY,EUR,分析,日記,
 forex,fx,trading,journal,trades,trader,currency,exchange,USD,JPY,EUR,analytics,community,social
 ```
 
+### Español
+```
+forex,fx,trading,diario,operaciones,trader,divisas,USD,JPY,EUR,análisis,comunidad,social
+```
+
+### Português
+```
+forex,fx,trading,diário,operações,trader,moedas,USD,JPY,EUR,análise,comunidade,social
+```
+
 ---
 
 ## 🆕 What's New (バージョン1.0)
@@ -197,7 +313,7 @@ TradeLog 初回リリース!
 ・分析ダッシュボード (月間 P&L、勝率、カレンダー)
 ・SNS機能 (投稿、フォロー、いいね、コメント)
 ・月間ランキング
-・5言語対応 (日 / 英 / ポ / 中 / 西)
+・4言語対応 (日 / 英 / ポ / 西)
 
 ご利用ありがとうございます。フィードバックは trilionbrothers@gmail.com まで。
 ```
@@ -210,7 +326,7 @@ Initial release of TradeLog!
 ・Analytics dashboard (monthly P&L, win rate, calendar)
 ・Social features (posts, follow, like, comment)
 ・Monthly rankings
-・5 languages (JA/EN/PT/ZH/ES)
+・4 languages (JA/EN/PT/ES)
 
 Thanks for trying TradeLog! Feedback: trilionbrothers@gmail.com
 ```
@@ -276,7 +392,7 @@ This is a beta version for testing core features before public launch.
 
 ### Notes
 ```
-The app is primarily in Japanese, with translations for English, Portuguese, Chinese, and Spanish (Settings > Language).
+The app is primarily in Japanese, with translations for English, Portuguese, and Spanish (Settings > Language).
 
 Test account is pre-populated with sample trades and posts.
 ```
@@ -309,3 +425,50 @@ iPhone 6.9" (1290x2796) と iPhone 6.5" (1242x2688) で 5〜10枚必要。
 - `Cmd + S` でデスクトップに保存
 - Figma などで文字 + 背景を追加して仕上げ
 - もしくは https://screenshots.pro/ などのツール
+
+---
+
+## 🤖 Google Play 固有の設定
+
+### フィーチャーグラフィック
+- サイズ: **1024 × 500 px**
+- デザイン: 黒背景 + アプリアイコン + "TradeLog" + サブテキスト "FX Trading Journal & SNS"
+
+### スクリーンショット (Google Play)
+- 最低 320 × 320 px / 推奨 **1080 × 1920 px (9:16)**
+- App Store と同じ5枚構成を流用可
+
+### データ安全セクション (Data Safety)
+```
+収集するデータ:
+  - メールアドレス: 収集する (アカウント管理)
+  - 名前 (表示名): 収集する (アプリ機能 — プロフィール)
+  - 写真/動画: 収集する (アプリ機能 — 投稿/アバター)
+  - アプリのアクティビティ: 収集する (分析 — Firebase Analytics ※有効化時)
+  - クラッシュログ/診断: 収集する (分析 — Sentry ※有効化時)
+
+データ共有: 第三者と共有しない
+暗号化: 転送中に暗号化される
+データ削除: ユーザーはアカウント削除でデータ削除をリクエストできる (設定 > アカウント削除)
+```
+
+### ストア説明文 (Google Play)
+- App Store と同じ4言語の説明文を流用 (上記「App Description」参照)
+- 短い説明 (Short description, 80文字以内) 例:
+  - 日本語: `FXトレードを記録・分析し、トレーダーとつながるSNS`
+  - English: `Log & analyze your FX trades and connect with traders worldwide.`
+
+---
+
+## ✅ ユーザーへの手動作業リスト (コードでは対応不可)
+
+1. **Apple Developer** で App ID に「Sign in with Apple」capability を追加
+2. **App Store Connect** でアプリ作成 + IAP商品 (monthly/yearly) を登録 → `ascAppId` を eas.json に設定
+3. **Google Play Console** でアプリ作成 + データ安全セクション回答
+4. **Firebase Console** でプロジェクト作成 → `GoogleService-Info.plist` / `google-services.json` をDL (Analytics有効化時)
+5. **Sentry** でDSN取得 (クラッシュ監視有効化時)
+6. **スクリーンショット** をデバイス/シミュレーターで撮影し、フレーム付きで仕上げ (5枚 × 各言語)
+7. **フィーチャーグラフィック** (1024×500) を作成 (Google Play)
+8. **プライバシーポリシー / 利用規約** のWeb公開を確認 (上記「公開URL」)
+9. **EAS Build**: `eas build --platform all`
+10. **EAS Submit**: `eas submit --platform all`

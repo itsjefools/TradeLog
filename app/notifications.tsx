@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { EmptyState } from '@/components/empty-state';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
@@ -160,15 +161,11 @@ export default function NotificationsScreen() {
           )}
 
           {items.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Ionicons
-                name="notifications-outline"
-                size={48}
-                color={c.textSecondary}
-              />
-              <Text style={styles.emptyTitle}>{t('notifications.emptyTitle')}</Text>
-              <Text style={styles.emptyText}>{t('notifications.emptyText')}</Text>
-            </View>
+            <EmptyState
+              icon="notifications-outline"
+              title={t('empty.notifications_title')}
+              subtitle={t('empty.notifications_subtitle')}
+            />
           ) : (
             sections.map((section) => (
               <View key={section.key}>

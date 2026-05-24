@@ -154,9 +154,7 @@ export default function CommentsScreen() {
               </View>
             )}
             {tree.length === 0 ? (
-              <Text style={styles.empty}>
-                まだコメントがありません。{'\n'}最初のコメントを書きましょう。
-              </Text>
+              <Text style={styles.empty}>{t('comments.empty')}</Text>
             ) : (
               tree.map((node) => (
                 <CommentNode

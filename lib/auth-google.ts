@@ -1,6 +1,20 @@
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-
 import { supabase } from './supabase';
+
+// Google Sign-In のネイティブモジュールは未設定/未バンドルでも起動時に落ちないよう
+// static import せず遅延 require + try/catch で取得する。
+type GoogleSigninType =
+  typeof import('@react-native-google-signin/google-signin').GoogleSignin;
+let _gsi: GoogleSigninType | null | undefined;
+function getGoogleSignin(): GoogleSigninType | null {
+  if (_gsi !== undefined) return _gsi;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    _gsi = require('@react-native-google-signin/google-signin').GoogleSignin;
+  } catch {
+    _gsi = null;
+  }
+  return _gsi ?? null;
+}
 
 /**
  * Google Client ID は EXPO_PUBLIC_GOOGLE_* 環境変数経由で読み込む。
@@ -28,6 +42,8 @@ export function isGoogleSignInConfigured(): boolean {
 export function configureGoogleSignIn(): void {
   if (configured) return;
   if (!isGoogleSignInConfigured()) return;
+  const GoogleSignin = getGoogleSignin();
+  if (!GoogleSignin) return;
   GoogleSignin.configure({
     iosClientId: IOS_CLIENT_ID || undefined,
     webClientId: WEB_CLIENT_ID,
@@ -41,6 +57,10 @@ export async function signInWithGoogle() {
   }
   if (!configured) configureGoogleSignIn();
 
+  const GoogleSignin = getGoogleSignin();
+  if (!GoogleSignin) {
+    throw new Error('Google Sign-In is not available');
+  }
   await GoogleSignin.hasPlayServices();
   const result = await GoogleSignin.signIn();
 

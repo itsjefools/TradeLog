@@ -87,10 +87,7 @@ export default function MessagesScreen() {
                 color={c.textSecondary}
               />
               <Text style={styles.emptyTitle}>{t('messages.empty')}</Text>
-              <Text style={styles.emptyText}>
-                ユーザーのプロフィールから{'\n'}
-                メッセージを送信できます。
-              </Text>
+              <Text style={styles.emptyText}>{t('messages.emptyHint')}</Text>
             </View>
           )}
 

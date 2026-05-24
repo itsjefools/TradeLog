@@ -155,9 +155,7 @@ export default function RankingScreen() {
 
           {rows.length === 0 && !error && (
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyText}>
-                該当するデータがまだありません。
-              </Text>
+              <Text style={styles.emptyText}>{t('ranking.empty')}</Text>
             </View>
           )}
 
@@ -287,7 +285,7 @@ function RankingRowItem({
           {primaryValue.text}
         </Text>
         <Text style={styles.subStats}>
-          {row.trade_count}回
+          {t('ranking.tradeCount', { count: row.trade_count })}
           {row.win_rate !== null && category !== 'winrate'
             ? ` · ${row.win_rate}%`
             : ''}

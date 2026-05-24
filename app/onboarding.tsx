@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useI18n } from '@/hooks/use-i18n';
 import { useOnboarding } from '@/hooks/use-onboarding';
+import { AnalyticsEvents } from '@/lib/analytics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -75,6 +76,7 @@ export default function OnboardingScreen() {
 
   const handleNext = () => {
     if (isLast) {
+      AnalyticsEvents.onboardingCompleted();
       finish();
       return;
     }
@@ -83,6 +85,7 @@ export default function OnboardingScreen() {
   };
 
   const handleSkip = () => {
+    AnalyticsEvents.onboardingSkipped(page);
     finish();
   };
 

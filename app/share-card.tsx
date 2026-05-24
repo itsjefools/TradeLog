@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Path, Stop, Line } from 'react-native-svg';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 
 import { ThemeColors } from '@/constants/theme';
@@ -34,7 +35,7 @@ const CARD_BG = '#0B0B0F';
 const CARD_WIN = '#22C55E';
 const CARD_LOSS = '#EF4444';
 
-type Period = 'week' | 'month';
+type Period = 'day' | 'week' | 'month';
 
 type CardStats = {
   count: number;
@@ -42,10 +43,14 @@ type CardStats = {
   hasPnl: boolean;
   winRate: number | null;
   bestPair: string | null;
+  curve: number[];
 };
 
 function rangeStart(period: Period): Date {
   const now = new Date();
+  if (period === 'day') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
   if (period === 'week') {
     const d = new Date(now);
     d.setDate(d.getDate() - 7);
@@ -77,13 +82,82 @@ function computeCardStats(trades: Trade[]): CardStats {
     }
   }
 
+  // エクイティ曲線: 取引日時順に累積損益（0 始点）
+  const sorted = [...withPnl].sort(
+    (a, b) => new Date(a.traded_at).getTime() - new Date(b.traded_at).getTime(),
+  );
+  const curve: number[] = [0];
+  let acc = 0;
+  for (const t of sorted) {
+    acc += t.pnl ?? 0;
+    curve.push(acc);
+  }
+
   return {
     count: trades.length,
     totalPnl,
     hasPnl: withPnl.length > 0,
     winRate,
     bestPair,
+    curve,
   };
+}
+
+function EquitySparkline({
+  points,
+  color,
+  width,
+  height,
+}: {
+  points: number[];
+  color: string;
+  width: number;
+  height: number;
+}) {
+  if (points.length < 2) return null;
+  const pad = 4;
+  const innerH = height - pad * 2;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 1;
+  const stepX = width / (points.length - 1);
+  const toY = (v: number) => pad + innerH - ((v - min) / range) * innerH;
+  const coords = points.map((v, i) => ({ x: i * stepX, y: toY(v) }));
+  const line = coords
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(' ');
+  const area = `${line} L${width},${height} L0,${height} Z`;
+  const zeroY = toY(0);
+  return (
+    <Svg width={width} height={height}>
+      <Defs>
+        <LinearGradient id="equityFill" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={color} stopOpacity={0.32} />
+          <Stop offset="1" stopColor={color} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      {min < 0 && max > 0 ? (
+        <Line
+          x1={0}
+          y1={zeroY}
+          x2={width}
+          y2={zeroY}
+          stroke="rgba(255,255,255,0.16)"
+          strokeWidth={1}
+          strokeDasharray="3 4"
+        />
+      ) : null}
+      <Path d={area} fill="url(#equityFill)" />
+      <Path
+        d={line}
+        stroke={color}
+        strokeWidth={3}
+        fill="none"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
 }
 
 export default function ShareCardScreen() {
@@ -110,7 +184,12 @@ export default function ShareCardScreen() {
   const stats = useMemo(() => computeCardStats(periodTrades), [periodTrades]);
   const isEmpty = stats.count === 0;
 
-  const periodLabel = period === 'week' ? t('shareCard.periodWeek') : t('shareCard.periodMonth');
+  const periodLabel =
+    period === 'day'
+      ? t('shareCard.periodDay')
+      : period === 'week'
+        ? t('shareCard.periodWeek')
+        : t('shareCard.periodMonth');
   const pnlColor = !stats.hasPnl
     ? '#FFFFFF'
     : stats.totalPnl > 0
@@ -188,8 +267,14 @@ export default function ShareCardScreen() {
       >
         {/* 期間トグル */}
         <View style={styles.toggleRow}>
-          {(['week', 'month'] as Period[]).map((p) => {
+          {(['day', 'week', 'month'] as Period[]).map((p) => {
             const active = period === p;
+            const label =
+              p === 'day'
+                ? t('shareCard.today')
+                : p === 'week'
+                  ? t('shareCard.thisWeek')
+                  : t('shareCard.thisMonth');
             return (
               <Pressable
                 key={p}
@@ -202,7 +287,7 @@ export default function ShareCardScreen() {
                     active ? styles.toggleTextActive : styles.toggleTextInactive,
                   ]}
                 >
-                  {p === 'week' ? t('shareCard.thisWeek') : t('shareCard.thisMonth')}
+                  {label}
                 </Text>
               </Pressable>
             );
@@ -226,7 +311,7 @@ export default function ShareCardScreen() {
                 </View>
               </View>
 
-              {/* 中央: 純損益を大きく */}
+              {/* 中央: 純損益 + エクイティ曲線 */}
               <View style={styles.cardCenter}>
                 <Text style={styles.netLabel}>{t('shareCard.netPnl')}</Text>
                 <Text
@@ -236,6 +321,16 @@ export default function ShareCardScreen() {
                 >
                   {stats.hasPnl ? formatPnlWithCurrency(stats.totalPnl, currency) : '—'}
                 </Text>
+                {stats.curve.length >= 3 ? (
+                  <View style={styles.sparkWrap}>
+                    <EquitySparkline
+                      points={stats.curve}
+                      color={pnlColor === '#FFFFFF' ? ACCENT_INDIGO : pnlColor}
+                      width={CARD_WIDTH - 56}
+                      height={76}
+                    />
+                  </View>
+                ) : null}
               </View>
 
               {/* 下部: サブ指標 */}
@@ -396,6 +491,10 @@ function makeStyles(c: ThemeColors) {
       fontWeight: '800',
       letterSpacing: -2,
       fontVariant: ['tabular-nums'],
+    },
+    sparkWrap: {
+      marginTop: 16,
+      alignSelf: 'stretch',
     },
     statsRow: {
       flexDirection: 'row',

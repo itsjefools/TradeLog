@@ -1,8 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -13,13 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { EmptyState } from '@/components/empty-state';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { useTrades } from '@/hooks/use-trades';
-import { exportTradesCsv } from '@/lib/export-csv';
 import { getPlan } from '@/lib/premium';
 import { Trade } from '@/lib/types';
 
@@ -31,37 +30,6 @@ export default function TradeHistoryScreen() {
   const { trades, refresh, deleteTrade } = useTrades();
   const { profile } = useProfile();
   const isPremium = getPlan(profile?.is_premium) === 'premium';
-  const [exporting, setExporting] = useState(false);
-
-  const handleExport = async () => {
-    if (!isPremium) {
-      Alert.alert(
-        t('tradeHistory.premiumFeatureTitle'),
-        t('tradeHistory.premiumFeatureBody'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('tradeHistory.seePremium'),
-            onPress: () => router.push('/premium'),
-          },
-        ],
-      );
-      return;
-    }
-    if (trades.length === 0) {
-      Alert.alert(t('tradeHistory.noDataTitle'), t('tradeHistory.noDataBody'));
-      return;
-    }
-    setExporting(true);
-    try {
-      await exportTradesCsv(trades);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert(t('tradeHistory.exportFail'), msg);
-    } finally {
-      setExporting(false);
-    }
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -98,37 +66,47 @@ export default function TradeHistoryScreen() {
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>{t('tradeHistory.title')}</Text>
-        <Pressable
-          onPress={handleExport}
-          disabled={exporting}
-          hitSlop={12}
-          style={({ pressed }) => [
-            styles.exportButton,
-            pressed && styles.exportButtonPressed,
-          ]}
-        >
-          {exporting ? (
-            <ActivityIndicator color={c.accent} size="small" />
-          ) : (
+        <View style={styles.headerActions}>
+          <Pressable
+            onPress={() => router.push('/import-trades')}
+            hitSlop={12}
+            style={({ pressed }) => [
+              styles.exportButton,
+              pressed && styles.exportButtonPressed,
+            ]}
+          >
+            <Ionicons
+              name="cloud-upload-outline"
+              size={20}
+              color={c.textPrimary}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/export')}
+            hitSlop={12}
+            style={({ pressed }) => [
+              styles.exportButton,
+              pressed && styles.exportButtonPressed,
+            ]}
+          >
             <Ionicons
               name={isPremium ? 'share-outline' : 'lock-closed-outline'}
               size={20}
               color={c.textPrimary}
             />
-          )}
-        </Pressable>
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
         {trades.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Ionicons
-              name="document-text-outline"
-              size={48}
-              color={c.textSecondary}
-            />
-            <Text style={styles.emptyText}>{t('tradeHistory.emptyMessage')}</Text>
-          </View>
+          <EmptyState
+            icon="trending-up-outline"
+            title={t('empty.trades_title')}
+            subtitle={t('empty.trades_subtitle')}
+            actionLabel={t('empty.trades_action')}
+            onAction={() => router.push('/(tabs)/record')}
+          />
         ) : (
           trades.map((trade) => (
             <TradeRow
@@ -245,6 +223,7 @@ function makeStyles(c: ThemeColors) {
     headerSpacer: {
       width: 40,
     },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
     exportButton: {
       width: 40,
       height: 40,

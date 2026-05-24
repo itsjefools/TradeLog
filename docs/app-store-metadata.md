@@ -383,11 +383,16 @@ This is a beta version for testing core features before public launch.
 ```
 - Sign up and log in (email/password)
 - Record a new trade (Record tab)
-- View analytics (Analytics tab)
+- Import MT5 report from the Record tab (XLSX/CSV) [NEW]
+- View analytics: daily P&L chart (tap bars) and month-end projection [NEW]
+- Trade stats: switch periods (1D/1W/1M/3M/6M/1Y/All) [NEW]
+- Share card: pick today/week/month and share/save [NEW]
+- Badges: open Profile > badges, toggle visibility, equip up to 3 [NEW]
 - Browse the feed (Home tab)
 - Edit profile (Profile tab > Settings)
 - Follow/unfollow other users
 - Like, comment, bookmark posts
+- Switch app language (Settings > Language: JA/EN/PT/ES)
 ```
 
 ### Notes

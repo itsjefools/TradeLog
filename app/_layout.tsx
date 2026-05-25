@@ -208,6 +208,14 @@ function ThemedRoot() {
               }}
             />
             <Stack.Screen
+              name="weekly-report"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
               name="export"
               options={{
                 headerShown: false,

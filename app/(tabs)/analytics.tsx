@@ -163,6 +163,14 @@ export default function AnalyticsScreen() {
         </View>
         <View style={styles.headerActions}>
           <Pressable
+            onPress={() => router.push('/weekly-report')}
+            hitSlop={8}
+            style={styles.statsButton}
+            accessibilityLabel={t('weeklyReport.title')}
+          >
+            <Ionicons name="document-text-outline" size={20} color={c.textPrimary} />
+          </Pressable>
+          <Pressable
             onPress={() => router.push('/share-card')}
             hitSlop={8}
             style={styles.statsButton}

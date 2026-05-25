@@ -728,7 +728,7 @@ export default function UserProfileScreen() {
             ) : (
               <>
                 <UserPerformance trades={trades} />
-                <Text style={styles.recentLabel}>{t('profile.recentTrades')}</Text>
+                <Text style={styles.recentLabel}>{t('analytics.recentTrades')}</Text>
                 {trades.slice(0, 8).map((tr) => (
                   <TradeCard key={tr.id} trade={tr} />
                 ))}

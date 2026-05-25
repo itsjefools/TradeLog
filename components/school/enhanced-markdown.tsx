@@ -51,11 +51,13 @@ function InfoBox({
   text,
   c,
   isDark,
+  label,
 }: {
   type: BoxKind;
   text: string;
   c: ThemeColors;
   isDark: boolean;
+  label: string;
 }) {
   const style = BOX_STYLES[type][isDark ? 'dark' : 'light'];
   return (
@@ -85,7 +87,7 @@ function InfoBox({
             letterSpacing: 1.2,
           }}
         >
-          {style.label}
+          {label}
         </Text>
       </View>
       <Text
@@ -196,7 +198,139 @@ function diagramColors(isDark: boolean) {
   };
 }
 
-function CandlestickDiagram({ isDark }: { isDark: boolean }) {
+// ============================================================================
+// 図解・InfoBox の多言語ラベル
+// ============================================================================
+
+export type MdLang = 'ja' | 'en' | 'pt' | 'es';
+
+type DiagramText = {
+  // candlestick
+  bullish: string;
+  bearish: string;
+  high: string;
+  close: string;
+  open: string;
+  low: string;
+  body: string;
+  closeGtOpen: string;
+  closeLtOpen: string;
+  // currency flow
+  baseCurrency: string;
+  quoteCurrency: string;
+  buyLong: string;
+  buyFlow: string;
+  sellShort: string;
+  sellFlow: string;
+  // pip calculation
+  decimal4: string;
+  decimal2: string;
+  // order types
+  currentPrice: string;
+  buyLimit: string;
+  sellLimit: string;
+  stopLossAt: string;
+  takeProfitAt: string;
+  // spread
+  bid: string;
+  ask: string;
+  spreadEq: string;
+  spreadCost: string;
+  spreadTitle: string;
+  // support / resistance
+  resistance: string;
+  support: string;
+  srTitle: string;
+  rejectDown: string;
+  bounceUp: string;
+  // lot size
+  lotTitle: string;
+  lot1: string;
+  lot01: string;
+  lot001: string;
+  // InfoBox labels
+  boxTip: string;
+  boxWarning: string;
+  boxKey: string;
+  boxExample: string;
+};
+
+const DIAGRAM_TEXT: Record<MdLang, DiagramText> = {
+  ja: {
+    bullish: '陽線', bearish: '陰線', high: '高値 (High)', close: '終値 (Close)',
+    open: '始値 (Open)', low: '安値 (Low)', body: '実体',
+    closeGtOpen: '終値 > 始値', closeLtOpen: '終値 < 始値',
+    baseCurrency: '基軸通貨', quoteCurrency: '決済通貨', buyLong: '買い(ロング)',
+    buyFlow: 'USDを買い → JPYを売る', sellShort: '売り(ショート)', sellFlow: 'USDを売り → JPYを買う',
+    decimal4: '小数点以下第4位', decimal2: '第2位 = 1 pip',
+    currentPrice: '現在価格 150.00', buyLimit: '149.50 で指値買い', sellLimit: '150.50 で指値売り',
+    stopLossAt: '149.30 で損切り', takeProfitAt: '151.00 で利確',
+    bid: '売値 (Bid)', ask: '買値 (Ask)', spreadEq: 'スプレッド = 3 pips',
+    spreadCost: 'これがあなたの取引コスト', spreadTitle: 'USD/JPY スプレッドの仕組み',
+    resistance: 'レジスタンス', support: 'サポート', srTitle: 'サポート＆レジスタンスの概念',
+    rejectDown: '反落↓', bounceUp: '反発↑',
+    lotTitle: 'ロットサイズ比較', lot1: '1 ロット = 100,000通貨 → 1pipあたり ≈ ¥1,000',
+    lot01: '0.1 ロット → ≈ ¥100/pip', lot001: '→ ≈ ¥10/pip（初心者推奨）',
+    boxTip: 'ヒント', boxWarning: '注意', boxKey: '重要ポイント', boxExample: '例',
+  },
+  en: {
+    bullish: 'Bullish', bearish: 'Bearish', high: 'High', close: 'Close',
+    open: 'Open', low: 'Low', body: 'Body',
+    closeGtOpen: 'Close > Open', closeLtOpen: 'Close < Open',
+    baseCurrency: 'Base currency', quoteCurrency: 'Quote currency', buyLong: 'Buy (Long)',
+    buyFlow: 'Buy USD → Sell JPY', sellShort: 'Sell (Short)', sellFlow: 'Sell USD → Buy JPY',
+    decimal4: '4th decimal place', decimal2: '2nd place = 1 pip',
+    currentPrice: 'Current price 150.00', buyLimit: 'Buy limit @ 149.50', sellLimit: 'Sell limit @ 150.50',
+    stopLossAt: 'Stop loss @ 149.30', takeProfitAt: 'Take profit @ 151.00',
+    bid: 'Bid', ask: 'Ask', spreadEq: 'Spread = 3 pips',
+    spreadCost: 'This is your trading cost', spreadTitle: 'How the USD/JPY spread works',
+    resistance: 'Resistance', support: 'Support', srTitle: 'Support & Resistance',
+    rejectDown: 'Reject ↓', bounceUp: 'Bounce ↑',
+    lotTitle: 'Lot size comparison', lot1: '1 lot = 100,000 units → ≈ $10/pip',
+    lot01: '0.1 lot → ≈ $1/pip', lot001: '→ ≈ $0.10/pip (beginner)',
+    boxTip: 'TIP', boxWarning: 'WARNING', boxKey: 'KEY CONCEPT', boxExample: 'EXAMPLE',
+  },
+  pt: {
+    bullish: 'Alta', bearish: 'Baixa', high: 'Máxima (High)', close: 'Fechamento (Close)',
+    open: 'Abertura (Open)', low: 'Mínima (Low)', body: 'Corpo',
+    closeGtOpen: 'Fech. > Abert.', closeLtOpen: 'Fech. < Abert.',
+    baseCurrency: 'Moeda base', quoteCurrency: 'Moeda de cotação', buyLong: 'Compra (Long)',
+    buyFlow: 'Compra USD → Vende JPY', sellShort: 'Venda (Short)', sellFlow: 'Vende USD → Compra JPY',
+    decimal4: '4ª casa decimal', decimal2: '2ª casa = 1 pip',
+    currentPrice: 'Preço atual 150,00', buyLimit: 'Compra limite @ 149,50', sellLimit: 'Venda limite @ 150,50',
+    stopLossAt: 'Stop loss @ 149,30', takeProfitAt: 'Take profit @ 151,00',
+    bid: 'Venda (Bid)', ask: 'Compra (Ask)', spreadEq: 'Spread = 3 pips',
+    spreadCost: 'Este é o seu custo de operação', spreadTitle: 'Como funciona o spread USD/JPY',
+    resistance: 'Resistência', support: 'Suporte', srTitle: 'Suporte e Resistência',
+    rejectDown: 'Rejeição ↓', bounceUp: 'Repique ↑',
+    lotTitle: 'Comparação de tamanho de lote', lot1: '1 lote = 100.000 unidades → ≈ $10/pip',
+    lot01: '0,1 lote → ≈ $1/pip', lot001: '→ ≈ $0,10/pip (iniciante)',
+    boxTip: 'DICA', boxWarning: 'ATENÇÃO', boxKey: 'CONCEITO-CHAVE', boxExample: 'EXEMPLO',
+  },
+  es: {
+    bullish: 'Alcista', bearish: 'Bajista', high: 'Máximo (High)', close: 'Cierre (Close)',
+    open: 'Apertura (Open)', low: 'Mínimo (Low)', body: 'Cuerpo',
+    closeGtOpen: 'Cierre > Apert.', closeLtOpen: 'Cierre < Apert.',
+    baseCurrency: 'Divisa base', quoteCurrency: 'Divisa de cotización', buyLong: 'Compra (Long)',
+    buyFlow: 'Compra USD → Vende JPY', sellShort: 'Venta (Short)', sellFlow: 'Vende USD → Compra JPY',
+    decimal4: '4º decimal', decimal2: '2º lugar = 1 pip',
+    currentPrice: 'Precio actual 150,00', buyLimit: 'Compra límite @ 149,50', sellLimit: 'Venta límite @ 150,50',
+    stopLossAt: 'Stop loss @ 149,30', takeProfitAt: 'Take profit @ 151,00',
+    bid: 'Venta (Bid)', ask: 'Compra (Ask)', spreadEq: 'Spread = 3 pips',
+    spreadCost: 'Este es tu costo de operación', spreadTitle: 'Cómo funciona el spread USD/JPY',
+    resistance: 'Resistencia', support: 'Soporte', srTitle: 'Soporte y Resistencia',
+    rejectDown: 'Rechazo ↓', bounceUp: 'Rebote ↑',
+    lotTitle: 'Comparación de tamaño de lote', lot1: '1 lote = 100.000 unidades → ≈ $10/pip',
+    lot01: '0,1 lote → ≈ $1/pip', lot001: '→ ≈ $0,10/pip (principiante)',
+    boxTip: 'CONSEJO', boxWarning: 'ADVERTENCIA', boxKey: 'CONCEPTO CLAVE', boxExample: 'EJEMPLO',
+  },
+};
+
+function diagramText(lang: MdLang): DiagramText {
+  return DIAGRAM_TEXT[lang] ?? DIAGRAM_TEXT.en;
+}
+
+function CandlestickDiagram({ isDark, L }: { isDark: boolean; L: DiagramText }) {
   const colors = diagramColors(isDark);
   return (
     <View style={diagramWrap}>
@@ -206,73 +340,73 @@ function CandlestickDiagram({ isDark }: { isDark: boolean }) {
           <Rect x="60" y="70" width="40" height="80" fill={GREEN} rx="3" />
           <Line x1="80" y1="150" x2="80" y2="200" stroke={GREEN} strokeWidth="2" />
           <SvgText x="80" y="20" textAnchor="middle" fontSize="12" fontWeight="600" fill={GREEN}>
-            陽線
+            {L.bullish}
           </SvgText>
           <Line x1="105" y1="30" x2="140" y2="30" stroke={colors.line} strokeWidth="1" strokeDasharray="3,3" />
-          <SvgText x="144" y="34" fontSize="10" fill={colors.sub}>高値 (High)</SvgText>
+          <SvgText x="144" y="34" fontSize="10" fill={colors.sub}>{L.high}</SvgText>
           <Line x1="105" y1="70" x2="140" y2="55" stroke={colors.line} strokeWidth="1" strokeDasharray="3,3" />
-          <SvgText x="144" y="59" fontSize="10" fill={colors.sub}>終値 (Close)</SvgText>
+          <SvgText x="144" y="59" fontSize="10" fill={colors.sub}>{L.close}</SvgText>
           <Line x1="105" y1="150" x2="140" y2="165" stroke={colors.line} strokeWidth="1" strokeDasharray="3,3" />
-          <SvgText x="144" y="169" fontSize="10" fill={colors.sub}>始値 (Open)</SvgText>
+          <SvgText x="144" y="169" fontSize="10" fill={colors.sub}>{L.open}</SvgText>
           <Line x1="105" y1="200" x2="140" y2="195" stroke={colors.line} strokeWidth="1" strokeDasharray="3,3" />
-          <SvgText x="144" y="199" fontSize="10" fill={colors.sub}>安値 (Low)</SvgText>
+          <SvgText x="144" y="199" fontSize="10" fill={colors.sub}>{L.low}</SvgText>
         </G>
         <G>
           <Line x1="220" y1="30" x2="220" y2="70" stroke={RED} strokeWidth="2" />
           <Rect x="200" y="70" width="40" height="80" fill={RED} rx="3" />
           <Line x1="220" y1="150" x2="220" y2="200" stroke={RED} strokeWidth="2" />
           <SvgText x="220" y="20" textAnchor="middle" fontSize="12" fontWeight="600" fill={RED}>
-            陰線
+            {L.bearish}
           </SvgText>
         </G>
         <SvgText x="80" y="230" textAnchor="middle" fontSize="10" fill={colors.sub}>
-          終値 {'>'} 始値
+          {L.closeGtOpen}
         </SvgText>
         <SvgText x="220" y="230" textAnchor="middle" fontSize="10" fill={colors.sub}>
-          終値 {'<'} 始値
+          {L.closeLtOpen}
         </SvgText>
         <SvgText x="80" y="115" textAnchor="middle" fontSize="10" fontWeight="600" fill="#FFFFFF">
-          実体
+          {L.body}
         </SvgText>
         <SvgText x="220" y="115" textAnchor="middle" fontSize="10" fontWeight="600" fill="#FFFFFF">
-          実体
+          {L.body}
         </SvgText>
       </Svg>
     </View>
   );
 }
 
-function CurrencyFlowDiagram({ isDark }: { isDark: boolean }) {
+function CurrencyFlowDiagram({ isDark, L }: { isDark: boolean; L: DiagramText }) {
   const colors = diagramColors(isDark);
   return (
     <View style={diagramWrap}>
       <Svg width={300} height={200} viewBox="0 0 300 200">
         <Rect x="20" y="60" width="80" height="50" rx="8" fill={colors.boxBg} stroke={colors.boxBorder} strokeWidth="1" />
         <SvgText x="60" y="82" textAnchor="middle" fontSize="16" fontWeight="700" fill={colors.text}>USD</SvgText>
-        <SvgText x="60" y="100" textAnchor="middle" fontSize="10" fill={colors.sub}>基軸通貨</SvgText>
+        <SvgText x="60" y="100" textAnchor="middle" fontSize="10" fill={colors.sub}>{L.baseCurrency}</SvgText>
 
         <SvgText x="120" y="92" textAnchor="middle" fontSize="20" fontWeight="300" fill={colors.sub}>/</SvgText>
 
         <Rect x="140" y="60" width="80" height="50" rx="8" fill={colors.boxBg} stroke={colors.boxBorder} strokeWidth="1" />
         <SvgText x="180" y="82" textAnchor="middle" fontSize="16" fontWeight="700" fill={colors.text}>JPY</SvgText>
-        <SvgText x="180" y="100" textAnchor="middle" fontSize="10" fill={colors.sub}>決済通貨</SvgText>
+        <SvgText x="180" y="100" textAnchor="middle" fontSize="10" fill={colors.sub}>{L.quoteCurrency}</SvgText>
 
         <SvgText x="235" y="92" textAnchor="middle" fontSize="16" fontWeight="300" fill={colors.sub}>=</SvgText>
         <SvgText x="270" y="92" textAnchor="middle" fontSize="16" fontWeight="700" fill={BLUE}>150.00</SvgText>
 
         <Path d="M 60 130 L 60 160 L 180 160 L 180 130" stroke={GREEN} strokeWidth="1.5" fill="none" strokeDasharray="4,3" />
-        <SvgText x="120" y="155" textAnchor="middle" fontSize="10" fontWeight="600" fill={GREEN}>買い(ロング)</SvgText>
-        <SvgText x="120" y="175" textAnchor="middle" fontSize="9" fill={colors.sub}>USDを買い → JPYを売る</SvgText>
+        <SvgText x="120" y="155" textAnchor="middle" fontSize="10" fontWeight="600" fill={GREEN}>{L.buyLong}</SvgText>
+        <SvgText x="120" y="175" textAnchor="middle" fontSize="9" fill={colors.sub}>{L.buyFlow}</SvgText>
 
         <Path d="M 180 50 L 180 25 L 60 25 L 60 50" stroke={RED} strokeWidth="1.5" fill="none" strokeDasharray="4,3" />
-        <SvgText x="120" y="22" textAnchor="middle" fontSize="10" fontWeight="600" fill={RED}>売り(ショート)</SvgText>
-        <SvgText x="120" y="10" textAnchor="middle" fontSize="9" fill={colors.sub}>USDを売り → JPYを買う</SvgText>
+        <SvgText x="120" y="22" textAnchor="middle" fontSize="10" fontWeight="600" fill={RED}>{L.sellShort}</SvgText>
+        <SvgText x="120" y="10" textAnchor="middle" fontSize="9" fill={colors.sub}>{L.sellFlow}</SvgText>
       </Svg>
     </View>
   );
 }
 
-function PipCalculationDiagram({ isDark }: { isDark: boolean }) {
+function PipCalculationDiagram({ isDark, L }: { isDark: boolean; L: DiagramText }) {
   const colors = diagramColors(isDark);
   return (
     <View style={diagramWrap}>
@@ -292,7 +426,7 @@ function PipCalculationDiagram({ isDark }: { isDark: boolean }) {
 
         <Line x1="160" y1="68" x2="160" y2="85" stroke={BLUE} strokeWidth="1.5" />
         <SvgText x="160" y="100" textAnchor="middle" fontSize="12" fontWeight="600" fill={BLUE}>← 1 pip</SvgText>
-        <SvgText x="160" y="115" textAnchor="middle" fontSize="10" fill={colors.sub}>小数点以下第4位</SvgText>
+        <SvgText x="160" y="115" textAnchor="middle" fontSize="10" fill={colors.sub}>{L.decimal4}</SvgText>
 
         <Line x1="20" y1="135" x2="280" y2="135" stroke={colors.softLine} strokeWidth="0.5" />
 
@@ -304,13 +438,13 @@ function PipCalculationDiagram({ isDark }: { isDark: boolean }) {
         </SvgText>
         <Rect x="170" y="141" width="22" height="20" rx="4" fill={colors.highlightBg} />
         <SvgText x="181" y="156" textAnchor="middle" fontSize="14" fontWeight="700" fill={BLUE}>00</SvgText>
-        <SvgText x="230" y="155" textAnchor="middle" fontSize="10" fill={colors.sub}>第2位 = 1 pip</SvgText>
+        <SvgText x="230" y="155" textAnchor="middle" fontSize="10" fill={colors.sub}>{L.decimal2}</SvgText>
       </Svg>
     </View>
   );
 }
 
-function OrderTypesDiagram({ isDark }: { isDark: boolean }) {
+function OrderTypesDiagram({ isDark, L }: { isDark: boolean; L: DiagramText }) {
   const colors = diagramColors(isDark);
   return (
     <View style={diagramWrap}>
@@ -320,26 +454,26 @@ function OrderTypesDiagram({ isDark }: { isDark: boolean }) {
         <Line x1="40" y1="120" x2="280" y2="120" stroke={colors.text} strokeWidth="1.5" strokeDasharray="6,4" />
         <Rect x="100" y="108" width="100" height="24" rx="6" fill={BLUE} />
         <SvgText x="150" y="124" textAnchor="middle" fontSize="11" fontWeight="600" fill="#FFFFFF">
-          現在価格 150.00
+          {L.currentPrice}
         </SvgText>
 
         <Line x1="40" y1="170" x2="200" y2="170" stroke={GREEN} strokeWidth="1" strokeDasharray="3,3" />
         <Circle cx="210" cy="170" r="5" fill={GREEN} />
         <SvgText x="224" y="167" fontSize="10" fontWeight="600" fill={GREEN}>Buy Limit</SvgText>
-        <SvgText x="224" y="180" fontSize="9" fill={colors.sub}>149.50 で指値買い</SvgText>
+        <SvgText x="224" y="180" fontSize="9" fill={colors.sub}>{L.buyLimit}</SvgText>
 
         <Line x1="40" y1="70" x2="200" y2="70" stroke={RED} strokeWidth="1" strokeDasharray="3,3" />
         <Circle cx="210" cy="70" r="5" fill={RED} />
         <SvgText x="224" y="67" fontSize="10" fontWeight="600" fill={RED}>Sell Limit</SvgText>
-        <SvgText x="224" y="80" fontSize="9" fill={colors.sub}>150.50 で指値売り</SvgText>
+        <SvgText x="224" y="80" fontSize="9" fill={colors.sub}>{L.sellLimit}</SvgText>
 
         <Line x1="40" y1="200" x2="200" y2="200" stroke={AMBER} strokeWidth="1.5" />
         <SvgText x="224" y="197" fontSize="10" fontWeight="600" fill={AMBER}>Stop Loss</SvgText>
-        <SvgText x="224" y="210" fontSize="9" fill={colors.sub}>149.30 で損切り</SvgText>
+        <SvgText x="224" y="210" fontSize="9" fill={colors.sub}>{L.stopLossAt}</SvgText>
 
         <Line x1="40" y1="40" x2="200" y2="40" stroke={GREEN} strokeWidth="1.5" />
         <SvgText x="224" y="37" fontSize="10" fontWeight="600" fill={GREEN}>Take Profit</SvgText>
-        <SvgText x="224" y="50" fontSize="9" fill={colors.sub}>151.00 で利確</SvgText>
+        <SvgText x="224" y="50" fontSize="9" fill={colors.sub}>{L.takeProfitAt}</SvgText>
 
         <SvgText x="20" y="44" textAnchor="middle" fontSize="8" fill={colors.sub}>151.00</SvgText>
         <SvgText x="20" y="74" textAnchor="middle" fontSize="8" fill={colors.sub}>150.50</SvgText>
@@ -351,50 +485,50 @@ function OrderTypesDiagram({ isDark }: { isDark: boolean }) {
   );
 }
 
-function SpreadDiagram({ isDark }: { isDark: boolean }) {
+function SpreadDiagram({ isDark, L }: { isDark: boolean; L: DiagramText }) {
   const colors = diagramColors(isDark);
   return (
     <View style={diagramWrap}>
       <Svg width={300} height={140} viewBox="0 0 300 140">
         <Rect x="20" y="40" width="120" height="40" rx="6" fill={BLUE} opacity="0.15" />
         <Rect x="20" y="40" width="120" height="40" rx="6" stroke={BLUE} strokeWidth="1" fill="none" />
-        <SvgText x="80" y="55" textAnchor="middle" fontSize="10" fontWeight="500" fill={BLUE}>売値 (Bid)</SvgText>
+        <SvgText x="80" y="55" textAnchor="middle" fontSize="10" fontWeight="500" fill={BLUE}>{L.bid}</SvgText>
         <SvgText x="80" y="72" textAnchor="middle" fontSize="16" fontWeight="700" fill={colors.text}>150.00</SvgText>
 
         <Rect x="160" y="40" width="120" height="40" rx="6" fill={RED} opacity="0.15" />
         <Rect x="160" y="40" width="120" height="40" rx="6" stroke={RED} strokeWidth="1" fill="none" />
-        <SvgText x="220" y="55" textAnchor="middle" fontSize="10" fontWeight="500" fill={RED}>買値 (Ask)</SvgText>
+        <SvgText x="220" y="55" textAnchor="middle" fontSize="10" fontWeight="500" fill={RED}>{L.ask}</SvgText>
         <SvgText x="220" y="72" textAnchor="middle" fontSize="16" fontWeight="700" fill={colors.text}>150.03</SvgText>
 
         <Line x1="140" y1="60" x2="160" y2="60" stroke={colors.sub} strokeWidth="1" strokeDasharray="2,2" />
         <Path d="M 80 90 L 80 105 L 220 105 L 220 90" stroke={colors.sub} strokeWidth="1" fill="none" />
         <SvgText x="150" y="120" textAnchor="middle" fontSize="12" fontWeight="700" fill={colors.text}>
-          スプレッド = 3 pips
+          {L.spreadEq}
         </SvgText>
         <SvgText x="150" y="135" textAnchor="middle" fontSize="10" fill={colors.sub}>
-          これがあなたの取引コスト
+          {L.spreadCost}
         </SvgText>
 
         <SvgText x="150" y="20" textAnchor="middle" fontSize="12" fontWeight="600" fill={colors.sub}>
-          USD/JPY スプレッドの仕組み
+          {L.spreadTitle}
         </SvgText>
       </Svg>
     </View>
   );
 }
 
-function SupportResistanceDiagram({ isDark }: { isDark: boolean }) {
+function SupportResistanceDiagram({ isDark, L }: { isDark: boolean; L: DiagramText }) {
   const colors = diagramColors(isDark);
   return (
     <View style={diagramWrap}>
       <Svg width={300} height={200} viewBox="0 0 300 200">
         <Rect x="20" y="34" width="260" height="20" rx="4" fill={RED} opacity="0.08" />
         <Line x1="20" y1="44" x2="280" y2="44" stroke={RED} strokeWidth="1.5" strokeDasharray="6,3" />
-        <SvgText x="280" y="30" textAnchor="end" fontSize="10" fontWeight="600" fill={RED}>レジスタンス</SvgText>
+        <SvgText x="280" y="30" textAnchor="end" fontSize="10" fontWeight="600" fill={RED}>{L.resistance}</SvgText>
 
         <Rect x="20" y="150" width="260" height="20" rx="4" fill={GREEN} opacity="0.08" />
         <Line x1="20" y1="160" x2="280" y2="160" stroke={GREEN} strokeWidth="1.5" strokeDasharray="6,3" />
-        <SvgText x="280" y="186" textAnchor="end" fontSize="10" fontWeight="600" fill={GREEN}>サポート</SvgText>
+        <SvgText x="280" y="186" textAnchor="end" fontSize="10" fontWeight="600" fill={GREEN}>{L.support}</SvgText>
 
         <Path
           d="M 30 100 L 60 55 L 85 90 L 110 50 L 135 85 L 155 45 L 175 95 L 200 55 L 220 150 L 240 95 L 260 155 L 275 110"
@@ -410,41 +544,41 @@ function SupportResistanceDiagram({ isDark }: { isDark: boolean }) {
         <Circle cx="260" cy="155" r="4" fill={GREEN} opacity="0.6" />
 
         <SvgText x="150" y="15" textAnchor="middle" fontSize="11" fontWeight="600" fill={colors.sub}>
-          サポート＆レジスタンスの概念
+          {L.srTitle}
         </SvgText>
 
-        <SvgText x="110" y="75" textAnchor="middle" fontSize="9" fill={RED}>反落↓</SvgText>
-        <SvgText x="240" y="140" textAnchor="middle" fontSize="9" fill={GREEN}>反発↑</SvgText>
+        <SvgText x="110" y="75" textAnchor="middle" fontSize="9" fill={RED}>{L.rejectDown}</SvgText>
+        <SvgText x="240" y="140" textAnchor="middle" fontSize="9" fill={GREEN}>{L.bounceUp}</SvgText>
       </Svg>
     </View>
   );
 }
 
-function LotSizeDiagram({ isDark }: { isDark: boolean }) {
+function LotSizeDiagram({ isDark, L }: { isDark: boolean; L: DiagramText }) {
   const colors = diagramColors(isDark);
   return (
     <View style={diagramWrap}>
       <Svg width={300} height={160} viewBox="0 0 300 160">
         <SvgText x="150" y="15" textAnchor="middle" fontSize="11" fontWeight="600" fill={colors.sub}>
-          ロットサイズ比較
+          {L.lotTitle}
         </SvgText>
 
         <Rect x="20" y="30" width="260" height="28" rx="6" fill={BLUE} opacity="0.25" />
         <Rect x="20" y="30" width="260" height="28" rx="6" stroke={BLUE} strokeWidth="1" fill="none" />
-        <SvgText x="150" y="48" textAnchor="middle" fontSize="11" fontWeight="600" fill={colors.text}>
-          1 ロット = 100,000通貨 → 1pipあたり ≈ ¥1,000
+        <SvgText x="150" y="48" textAnchor="middle" fontSize="10" fontWeight="600" fill={colors.text}>
+          {L.lot1}
         </SvgText>
 
         <Rect x="20" y="70" width="130" height="28" rx="6" fill={BLUE} opacity="0.15" />
         <Rect x="20" y="70" width="130" height="28" rx="6" stroke={BLUE} strokeWidth="1" fill="none" />
         <SvgText x="85" y="88" textAnchor="middle" fontSize="10" fontWeight="600" fill={colors.text}>
-          0.1 ロット → ≈ ¥100/pip
+          {L.lot01}
         </SvgText>
 
         <Rect x="20" y="110" width="52" height="28" rx="6" fill={BLUE} opacity="0.08" />
         <Rect x="20" y="110" width="52" height="28" rx="6" stroke={BLUE} strokeWidth="1" fill="none" />
         <SvgText x="46" y="128" textAnchor="middle" fontSize="9" fontWeight="600" fill={colors.text}>0.01</SvgText>
-        <SvgText x="90" y="128" fontSize="10" fill={colors.sub}>→ ≈ ¥10/pip（初心者推奨）</SvgText>
+        <SvgText x="90" y="128" fontSize="10" fill={colors.sub}>{L.lot001}</SvgText>
       </Svg>
     </View>
   );
@@ -458,25 +592,27 @@ const diagramWrap = {
 function DiagramBlock({
   name,
   isDark,
+  L,
 }: {
   name: string;
   isDark: boolean;
+  L: DiagramText;
 }) {
   switch (name) {
     case 'candlestick':
-      return <CandlestickDiagram isDark={isDark} />;
+      return <CandlestickDiagram isDark={isDark} L={L} />;
     case 'currency_flow':
-      return <CurrencyFlowDiagram isDark={isDark} />;
+      return <CurrencyFlowDiagram isDark={isDark} L={L} />;
     case 'pip_calculation':
-      return <PipCalculationDiagram isDark={isDark} />;
+      return <PipCalculationDiagram isDark={isDark} L={L} />;
     case 'order_types':
-      return <OrderTypesDiagram isDark={isDark} />;
+      return <OrderTypesDiagram isDark={isDark} L={L} />;
     case 'spread':
-      return <SpreadDiagram isDark={isDark} />;
+      return <SpreadDiagram isDark={isDark} L={L} />;
     case 'support_resistance':
-      return <SupportResistanceDiagram isDark={isDark} />;
+      return <SupportResistanceDiagram isDark={isDark} L={L} />;
     case 'lot_size':
-      return <LotSizeDiagram isDark={isDark} />;
+      return <LotSizeDiagram isDark={isDark} L={L} />;
     default:
       return null;
   }
@@ -490,10 +626,19 @@ type Props = {
   text: string;
   c: ThemeColors;
   isDark: boolean;
+  lang?: MdLang;
 };
 
-export function EnhancedMarkdown({ text, c, isDark }: Props) {
+const BOX_LABEL_KEY: Record<BoxKind, keyof DiagramText> = {
+  tip: 'boxTip',
+  warning: 'boxWarning',
+  key: 'boxKey',
+  example: 'boxExample',
+};
+
+export function EnhancedMarkdown({ text, c, isDark, lang = 'en' }: Props) {
   const styles = useMemo(() => makeStyles(c), [c]);
+  const L = diagramText(lang);
   if (!text) return null;
 
   const lines = text.split('\n');
@@ -529,6 +674,7 @@ export function EnhancedMarkdown({ text, c, isDark }: Props) {
           text={body}
           c={c}
           isDark={isDark}
+          label={L[BOX_LABEL_KEY[blockType]]}
         />,
       );
     }
@@ -557,7 +703,7 @@ export function EnhancedMarkdown({ text, c, isDark }: Props) {
     if (diagram) {
       flushList();
       elements.push(
-        <DiagramBlock key={`d-${i}`} name={diagram[1]} isDark={isDark} />,
+        <DiagramBlock key={`d-${i}`} name={diagram[1]} isDark={isDark} L={L} />,
       );
       return;
     }

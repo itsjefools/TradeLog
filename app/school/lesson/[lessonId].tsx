@@ -184,7 +184,7 @@ export default function LessonDetailScreen() {
 
         <View style={styles.contentWrap}>
           {content ? (
-            <EnhancedMarkdown text={content} c={c} isDark={isDark} />
+            <EnhancedMarkdown text={content} c={c} isDark={isDark} lang={lang} />
           ) : (
             <View style={styles.comingCard}>
               <Text style={styles.comingEmoji}>📝</Text>

@@ -800,6 +800,8 @@ export default {
     save: 'Guardar en Fotos',
     netPnl: 'P&L neto',
     winRate: 'Tasa de acierto',
+    profitFactor: 'FL',
+    verified: 'Verificado',
     trades: 'Operaciones',
     bestPair: 'Mejor par',
     tradesUnit: '',

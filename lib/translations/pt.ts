@@ -799,6 +799,8 @@ export default {
     save: 'Salvar nas Fotos',
     netPnl: 'P&L líquido',
     winRate: 'Taxa de acerto',
+    profitFactor: 'FL',
+    verified: 'Verificado',
     trades: 'Operações',
     bestPair: 'Melhor par',
     tradesUnit: '',

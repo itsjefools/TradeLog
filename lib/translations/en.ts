@@ -793,6 +793,8 @@ export default {
     save: 'Save to Photos',
     netPnl: 'Net P&L',
     winRate: 'Win Rate',
+    profitFactor: 'PF',
+    verified: 'Verified',
     trades: 'Trades',
     bestPair: 'Best Pair',
     tradesUnit: '',

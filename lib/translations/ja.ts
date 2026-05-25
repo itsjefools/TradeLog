@@ -849,6 +849,8 @@ export default {
     save: '写真に保存',
     netPnl: '純損益',
     winRate: '勝率',
+    profitFactor: 'PF',
+    verified: '検証済み',
     trades: '取引数',
     bestPair: 'ベスト銘柄',
     tradesUnit: '件',

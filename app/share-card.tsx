@@ -43,6 +43,8 @@ type CardStats = {
   hasPnl: boolean;
   winRate: number | null;
   bestPair: string | null;
+  profitFactor: number | null;
+  verified: boolean;
   curve: number[];
 };
 
@@ -82,6 +84,20 @@ function computeCardStats(trades: Trade[]): CardStats {
     }
   }
 
+  // プロフィットファクター（総利益 / 総損失）
+  const grossWin = withPnl
+    .filter((t) => (t.pnl ?? 0) > 0)
+    .reduce((s, t) => s + (t.pnl ?? 0), 0);
+  const grossLoss = Math.abs(
+    withPnl.filter((t) => (t.pnl ?? 0) < 0).reduce((s, t) => s + (t.pnl ?? 0), 0),
+  );
+  const profitFactor =
+    grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Infinity : null;
+
+  // 検証済み: 期間内取引がすべて MT5 取込由来か
+  const verified =
+    trades.length > 0 && trades.every((t) => t.source === 'mt5_import');
+
   // エクイティ曲線: 取引日時順に累積損益（0 始点）
   const sorted = [...withPnl].sort(
     (a, b) => new Date(a.traded_at).getTime() - new Date(b.traded_at).getTime(),
@@ -99,6 +115,8 @@ function computeCardStats(trades: Trade[]): CardStats {
     hasPnl: withPnl.length > 0,
     winRate,
     bestPair,
+    profitFactor,
+    verified,
     curve,
   };
 }
@@ -304,7 +322,15 @@ export default function ShareCardScreen() {
             <View style={styles.card}>
               {/* 上部: 期間 + ロゴ */}
               <View style={styles.cardTop}>
-                <Text style={styles.periodLabel}>{periodLabel}</Text>
+                <View style={styles.periodWrap}>
+                  <Text style={styles.periodLabel}>{periodLabel}</Text>
+                  {stats.verified ? (
+                    <View style={styles.verifiedPill}>
+                      <Ionicons name="shield-checkmark" size={11} color={ACCENT_GREEN} />
+                      <Text style={styles.verifiedText}>{t('shareCard.verified')}</Text>
+                    </View>
+                  ) : null}
+                </View>
                 <View style={styles.logoRow}>
                   <Text style={styles.logoTrade}>Trade</Text>
                   <Text style={styles.logoLog}>Log</Text>
@@ -340,6 +366,17 @@ export default function ShareCardScreen() {
                     {stats.winRate === null ? '—' : `${stats.winRate}%`}
                   </Text>
                   <Text style={styles.statLabel}>{t('shareCard.winRate')}</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>
+                    {stats.profitFactor === null
+                      ? '—'
+                      : stats.profitFactor === Infinity
+                        ? '∞'
+                        : stats.profitFactor.toFixed(2)}
+                  </Text>
+                  <Text style={styles.statLabel}>{t('shareCard.profitFactor')}</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statBox}>
@@ -467,12 +504,28 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'space-between',
     },
+    periodWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     periodLabel: {
       fontSize: 13,
       fontWeight: '700',
       color: ACCENT_INDIGO,
       letterSpacing: 0.5,
       textTransform: 'uppercase',
+    },
+    verifiedPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 999,
+      backgroundColor: 'rgba(16,185,129,0.12)',
+    },
+    verifiedText: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: ACCENT_GREEN,
+      letterSpacing: 0.3,
     },
     logoRow: { flexDirection: 'row', alignItems: 'baseline' },
     logoTrade: { fontSize: 16, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.3 },
@@ -511,7 +564,7 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: 'rgba(255,255,255,0.12)',
     },
     statValue: {
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: '800',
       color: '#FFFFFF',
       fontVariant: ['tabular-nums'],

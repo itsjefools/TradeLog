@@ -224,6 +224,7 @@ export default {
     avg_loss: 'Avg Loss',
     max_win: 'Max Win',
     max_loss: 'Max Loss',
+    max_drawdown: 'Max Drawdown',
     win_streak: 'Win Streak',
     lose_streak: 'Lose Streak',
     by_pair: 'By Pair',

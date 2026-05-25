@@ -17,6 +17,7 @@ export type TradeStats = {
   profitFactor: number;
   maxWin: number;
   maxLoss: number;
+  maxDrawdown: number;
   winStreak: number;
   loseStreak: number;
   byPair: { pair: string; trades: number; pnl: number; winRate: number }[];
@@ -35,6 +36,7 @@ const EMPTY_STATS: TradeStats = {
   profitFactor: 0,
   maxWin: 0,
   maxLoss: 0,
+  maxDrawdown: 0,
   winStreak: 0,
   loseStreak: 0,
   byPair: [],
@@ -140,6 +142,15 @@ export function useTradeStats(period: StatsPeriod = 'all') {
       return { date: t.traded_at.slice(0, 10), cumulative };
     });
 
+    // 最大ドローダウン: 累積エクイティのピークからの最大下落幅
+    let peak = 0;
+    let maxDrawdown = 0;
+    for (const p of pnlCurve) {
+      if (p.cumulative > peak) peak = p.cumulative;
+      const dd = peak - p.cumulative;
+      if (dd > maxDrawdown) maxDrawdown = dd;
+    }
+
     return {
       totalTrades: list.length,
       winRate: (wins.length / list.length) * 100,
@@ -152,6 +163,7 @@ export function useTradeStats(period: StatsPeriod = 'all') {
         totalLoss > 0 ? totalWin / totalLoss : totalWin > 0 ? Infinity : 0,
       maxWin: wins.length > 0 ? Math.max(...wins.map(pnlOf)) : 0,
       maxLoss: losses.length > 0 ? Math.min(...losses.map(pnlOf)) : 0,
+      maxDrawdown,
       winStreak: maxWinStreak,
       loseStreak: maxLoseStreak,
       byPair: Array.from(pairMap.entries())

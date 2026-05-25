@@ -186,6 +186,14 @@ export default function TradeStatsScreen() {
                 value={`${stats.loseStreak}`}
               />
             </View>
+            <View style={styles.cardRow}>
+              <StatCard
+                label={t('stats.max_drawdown')}
+                value={fmt(-stats.maxDrawdown)}
+                color={stats.maxDrawdown > 0 ? c.loss : undefined}
+              />
+              <View style={{ flex: 1 }} />
+            </View>
 
             {/* 通貨ペア別 */}
             <Text style={styles.sectionLabel}>{t('stats.by_pair')}</Text>

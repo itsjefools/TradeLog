@@ -285,6 +285,7 @@ export default {
     avg_loss: '平均損失',
     max_win: '最大利益',
     max_loss: '最大損失',
+    max_drawdown: '最大ドローダウン',
     win_streak: '最大連勝',
     lose_streak: '最大連敗',
     by_pair: '通貨ペア別',

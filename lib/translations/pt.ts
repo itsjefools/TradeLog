@@ -228,6 +228,7 @@ export default {
     avg_loss: 'Perda Média',
     max_win: 'Maior Ganho',
     max_loss: 'Maior Perda',
+    max_drawdown: 'Drawdown máx.',
     win_streak: 'Sequência de Ganhos',
     lose_streak: 'Sequência de Perdas',
     by_pair: 'Por Par',

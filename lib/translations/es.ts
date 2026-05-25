@@ -229,6 +229,7 @@ export default {
     avg_loss: 'Pérdida Media',
     max_win: 'Mayor Ganancia',
     max_loss: 'Mayor Pérdida',
+    max_drawdown: 'Drawdown máx.',
     win_streak: 'Racha Ganadora',
     lose_streak: 'Racha Perdedora',
     by_pair: 'Por Par',

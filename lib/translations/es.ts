@@ -97,6 +97,8 @@ export default {
     title: 'Nueva operación',
     subtitle: 'Registra la operación de hoy',
     importMt5: 'Importar MT5',
+    tiltTitle: '{{count}} pérdidas seguidas',
+    tiltBody: 'Respira y revisa tus reglas de trading. Evita forzar la próxima entrada.',
     dateLabel: 'Fecha',
     doneButton: 'Listo',
     pairLabel: 'Par de divisas',

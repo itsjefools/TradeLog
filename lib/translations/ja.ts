@@ -154,6 +154,8 @@ export default {
     title: '取引記録',
     subtitle: '今日のトレードを記録しましょう',
     importMt5: 'MT5取込',
+    tiltTitle: '{{count}}連敗中です',
+    tiltBody: '一度落ち着いて、トレードルールを再確認しましょう。無理なエントリーは禁物です。',
     dateLabel: '取引日',
     doneButton: '完了',
     pairLabel: '通貨ペア',

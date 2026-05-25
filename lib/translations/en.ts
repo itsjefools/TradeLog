@@ -94,6 +94,8 @@ export default {
     title: 'New Trade',
     subtitle: "Log today's trade",
     importMt5: 'Import MT5',
+    tiltTitle: '{{count}} losses in a row',
+    tiltBody: 'Take a breath and review your trading rules. Avoid forcing the next entry.',
     dateLabel: 'Trade date',
     doneButton: 'Done',
     pairLabel: 'Currency pair',

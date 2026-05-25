@@ -85,6 +85,7 @@ export default function RecordScreen() {
   const [loading, setLoading] = useState(false);
   const [pairSearch, setPairSearch] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const [tiltDismissed, setTiltDismissed] = useState(false);
 
   // カレンダーから日付パラメータが渡されたら反映（URL変更時）
   useEffect(() => {
@@ -117,6 +118,23 @@ export default function RecordScreen() {
 
   const isOverFreeLimit =
     plan === 'free' && monthlyTradeCount >= FREE_LIMITS.monthlyTrades;
+
+  // 連敗ティルト検知: 直近の取引から連続する負けを数える
+  const lossStreak = useMemo(() => {
+    const sorted = trades
+      .filter((tr) => tr.result !== null)
+      .sort(
+        (a, b) =>
+          new Date(b.traded_at).getTime() - new Date(a.traded_at).getTime(),
+      );
+    let n = 0;
+    for (const tr of sorted) {
+      if (tr.result === 'loss') n += 1;
+      else break;
+    }
+    return n;
+  }, [trades]);
+  const showTilt = lossStreak >= 3 && !tiltDismissed;
 
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -353,6 +371,21 @@ export default function RecordScreen() {
           automaticallyAdjustKeyboardInsets
           bounces={false}
         >
+          {showTilt && (
+            <View style={styles.tiltBanner}>
+              <Ionicons name="warning-outline" size={20} color={c.loss} />
+              <View style={styles.flex}>
+                <Text style={styles.tiltTitle}>
+                  {t('record.tiltTitle', { count: lossStreak })}
+                </Text>
+                <Text style={styles.tiltBody}>{t('record.tiltBody')}</Text>
+              </View>
+              <Pressable onPress={() => setTiltDismissed(true)} hitSlop={10}>
+                <Ionicons name="close" size={18} color={c.textSecondary} />
+              </Pressable>
+            </View>
+          )}
+
           <View style={styles.section}>
             <Text style={styles.label}>{t('record.dateLabel')}</Text>
             <Pressable
@@ -904,6 +937,19 @@ function makeStyles(c: ThemeColors) {
   section: {
     marginBottom: 16,
   },
+  tiltBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: c.loss + '18',
+    borderWidth: 1,
+    borderColor: c.loss + '55',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  tiltTitle: { fontSize: 14, fontWeight: '700', color: c.loss },
+  tiltBody: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
   row: {
     flexDirection: 'row',
     gap: 12,

@@ -241,6 +241,8 @@ export default {
     horizon_month: '今月末',
     horizon_half: '半年後',
     horizon_year: '1年後',
+    heatmapTitle: '取引ヒートマップ',
+    heatmapHint: 'マスをタップでその日の損益を表示（過去1年）',
     pairBreakdown: '通貨ペア別損益',
     winLossRatio: '勝敗比率',
     hourlyPerf: '時間帯別パフォーマンス',

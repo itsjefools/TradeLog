@@ -185,6 +185,8 @@ export default {
     horizon_month: 'Este mes',
     horizon_half: '6 meses',
     horizon_year: '1 año',
+    heatmapTitle: 'Mapa de calor de operaciones',
+    heatmapHint: 'Toca una celda para ver el P&G del día (último año)',
     pairBreakdown: 'P&G por par',
     winLossRatio: 'Ratio victorias/derrotas',
     hourlyPerf: 'Rendimiento por hora',

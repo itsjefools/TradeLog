@@ -184,6 +184,8 @@ export default {
     horizon_month: 'Este mês',
     horizon_half: '6 meses',
     horizon_year: '1 ano',
+    heatmapTitle: 'Mapa de calor de operações',
+    heatmapHint: 'Toque numa célula para ver o L&P do dia (último ano)',
     pairBreakdown: 'L&P por par',
     winLossRatio: 'Razão vitórias/derrotas',
     hourlyPerf: 'Desempenho por hora',

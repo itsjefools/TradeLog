@@ -352,6 +352,13 @@ export default function AnalyticsScreen() {
                     <ProjectionCard trades={trades} currency={profile?.currency} />
                   )}
 
+                  <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+                    {t('analytics.heatmapTitle')}
+                  </Text>
+                  <View style={styles.dataCard}>
+                    <TradeHeatmap trades={trades} currency={profile?.currency} />
+                  </View>
+
                   {pairData.labels.length > 0 && (
                     <>
                       <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
@@ -1553,6 +1560,135 @@ function ProjectionCard({
         </View>
       </View>
     </>
+  );
+}
+
+function ymdKey(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+// GitHub風の年間ヒートマップ（日別損益を色分け）
+function TradeHeatmap({
+  trades,
+  currency,
+}: {
+  trades: Trade[];
+  currency?: string | null;
+}) {
+  const c = useThemeColors();
+  const { t, locale } = useI18n();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const [sel, setSel] = useState<{ key: string; pnl: number; date: Date } | null>(
+    null,
+  );
+
+  const { weeks, maxAbs } = useMemo(() => {
+    const byDay = new Map<string, number>();
+    for (const tr of trades) {
+      if (tr.pnl === null) continue;
+      const d = new Date(tr.traded_at);
+      const k = ymdKey(d);
+      byDay.set(k, (byDay.get(k) ?? 0) + tr.pnl);
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(today);
+    start.setDate(start.getDate() - 364);
+    start.setDate(start.getDate() - start.getDay()); // 週初(日曜)に揃える
+    const ws: { date: Date; key: string; pnl: number | null }[][] = [];
+    const cur = new Date(start);
+    let mAbs = 1;
+    while (cur <= today) {
+      const week: { date: Date; key: string; pnl: number | null }[] = [];
+      for (let d = 0; d < 7; d++) {
+        const k = ymdKey(cur);
+        const isFuture = cur > today;
+        const pnl = !isFuture && byDay.has(k) ? (byDay.get(k) as number) : null;
+        if (pnl !== null) mAbs = Math.max(mAbs, Math.abs(pnl));
+        week.push({ date: new Date(cur), key: k, pnl: isFuture ? null : pnl });
+        cur.setDate(cur.getDate() + 1);
+      }
+      ws.push(week);
+    }
+    return { weeks: ws, maxAbs: mAbs };
+  }, [trades]);
+
+  const cellColor = (pnl: number | null) => {
+    if (pnl === null) return c.surfaceAlt;
+    if (pnl === 0) return c.border;
+    const ratio = Math.min(1, Math.abs(pnl) / maxAbs);
+    const level = ratio > 0.66 ? 0.95 : ratio > 0.33 ? 0.65 : 0.38;
+    return withOpacity(pnl > 0 ? c.win : c.loss, level);
+  };
+
+  const CELL = 12;
+  const GAP = 3;
+
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 22, marginBottom: 6, gap: 8 }}>
+        {sel ? (
+          <>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: c.textSecondary }}>
+              {formatDate(sel.date, locale)}
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '800',
+                color: sel.pnl >= 0 ? c.win : c.loss,
+                fontVariant: ['tabular-nums'],
+              }}
+            >
+              {formatPnl(sel.pnl, currency)}
+            </Text>
+          </>
+        ) : (
+          <Text style={{ fontSize: 12, color: c.textSecondary }}>
+            {t('analytics.heatmapHint')}
+          </Text>
+        )}
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} ref={(r) => r?.scrollToEnd?.({ animated: false })}>
+        <View style={{ flexDirection: 'row', gap: GAP }}>
+          {weeks.map((week, wi) => (
+            <View key={wi} style={{ gap: GAP }}>
+              {week.map((day) => {
+                const active = sel?.key === day.key;
+                return (
+                  <Pressable
+                    key={day.key}
+                    onPress={() =>
+                      day.pnl !== null
+                        ? setSel(active ? null : { key: day.key, pnl: day.pnl, date: day.date })
+                        : setSel(null)
+                    }
+                    style={{
+                      width: CELL,
+                      height: CELL,
+                      borderRadius: 3,
+                      backgroundColor: cellColor(day.pnl),
+                      borderWidth: active ? 1.5 : 0,
+                      borderColor: c.textPrimary,
+                    }}
+                  />
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+      {/* 凡例 */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 10 }}>
+        <Text style={{ fontSize: 10, color: c.textSecondary }}>{t('analytics.lossLabel')}</Text>
+        <View style={{ width: CELL, height: CELL, borderRadius: 3, backgroundColor: withOpacity(c.loss, 0.95) }} />
+        <View style={{ width: CELL, height: CELL, borderRadius: 3, backgroundColor: withOpacity(c.loss, 0.4) }} />
+        <View style={{ width: CELL, height: CELL, borderRadius: 3, backgroundColor: c.surfaceAlt }} />
+        <View style={{ width: CELL, height: CELL, borderRadius: 3, backgroundColor: withOpacity(c.win, 0.4) }} />
+        <View style={{ width: CELL, height: CELL, borderRadius: 3, backgroundColor: withOpacity(c.win, 0.95) }} />
+        <Text style={{ fontSize: 10, color: c.textSecondary }}>{t('analytics.winLabel')}</Text>
+      </View>
+    </View>
   );
 }
 

@@ -180,6 +180,8 @@ export default {
     horizon_month: 'This month',
     horizon_half: '6 months',
     horizon_year: '1 year',
+    heatmapTitle: 'Trade heatmap',
+    heatmapHint: 'Tap a cell to see that day’s P&L (past year)',
     pairBreakdown: 'P&L by pair',
     winLossRatio: 'Win/Loss ratio',
     hourlyPerf: 'Performance by hour',

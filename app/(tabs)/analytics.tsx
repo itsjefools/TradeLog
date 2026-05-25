@@ -125,10 +125,6 @@ export default function AnalyticsScreen() {
     [monthlyTrades, monthInfo],
   );
 
-  const projection = useMemo(
-    () => buildProjection(monthlyTrades, monthInfo, monthOffset === 0),
-    [monthlyTrades, monthInfo, monthOffset],
-  );
 
   const pairData = useMemo(() => buildPairPnl(monthlyTrades), [monthlyTrades]);
 
@@ -352,50 +348,8 @@ export default function AnalyticsScreen() {
                     <DailyBars data={dailyData} currency={profile?.currency} />
                   </View>
 
-                  {projection && projection.today < projection.lastDay && (
-                    <>
-                      <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
-                        {t('analytics.projectionTitle')}
-                      </Text>
-                      <View style={styles.dataCard}>
-                        <Text style={styles.projCaption}>
-                          {t('analytics.projectionCaption')}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.projValue,
-                            {
-                              color:
-                                projection.projectedEnd >= 0 ? c.win : c.loss,
-                            },
-                          ]}
-                        >
-                          {formatPnl(projection.projectedEnd, profile?.currency)}
-                        </Text>
-                        <ProjectionChart
-                          proj={projection}
-                          color={projection.projectedEnd >= 0 ? c.win : c.loss}
-                        />
-                        <View style={styles.projChips}>
-                          <View style={styles.projChip}>
-                            <Text style={styles.projChipLabel}>
-                              {t('analytics.current')}
-                            </Text>
-                            <Text style={styles.projChipValue}>
-                              {formatPnl(projection.currentTotal, profile?.currency)}
-                            </Text>
-                          </View>
-                          <View style={styles.projChip}>
-                            <Text style={styles.projChipLabel}>
-                              {t('analytics.projectionPaceLabel')}
-                            </Text>
-                            <Text style={styles.projChipValue}>
-                              {formatPnl(projection.perDay, profile?.currency)}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    </>
+                  {monthOffset === 0 && (
+                    <ProjectionCard trades={trades} currency={profile?.currency} />
                   )}
 
                   {pairData.labels.length > 0 && (
@@ -1408,76 +1362,92 @@ function buildDailyPnl(monthly: Trade[], range: MonthRange) {
   };
 }
 
-type Projection = {
-  actual: number[]; // 1日目..今日 の累積損益
-  today: number; // 今日の日付(当月) もしくは月末
-  lastDay: number; // 当月の日数
-  currentTotal: number; // 今日時点の累積
-  projectedEnd: number; // 月末予測
-  perDay: number; // 1日あたりの平均
-};
+type Horizon = 'week' | 'month' | 'half' | 'year';
 
-function buildProjection(
-  monthly: Trade[],
-  range: MonthRange,
-  isCurrentMonth: boolean,
-): Projection | null {
-  const lastDay = new Date(
-    range.end.getTime() - 24 * 60 * 60 * 1000,
-  ).getDate();
-  const today = isCurrentMonth
-    ? Math.min(new Date().getDate(), lastDay)
-    : lastDay;
+const HORIZONS: Horizon[] = ['week', 'month', 'half', 'year'];
 
-  const dayPnl = new Map<number, number>();
-  for (const t of monthly) {
-    if (t.pnl === null) continue;
-    const day = new Date(t.traded_at).getDate();
-    dayPnl.set(day, (dayPnl.get(day) ?? 0) + t.pnl);
+function horizonEnd(h: Horizon): Date {
+  const now = new Date();
+  if (h === 'week') {
+    const d = new Date(now);
+    const daysToSun = (7 - d.getDay()) % 7;
+    d.setDate(d.getDate() + daysToSun);
+    d.setHours(23, 59, 59, 0);
+    return d;
   }
-  // 取引が無い、または当月でない(=予測不要)なら null
-  if (dayPnl.size === 0 || today < 1) return null;
-
-  const actual: number[] = [];
-  let acc = 0;
-  for (let d = 1; d <= today; d++) {
-    acc += dayPnl.get(d) ?? 0;
-    actual.push(acc);
+  if (h === 'month') {
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   }
-  const currentTotal = acc;
-  const perDay = currentTotal / today;
-  const projectedEnd = perDay * lastDay;
-  return { actual, today, lastDay, currentTotal, projectedEnd, perDay };
+  if (h === 'half') {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() + 6);
+    return d;
+  }
+  const d = new Date(now);
+  d.setFullYear(d.getFullYear() + 1);
+  return d;
 }
 
-function ProjectionChart({
-  proj,
-  color,
-}: {
-  proj: Projection;
-  color: string;
-}) {
+type Projection = {
+  curve: { x: number; v: number }[]; // x=timestamp(ms), v=累積損益
+  currentTotal: number;
+  projectedTotal: number;
+  pacePerDay: number;
+  startMs: number;
+  nowMs: number;
+  horizonMs: number;
+};
+
+const DAY_MS = 86_400_000;
+
+function buildProjection(trades: Trade[], h: Horizon): Projection | null {
+  const withPnl = trades
+    .filter((t) => t.pnl !== null)
+    .sort(
+      (a, b) =>
+        new Date(a.traded_at).getTime() - new Date(b.traded_at).getTime(),
+    );
+  if (withPnl.length < 2) return null;
+
+  const nowMs = Date.now();
+  let acc = 0;
+  const curve = withPnl.map((t) => {
+    acc += t.pnl ?? 0;
+    return { x: new Date(t.traded_at).getTime(), v: acc };
+  });
+  const startMs = curve[0].x;
+  const currentTotal = acc;
+  const spanDays = Math.max(1, (nowMs - startMs) / DAY_MS);
+  const pacePerDay = currentTotal / spanDays;
+  const horizonMs = horizonEnd(h).getTime();
+  const daysAhead = Math.max(0, (horizonMs - nowMs) / DAY_MS);
+  const projectedTotal = currentTotal + pacePerDay * daysAhead;
+  return { curve, currentTotal, projectedTotal, pacePerDay, startMs, nowMs, horizonMs };
+}
+
+function ProjectionChart({ proj, color }: { proj: Projection; color: string }) {
   const W = SCREEN_WIDTH - 64;
-  const H = 120;
+  const H = 130;
   const pad = 6;
   const innerH = H - pad * 2;
 
-  // 実績点 + 予測終点(月末)を結ぶ
-  const actualPts = proj.actual.map((v, i) => ({ day: i + 1, v }));
-  const all = [...proj.actual, proj.projectedEnd, 0];
-  const min = Math.min(...all);
-  const max = Math.max(...all);
+  const spanX = Math.max(1, proj.horizonMs - proj.startMs);
+  const xAt = (ms: number) => ((ms - proj.startMs) / spanX) * W;
+
+  const vals = proj.curve.map((p) => p.v);
+  const min = Math.min(0, ...vals, proj.projectedTotal);
+  const max = Math.max(0, ...vals, proj.projectedTotal);
   const range = max - min || 1;
-  const xAt = (day: number) =>
-    proj.lastDay <= 1 ? 0 : ((day - 1) / (proj.lastDay - 1)) * W;
   const yAt = (v: number) => pad + innerH - ((v - min) / range) * innerH;
 
-  const actualLine = actualPts
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.day).toFixed(1)},${yAt(p.v).toFixed(1)}`)
-    .join(' ');
-  const lastActual = actualPts[actualPts.length - 1];
-  const projLine = `M${xAt(lastActual.day).toFixed(1)},${yAt(lastActual.v).toFixed(1)} L${xAt(proj.lastDay).toFixed(1)},${yAt(proj.projectedEnd).toFixed(1)}`;
+  // 実績(最終トレード→現在は横ばい)
+  const actualLine =
+    proj.curve
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.x).toFixed(1)},${yAt(p.v).toFixed(1)}`)
+      .join(' ') + ` L${xAt(proj.nowMs).toFixed(1)},${yAt(proj.currentTotal).toFixed(1)}`;
+  const projLine = `M${xAt(proj.nowMs).toFixed(1)},${yAt(proj.currentTotal).toFixed(1)} L${xAt(proj.horizonMs).toFixed(1)},${yAt(proj.projectedTotal).toFixed(1)}`;
   const zeroY = yAt(0);
+  const nowX = xAt(proj.nowMs);
 
   return (
     <Svg width={W} height={H}>
@@ -1495,15 +1465,94 @@ function ProjectionChart({
           strokeDasharray="3 4"
         />
       ) : null}
+      {/* 現在の縦線 */}
       <Path
-        d={`${actualLine} L${xAt(lastActual.day).toFixed(1)},${(H - pad).toFixed(1)} L0,${(H - pad).toFixed(1)} Z`}
+        d={`M${nowX.toFixed(1)},${pad} L${nowX.toFixed(1)},${H - pad}`}
+        stroke="rgba(127,127,127,0.3)"
+        strokeWidth={1}
+        strokeDasharray="2 3"
+      />
+      <Path
+        d={`${actualLine} L${nowX.toFixed(1)},${(H - pad).toFixed(1)} L0,${(H - pad).toFixed(1)} Z`}
         fill="url(#projFill)"
       />
       <Path d={actualLine} stroke={color} strokeWidth={2.5} fill="none" strokeLinejoin="round" />
       <Path d={projLine} stroke={color} strokeWidth={2.5} strokeDasharray="5 5" fill="none" opacity={0.7} />
-      <Circle cx={xAt(lastActual.day)} cy={yAt(lastActual.v)} r={3.5} fill={color} />
-      <Circle cx={xAt(proj.lastDay)} cy={yAt(proj.projectedEnd)} r={4} fill={color} opacity={0.5} />
+      <Circle cx={nowX} cy={yAt(proj.currentTotal)} r={3.5} fill={color} />
+      <Circle cx={xAt(proj.horizonMs)} cy={yAt(proj.projectedTotal)} r={4.5} fill={color} opacity={0.55} />
     </Svg>
+  );
+}
+
+function ProjectionCard({
+  trades,
+  currency,
+}: {
+  trades: Trade[];
+  currency?: string | null;
+}) {
+  const c = useThemeColors();
+  const { t } = useI18n();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const [horizon, setHorizon] = useState<Horizon>('month');
+  const proj = useMemo(() => buildProjection(trades, horizon), [trades, horizon]);
+
+  if (!proj) return null;
+  const color = proj.projectedTotal >= 0 ? c.win : c.loss;
+
+  return (
+    <>
+      <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+        {t('analytics.projectionTitle')}
+      </Text>
+      <View style={styles.dataCard}>
+        <View style={styles.projHorizonRow}>
+          {HORIZONS.map((h) => {
+            const active = horizon === h;
+            return (
+              <Pressable
+                key={h}
+                onPress={() => setHorizon(h)}
+                style={[
+                  styles.projHorizonChip,
+                  { backgroundColor: active ? c.accent : c.surfaceAlt },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.projHorizonText,
+                    { color: active ? '#fff' : c.textSecondary },
+                  ]}
+                >
+                  {t(`analytics.horizon_${h}`)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={styles.projCaption}>{t('analytics.projectionCaption')}</Text>
+        <Text style={[styles.projValue, { color }]}>
+          {formatPnl(proj.projectedTotal, currency)}
+        </Text>
+        <ProjectionChart proj={proj} color={color} />
+        <View style={styles.projChips}>
+          <View style={styles.projChip}>
+            <Text style={styles.projChipLabel}>{t('analytics.current')}</Text>
+            <Text style={styles.projChipValue}>
+              {formatPnl(proj.currentTotal, currency)}
+            </Text>
+          </View>
+          <View style={styles.projChip}>
+            <Text style={styles.projChipLabel}>
+              {t('analytics.projectionPaceLabel')}
+            </Text>
+            <Text style={styles.projChipValue}>
+              {formatPnl(proj.pacePerDay, currency)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </>
   );
 }
 
@@ -1781,6 +1830,18 @@ function makeStyles(c: ThemeColors) {
       marginBottom: 12,
       fontVariant: ['tabular-nums'],
     },
+    projHorizonRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 14,
+    },
+    projHorizonChip: {
+      flex: 1,
+      paddingVertical: 8,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+    projHorizonText: { fontSize: 12, fontWeight: '700' },
     projChips: {
       flexDirection: 'row',
       gap: 10,

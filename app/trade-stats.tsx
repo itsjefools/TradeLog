@@ -10,7 +10,15 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  Line,
+  LinearGradient,
+  Path,
+  Stop,
+  Text as SvgText,
+} from 'react-native-svg';
 
 import { EmptyState } from '@/components/empty-state';
 import { PremiumGate } from '@/components/premium-gate';
@@ -139,7 +147,7 @@ export default function TradeStatsScreen() {
             {/* 損益カーブ */}
             <Text style={styles.sectionLabel}>{t('stats.pnl_curve')}</Text>
             <View style={styles.chartCard}>
-              <PnlCurve curve={stats.pnlCurve} isDark={isDark} c={c} />
+              <PnlCurve curve={stats.pnlCurve} isDark={isDark} c={c} fmt={fmt} />
             </View>
 
             {/* 詳細統計 */}
@@ -274,14 +282,31 @@ function StatCard({
   );
 }
 
+function compactSigned(n: number): string {
+  const abs = Math.abs(n);
+  let s: string;
+  if (abs >= 1_000_000) s = `${(n / 1_000_000).toFixed(1)}M`;
+  else if (abs >= 1_000) s = `${(n / 1_000).toFixed(1)}k`;
+  else s = String(Math.round(n));
+  return n > 0 ? `+${s}` : s;
+}
+
+function shortDate(raw: string): string {
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 function PnlCurve({
   curve,
   isDark,
   c,
+  fmt,
 }: {
   curve: { date: string; cumulative: number }[];
   isDark: boolean;
   c: ThemeColors;
+  fmt: (n: number) => string;
 }) {
   if (curve.length < 2) {
     return (
@@ -292,8 +317,8 @@ function PnlCurve({
   }
 
   const W = SCREEN_WIDTH - 40;
-  const H = 170;
-  const pad = { top: 12, bottom: 20, left: 8, right: 8 };
+  const H = 200;
+  const pad = { top: 16, bottom: 26, left: 44, right: 12 };
   const chartW = W - pad.left - pad.right;
   const chartH = H - pad.top - pad.bottom;
 
@@ -302,31 +327,82 @@ function PnlCurve({
   const maxVal = Math.max(0, ...values);
   const range = maxVal - minVal || 1;
 
-  const points = curve.map((p, i) => {
-    const x = pad.left + (i / (curve.length - 1)) * chartW;
-    const y = pad.top + chartH - ((p.cumulative - minVal) / range) * chartH;
-    return { x, y };
-  });
+  const xAt = (i: number) => pad.left + (i / (curve.length - 1)) * chartW;
+  const yAt = (v: number) => pad.top + chartH - ((v - minVal) / range) * chartH;
 
-  const pathD = `M ${points.map((p) => `${p.x},${p.y}`).join(' L ')}`;
+  const points = curve.map((p, i) => ({ x: xAt(i), y: yAt(p.cumulative) }));
+  const lineD = `M ${points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')}`;
+  const areaD = `${lineD} L ${points[points.length - 1].x.toFixed(1)},${(pad.top + chartH).toFixed(1)} L ${points[0].x.toFixed(1)},${(pad.top + chartH).toFixed(1)} Z`;
+
   const last = curve[curve.length - 1].cumulative;
   const lineColor = last >= 0 ? c.win : c.loss;
-  const zeroY = pad.top + chartH - ((0 - minVal) / range) * chartH;
+  const zeroY = yAt(0);
   const lastPoint = points[points.length - 1];
+
+  // ピーク（最大到達点）
+  let peakIdx = 0;
+  for (let i = 1; i < values.length; i++) if (values[i] > values[peakIdx]) peakIdx = i;
+  const peakPoint = points[peakIdx];
+  const showPeak = maxVal > 0 && peakIdx !== curve.length - 1;
+
+  const gridColor = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)';
+  const axisText = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)';
 
   return (
     <Svg width={W} height={H}>
-      <Line
-        x1={pad.left}
-        y1={zeroY}
-        x2={W - pad.right}
-        y2={zeroY}
-        stroke={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}
-        strokeWidth={1}
-        strokeDasharray="4,4"
-      />
-      <Path d={pathD} stroke={lineColor} strokeWidth={2} fill="none" />
-      <Circle cx={lastPoint.x} cy={lastPoint.y} r={4} fill={lineColor} />
+      <Defs>
+        <LinearGradient id="pnlCurveFill" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={lineColor} stopOpacity={0.28} />
+          <Stop offset="1" stopColor={lineColor} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+
+      {/* 上限グリッド + ラベル */}
+      {maxVal > 0 && (
+        <>
+          <Line x1={pad.left} y1={yAt(maxVal)} x2={W - pad.right} y2={yAt(maxVal)} stroke={gridColor} strokeWidth={1} />
+          <SvgText x={pad.left - 6} y={yAt(maxVal) + 3} textAnchor="end" fontSize="9" fill={axisText}>
+            {compactSigned(maxVal)}
+          </SvgText>
+        </>
+      )}
+      {/* ゼロライン */}
+      <Line x1={pad.left} y1={zeroY} x2={W - pad.right} y2={zeroY} stroke={gridColor} strokeWidth={1} strokeDasharray="4,4" />
+      <SvgText x={pad.left - 6} y={zeroY + 3} textAnchor="end" fontSize="9" fill={axisText}>0</SvgText>
+      {/* 下限グリッド + ラベル */}
+      {minVal < 0 && (
+        <>
+          <Line x1={pad.left} y1={yAt(minVal)} x2={W - pad.right} y2={yAt(minVal)} stroke={gridColor} strokeWidth={1} />
+          <SvgText x={pad.left - 6} y={yAt(minVal) + 3} textAnchor="end" fontSize="9" fill={axisText}>
+            {compactSigned(minVal)}
+          </SvgText>
+        </>
+      )}
+
+      <Path d={areaD} fill="url(#pnlCurveFill)" />
+      <Path d={lineD} stroke={lineColor} strokeWidth={2.5} fill="none" strokeLinejoin="round" strokeLinecap="round" />
+
+      {showPeak && (
+        <>
+          <Circle cx={peakPoint.x} cy={peakPoint.y} r={3} fill={c.textSecondary} opacity={0.6} />
+          <SvgText x={peakPoint.x} y={peakPoint.y - 7} textAnchor="middle" fontSize="9" fontWeight="700" fill={axisText}>
+            {compactSigned(maxVal)}
+          </SvgText>
+        </>
+      )}
+
+      <Circle cx={lastPoint.x} cy={lastPoint.y} r={4.5} fill={lineColor} />
+      <SvgText x={lastPoint.x} y={Math.max(pad.top + 8, lastPoint.y - 9)} textAnchor="end" fontSize="11" fontWeight="800" fill={lineColor}>
+        {fmt(last)}
+      </SvgText>
+
+      {/* X軸: 開始日・終了日 */}
+      <SvgText x={pad.left} y={H - 8} textAnchor="start" fontSize="9" fill={axisText}>
+        {shortDate(curve[0].date)}
+      </SvgText>
+      <SvgText x={W - pad.right} y={H - 8} textAnchor="end" fontSize="9" fill={axisText}>
+        {shortDate(curve[curve.length - 1].date)}
+      </SvgText>
     </Svg>
   );
 }

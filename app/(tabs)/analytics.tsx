@@ -961,6 +961,7 @@ function DailyBars({
   const values = data.datasets[0]?.data ?? [];
   const labels = data.labels ?? [];
   const [sel, setSel] = useState<number | null>(null);
+  const total = values.reduce((s, v) => s + v, 0);
 
   const maxV = Math.max(0, ...values);
   const minV = Math.min(0, ...values);
@@ -1014,9 +1015,18 @@ function DailyBars({
             </Text>
           </>
         ) : (
-          <Text style={{ fontSize: 12, color: c.textSecondary }}>
-            {t('analytics.dailyTapHint')}
-          </Text>
+          <>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: total >= 0 ? c.win : c.loss, fontVariant: ['tabular-nums'] }}>
+              {formatPnl(total, currency)}
+            </Text>
+            <View style={{ flex: 1 }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: c.win }} />
+              <Text style={{ fontSize: 10, color: c.textSecondary }}>{t('analytics.winLabel')}</Text>
+              <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: c.loss, marginLeft: 8 }} />
+              <Text style={{ fontSize: 10, color: c.textSecondary }}>{t('analytics.lossLabel')}</Text>
+            </View>
+          </>
         )}
       </View>
 

@@ -603,7 +603,7 @@ export default function UserProfileScreen() {
 
           <ProfileLinks
             website={profile.website}
-            twitter={profile.twitter_handle}
+            youtube={profile.youtube}
           />
 
           {profile.show_badges !== false && showcaseBadges.length > 0 && (

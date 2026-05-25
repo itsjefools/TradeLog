@@ -452,7 +452,7 @@ export default function ProfileScreen() {
 
             <ProfileLinks
               website={profile?.website}
-              twitter={profile?.twitter_handle}
+              youtube={profile?.youtube}
             />
 
             {streak >= 1 && (
@@ -464,42 +464,29 @@ export default function ProfileScreen() {
               </View>
             )}
 
-            <Pressable
-              style={styles.badgesRow}
-              onPress={() => router.push('/badges')}
-            >
-              {badges.map((b) => (
-                <View
-                  key={b.id}
-                  style={[
-                    styles.badgeChip,
-                    { borderColor: tierColor(b.tier) },
-                  ]}
-                >
-                  <Text style={styles.badgeEmoji}>{b.emoji}</Text>
-                  <Text
+            {badges.length > 0 && (
+              <View style={styles.badgesRow}>
+                {badges.map((b) => (
+                  <View
+                    key={b.id}
                     style={[
-                      styles.badgeLabel,
-                      { color: tierColor(b.tier) },
+                      styles.badgeChip,
+                      { borderColor: tierColor(b.tier) },
                     ]}
                   >
-                    {t(b.labelKey, b.labelParams)}
-                  </Text>
-                </View>
-              ))}
-              <View style={styles.badgeManageChip}>
-                <Ionicons
-                  name={badges.length > 0 ? 'create-outline' : 'ribbon-outline'}
-                  size={14}
-                  color={c.textSecondary}
-                />
-                <Text style={styles.badgeManageText}>
-                  {badges.length > 0
-                    ? t('badges.edit')
-                    : t('badges.manageTitle')}
-                </Text>
+                    <Text style={styles.badgeEmoji}>{b.emoji}</Text>
+                    <Text
+                      style={[
+                        styles.badgeLabel,
+                        { color: tierColor(b.tier) },
+                      ]}
+                    >
+                      {t(b.labelKey, b.labelParams)}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            </Pressable>
+            )}
           </View>
 
           <View style={styles.statsRow}>
@@ -737,18 +724,6 @@ function makeStyles(c: ThemeColors) {
     },
     badgeEmoji: { fontSize: 13 },
     badgeLabel: { fontSize: 11, fontWeight: '700' },
-    badgeManageChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 999,
-      borderWidth: 1.5,
-      borderColor: c.border,
-      borderStyle: 'dashed',
-    },
-    badgeManageText: { fontSize: 11, fontWeight: '600', color: c.textSecondary },
     statsRow: {
       flexDirection: 'row',
       backgroundColor: c.surface,

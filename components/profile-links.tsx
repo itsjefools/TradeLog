@@ -16,29 +16,44 @@ function displayWebsite(raw: string): string {
   return raw.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
 }
 
-function normalizeHandle(raw: string): string {
-  return raw.trim().replace(/^@+/, '');
+// YouTube の入力を開けるURLに整える。
+// - フルURL(http/https) はそのまま
+// - @handle は youtube.com/@handle
+// - それ以外は youtube.com/@value とみなす
+function youtubeUrl(raw: string): string {
+  const t = raw.trim();
+  if (/^https?:\/\//i.test(t)) return t;
+  if (/^youtube\.com|^youtu\.be/i.test(t)) return `https://${t}`;
+  const handle = t.replace(/^@+/, '');
+  return `https://youtube.com/@${handle}`;
+}
+
+function displayYoutube(raw: string): string {
+  const t = raw.trim();
+  if (/^https?:\/\//i.test(t) || /^youtube\.com|^youtu\.be/i.test(t)) {
+    return t.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+  }
+  return `@${t.replace(/^@+/, '')}`;
 }
 
 /**
- * プロフィールの Web サイト / X(Twitter) ハンドルをタップ可能なリンクとして表示する。
- * profile-edit で設定した値の閲覧用（バグ#13）。
+ * プロフィールの URL / YouTube をタップ可能なリンクとして表示する。
+ * profile-edit で設定した値の閲覧用。
  */
 export function ProfileLinks({
   website,
-  twitter,
+  youtube,
 }: {
   website?: string | null;
-  twitter?: string | null;
+  youtube?: string | null;
 }) {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
 
   const hasWebsite = !!website && website.trim() !== '';
-  const handle = twitter ? normalizeHandle(twitter) : '';
-  const hasTwitter = handle !== '';
+  const hasYoutube = !!youtube && youtube.trim() !== '';
 
-  if (!hasWebsite && !hasTwitter) return null;
+  if (!hasWebsite && !hasYoutube) return null;
 
   return (
     <View style={styles.row}>
@@ -56,15 +71,15 @@ export function ProfileLinks({
           </Text>
         </Pressable>
       ) : null}
-      {hasTwitter ? (
+      {hasYoutube ? (
         <Pressable
           style={styles.item}
           hitSlop={6}
-          onPress={() => WebBrowser.openBrowserAsync(`https://x.com/${handle}`)}
+          onPress={() => WebBrowser.openBrowserAsync(youtubeUrl(youtube as string))}
         >
-          <Ionicons name="logo-twitter" size={14} color={c.accent} />
+          <Ionicons name="logo-youtube" size={14} color={c.accent} />
           <Text style={styles.text} numberOfLines={1}>
-            @{handle}
+            {displayYoutube(youtube as string)}
           </Text>
         </Pressable>
       ) : null}

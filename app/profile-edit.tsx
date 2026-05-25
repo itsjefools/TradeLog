@@ -49,9 +49,7 @@ export default function ProfileEditScreen() {
   const [username, setUsername] = useState(profile?.username ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [website, setWebsite] = useState(profile?.website ?? '');
-  const [twitterHandle, setTwitterHandle] = useState(
-    profile?.twitter_handle ?? '',
-  );
+  const [youtube, setYoutube] = useState(profile?.youtube ?? '');
   const [tradeStyle, setTradeStyle] = useState<string | null>(
     profile?.trade_style ?? null,
   );
@@ -169,14 +167,7 @@ export default function ProfileEditScreen() {
       );
       return;
     }
-    const cleanedHandle = twitterHandle.trim().replace(/^@+/, '');
-    if (cleanedHandle !== '' && !/^[A-Za-z0-9_]{1,15}$/.test(cleanedHandle)) {
-      Alert.alert(
-        t('profileEdit.inputErrorTitle'),
-        t('profileEdit.inputErrorTwitter'),
-      );
-      return;
-    }
+    const trimmedYoutube = youtube.trim();
     setSaving(true);
     try {
       await updateProfile({
@@ -186,7 +177,7 @@ export default function ProfileEditScreen() {
         trade_style: tradeStyle,
         nationality: nationality?.toUpperCase() ?? null,
         website: trimmedWebsite || null,
-        twitter_handle: cleanedHandle || null,
+        youtube: trimmedYoutube || null,
       });
       router.back();
     } catch (e) {
@@ -324,18 +315,39 @@ export default function ProfileEditScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>{t('profileEdit.twitterLabel')}</Text>
+            <Text style={styles.label}>{t('profileEdit.youtubeLabel')}</Text>
             <TextInput
               style={styles.input}
-              value={twitterHandle}
-              onChangeText={setTwitterHandle}
-              placeholder={t('profileEdit.twitterPlaceholder')}
+              value={youtube}
+              onChangeText={setYoutube}
+              placeholder={t('profileEdit.youtubePlaceholder')}
               placeholderTextColor={c.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
+              keyboardType="url"
               editable={!saving}
             />
-            <Text style={styles.helper}>{t('profileEdit.twitterHelper')}</Text>
+            <Text style={styles.helper}>{t('profileEdit.youtubeHelper')}</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>{t('badges.manageTitle')}</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.navRow,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => router.push('/badges')}
+              disabled={saving}
+            >
+              <Ionicons name="ribbon-outline" size={18} color={c.accent} />
+              <Text style={styles.navRowText}>{t('badges.editShowcase')}</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={c.textSecondary}
+              />
+            </Pressable>
           </View>
 
           <View style={styles.section}>
@@ -525,6 +537,18 @@ function makeStyles(c: ThemeColors) {
     fontSize: 16,
     color: c.textPrimary,
   },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  navRowText: { flex: 1, fontSize: 16, color: c.textPrimary, fontWeight: '500' },
   inputMt: {
     marginTop: 8,
   },

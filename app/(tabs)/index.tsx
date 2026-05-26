@@ -329,6 +329,16 @@ export default function FeedScreen() {
                 <Ionicons name="trophy-outline" size={20} color={c.textPrimary} />
               </Pressable>
             </Link>
+            <Link href="/predictions" asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <Ionicons name="bulb-outline" size={20} color={c.textPrimary} />
+              </Pressable>
+            </Link>
             <Link href="/messages" asChild>
               <Pressable
                 style={({ pressed }) => [

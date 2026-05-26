@@ -216,6 +216,22 @@ function ThemedRoot() {
               }}
             />
             <Stack.Screen
+              name="predictions"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
+              name="prediction-new"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <Stack.Screen
               name="export"
               options={{
                 headerShown: false,

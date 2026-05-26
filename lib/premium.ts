@@ -19,9 +19,17 @@ export const TEST_UNLOCK_PREMIUM = true;
 
 export type Plan = 'free' | 'premium';
 
-export function getPlan(isPremium: boolean | null | undefined): Plan {
+/** 招待リワード等で付与された bonus_premium_until が有効か */
+export function isBonusPremiumActive(bonusUntil?: string | null): boolean {
+  return !!bonusUntil && new Date(bonusUntil).getTime() > Date.now();
+}
+
+export function getPlan(
+  isPremium: boolean | null | undefined,
+  bonusUntil?: string | null,
+): Plan {
   if (TEST_UNLOCK_PREMIUM) return 'premium';
-  return isPremium ? 'premium' : 'free';
+  return isPremium || isBonusPremiumActive(bonusUntil) ? 'premium' : 'free';
 }
 
 export function planLabel(plan: Plan): string {

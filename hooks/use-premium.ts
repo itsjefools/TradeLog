@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { checkPremiumStatus } from '@/lib/iap';
-import { TEST_UNLOCK_PREMIUM } from '@/lib/premium';
+import { isBonusPremiumActive, TEST_UNLOCK_PREMIUM } from '@/lib/premium';
 
 import { useAuth } from './use-auth';
 import { useProfile } from './use-profile';
@@ -39,7 +39,8 @@ export function usePremium() {
     refresh();
   }, [refresh]);
 
-  const realPremium = dbPremium || profileFlag;
+  const bonusActive = isBonusPremiumActive(profile?.bonus_premium_until);
+  const realPremium = dbPremium || profileFlag || bonusActive;
 
   return {
     // 機能の解放判定。テスト解放フラグが立っていれば全員解放。

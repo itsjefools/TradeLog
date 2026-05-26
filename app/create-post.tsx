@@ -58,7 +58,7 @@ export default function CreatePostScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [monthlyCount, setMonthlyCount] = useState<number | null>(null);
 
-  const plan = getPlan(profile?.is_premium);
+  const plan = getPlan(profile?.is_premium, profile?.bonus_premium_until);
   const isPremium = plan === 'premium';
   const overLimit =
     !isPremium &&

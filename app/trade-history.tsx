@@ -29,7 +29,7 @@ export default function TradeHistoryScreen() {
   const router = useRouter();
   const { trades, refresh, deleteTrade } = useTrades();
   const { profile } = useProfile();
-  const isPremium = getPlan(profile?.is_premium) === 'premium';
+  const isPremium = getPlan(profile?.is_premium, profile?.bonus_premium_until) === 'premium';
 
   useFocusEffect(
     useCallback(() => {

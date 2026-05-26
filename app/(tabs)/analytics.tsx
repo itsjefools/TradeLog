@@ -51,7 +51,7 @@ export default function AnalyticsScreen() {
   const { trades, loading, error, refresh, deleteTrade } = useTrades();
   const { profile } = useProfile();
   const router = useRouter();
-  const isPremium = getPlan(profile?.is_premium) === 'premium';
+  const isPremium = getPlan(profile?.is_premium, profile?.bonus_premium_until) === 'premium';
   const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);

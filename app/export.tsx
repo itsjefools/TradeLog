@@ -50,7 +50,7 @@ export default function ExportScreen() {
   const router = useRouter();
   const { trades } = useTrades();
   const { profile } = useProfile();
-  const isPremium = getPlan(profile?.is_premium) === 'premium';
+  const isPremium = getPlan(profile?.is_premium, profile?.bonus_premium_until) === 'premium';
   const [period, setPeriod] = useState<StatsPeriod>('all');
   const [exporting, setExporting] = useState(false);
 

@@ -277,6 +277,11 @@ export default function SettingsScreen() {
           label={t('settings.exportData')}
           onPress={() => router.push('/export')}
         />
+        <SettingRow
+          icon="gift-outline"
+          label={t('settings.invite')}
+          onPress={() => router.push('/invite')}
+        />
 
         <Divider />
 

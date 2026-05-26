@@ -107,7 +107,7 @@ export default function RecordScreen() {
   const { favorites, isFavorite, toggleFavorite } = useFavoritePairs();
   const { profile } = useProfile();
   const toast = useToast();
-  const plan = getPlan(profile?.is_premium);
+  const plan = getPlan(profile?.is_premium, profile?.bonus_premium_until);
 
   // 今月の取引数（Free プラン制限用）
   const monthlyTradeCount = useMemo(() => {

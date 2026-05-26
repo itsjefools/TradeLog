@@ -18,10 +18,20 @@ import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { formatPnlWithCurrency } from '@/lib/format-currency';
-import { findCountry, flagEmoji } from '@/lib/countries';
+import { flagEmoji } from '@/lib/countries';
+import { BadgeTier, tierColor } from '@/lib/badges';
 import { supabase } from '@/lib/supabase';
 
 type Category = 'pnl' | 'pips' | 'winrate' | 'overall';
+
+// 月間ランクから所属リーグを導出（MVP: 順位ベース）
+function leagueForRank(rank: number): { tier: BadgeTier; emoji: string; key: string } {
+  if (rank <= 3) return { tier: 'diamond', emoji: '💎', key: 'diamond' };
+  if (rank <= 10) return { tier: 'platinum', emoji: '🪐', key: 'platinum' };
+  if (rank <= 20) return { tier: 'gold', emoji: '🥇', key: 'gold' };
+  if (rank <= 35) return { tier: 'silver', emoji: '🥈', key: 'silver' };
+  return { tier: 'bronze', emoji: '🥉', key: 'bronze' };
+}
 
 type RankingRow = {
   user_id: string;
@@ -55,6 +65,7 @@ export default function RankingScreen() {
   );
   const router = useRouter();
   const [category, setCategory] = useState<Category>('overall');
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [rows, setRows] = useState<RankingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +76,7 @@ export default function RankingScreen() {
     try {
       const { data, error: rpcError } = await supabase.rpc(
         'get_monthly_ranking',
-        { top_n: 50, category },
+        { top_n: 50, category, verified_only: verifiedOnly },
       );
       if (rpcError) {
         setError(rpcError.message);
@@ -77,7 +88,7 @@ export default function RankingScreen() {
     } finally {
       setLoading(false);
     }
-  }, [category]);
+  }, [category, verifiedOnly]);
 
   useFocusEffect(
     useCallback(() => {
@@ -141,6 +152,25 @@ export default function RankingScreen() {
         })}
       </View>
 
+      <Pressable
+        style={[styles.verifiedToggle, verifiedOnly && styles.verifiedToggleOn]}
+        onPress={() => setVerifiedOnly((v) => !v)}
+      >
+        <Ionicons
+          name={verifiedOnly ? 'shield-checkmark' : 'shield-outline'}
+          size={15}
+          color={verifiedOnly ? c.onAccent : c.textSecondary}
+        />
+        <Text
+          style={[
+            styles.verifiedToggleText,
+            { color: verifiedOnly ? c.onAccent : c.textSecondary },
+          ]}
+        >
+          {t('ranking.verifiedOnly')}
+        </Text>
+      </Pressable>
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={c.accent} size="large" />
@@ -195,7 +225,7 @@ function RankingRowItem({
     row.display_name?.trim() || row.username?.trim() || fallbackName;
   const username = row.username?.trim() || fallbackName;
   const flag = row.nationality ? flagEmoji(row.nationality) : '';
-  const country = findCountry(row.nationality ?? null);
+  const league = leagueForRank(rank);
 
   const rankStyle =
     rank === 1
@@ -270,12 +300,20 @@ function RankingRowItem({
           )}
         </View>
         <View style={styles.userMeta}>
-          <Text style={styles.username}>@{username}</Text>
+          <View
+            style={[
+              styles.leagueChip,
+              { borderColor: tierColor(league.tier) },
+            ]}
+          >
+            <Text style={styles.leagueEmoji}>{league.emoji}</Text>
+            <Text style={[styles.leagueText, { color: tierColor(league.tier) }]}>
+              {t(`ranking.league_${league.key}`)}
+            </Text>
+          </View>
           {flag !== '' && (
             <>
-              <Text style={styles.metaSep}>·</Text>
               <Text style={styles.flag}>{flag}</Text>
-              {country && <Text style={styles.metaText}>{country.name}</Text>}
             </>
           )}
         </View>
@@ -343,6 +381,32 @@ function makeStyles(c: ThemeColors) {
     tabSelected: { backgroundColor: c.accent, borderColor: c.accent },
     tabText: { fontSize: 12, color: c.textPrimary, fontWeight: '600' },
     tabTextSelected: { color: '#fff' },
+    verifiedToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      alignSelf: 'center',
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+      marginBottom: 8,
+    },
+    verifiedToggleOn: { backgroundColor: c.accent, borderColor: c.accent },
+    verifiedToggleText: { fontSize: 12, fontWeight: '700' },
+    leagueChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 999,
+      borderWidth: 1,
+    },
+    leagueEmoji: { fontSize: 10 },
+    leagueText: { fontSize: 10, fontWeight: '800' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     body: { padding: 16, paddingBottom: 40, gap: 8 },
     errorBox: { backgroundColor: '#7F1D1D', padding: 12, borderRadius: 8 },

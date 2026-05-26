@@ -649,6 +649,8 @@ export default {
     placeholderUser: 'ユーザー名・表示名で検索',
     placeholderHashtag: 'ハッシュタグで検索(例: USDJPY)',
     emptyUserHint: 'ユーザーを検索しましょう',
+    trendingTraders: '急上昇トレーダー',
+    trendingTags: 'トレンドタグ',
     emptyHashtagHint: '#ハッシュタグで投稿を検索しましょう',
     noUserFound: '該当するユーザーが見つかりません',
     noPostFound: '該当する投稿が見つかりません',

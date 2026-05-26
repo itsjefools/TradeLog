@@ -600,6 +600,8 @@ export default {
     placeholderUser: 'Buscar por nombre de usuario',
     placeholderHashtag: 'Buscar por hashtag (ej. USDJPY)',
     emptyUserHint: 'Busca usuarios',
+    trendingTraders: 'Traders en tendencia',
+    trendingTags: 'Tags en tendencia',
     emptyHashtagHint: 'Busca publicaciones por #hashtag',
     noUserFound: 'No se encontraron usuarios',
     noPostFound: 'No se encontraron publicaciones',

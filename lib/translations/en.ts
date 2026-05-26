@@ -593,6 +593,8 @@ export default {
     placeholderUser: 'Search by username or display name',
     placeholderHashtag: 'Search by hashtag (e.g. USDJPY)',
     emptyUserHint: 'Search for users',
+    trendingTraders: 'Trending traders',
+    trendingTags: 'Trending tags',
     emptyHashtagHint: 'Search posts by #hashtag',
     noUserFound: 'No matching users',
     noPostFound: 'No matching posts',

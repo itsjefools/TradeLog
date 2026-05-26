@@ -28,6 +28,20 @@ type TagPost = Post & {
   profile: Profile | null;
 };
 
+type TrendingTrader = {
+  user_id: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  nationality: string | null;
+  is_verified: boolean | null;
+  trade_style: string | null;
+  new_followers: number;
+  score: number;
+};
+
+type TrendingTag = { tag: string; uses: number };
+
 export default function SearchScreen() {
   const c = useThemeColors();
   const { t } = useI18n();
@@ -41,7 +55,27 @@ export default function SearchScreen() {
   const [tagResults, setTagResults] = useState<TagPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [trendingTraders, setTrendingTraders] = useState<TrendingTrader[]>([]);
+  const [trendingTags, setTrendingTags] = useState<TrendingTag[]>([]);
   const { isBlocked } = useBlocks();
+
+  // 発見: 急上昇トレーダー & トレンドタグ（マウント時に取得）
+  useEffect(() => {
+    (async () => {
+      const [traders, tags] = await Promise.all([
+        supabase.rpc('get_trending_traders', { days: 7, top_n: 10 }),
+        supabase.rpc('get_trending_hashtags', { days: 7, top_n: 12 }),
+      ]);
+      if (!traders.error)
+        setTrendingTraders(
+          ((traders.data ?? []) as TrendingTrader[]).filter(
+            (tr) => !isBlocked(tr.user_id),
+          ),
+        );
+      if (!tags.error) setTrendingTags((tags.data ?? []) as TrendingTag[]);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -169,11 +203,49 @@ export default function SearchScreen() {
         )}
 
         {!loading && query.trim() === '' && (
-          <Text style={styles.hint}>
-            {mode === 'users'
-              ? t('search.emptyUserHint')
-              : t('search.emptyHashtagHint')}
-          </Text>
+          <>
+            {trendingTags.length > 0 && (
+              <>
+                <Text style={styles.discoverTitle}>
+                  {t('search.trendingTags')}
+                </Text>
+                <View style={styles.tagCloud}>
+                  {trendingTags.map((tg) => (
+                    <Pressable
+                      key={tg.tag}
+                      style={styles.trendTag}
+                      onPress={() => {
+                        setMode('tags');
+                        setQuery(tg.tag);
+                      }}
+                    >
+                      <Text style={styles.trendTagText}>#{tg.tag}</Text>
+                      <Text style={styles.trendTagCount}>{tg.uses}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {trendingTraders.length > 0 && (
+              <>
+                <Text style={styles.discoverTitle}>
+                  {t('search.trendingTraders')}
+                </Text>
+                {trendingTraders.map((tr) => (
+                  <TrendingTraderRow key={tr.user_id} trader={tr} router={router} />
+                ))}
+              </>
+            )}
+
+            {trendingTags.length === 0 && trendingTraders.length === 0 && (
+              <Text style={styles.hint}>
+                {mode === 'users'
+                  ? t('search.emptyUserHint')
+                  : t('search.emptyHashtagHint')}
+              </Text>
+            )}
+          </>
         )}
 
         {!loading && query.trim() !== '' && (
@@ -197,6 +269,65 @@ export default function SearchScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function TrendingTraderRow({
+  trader,
+  router,
+}: {
+  trader: TrendingTrader;
+  router: Router;
+}) {
+  const c = useThemeColors();
+  const { t } = useI18n();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const fallbackName = t('profile.defaultName');
+  const displayName =
+    trader.display_name?.trim() || trader.username?.trim() || fallbackName;
+  const username = trader.username?.trim() || fallbackName;
+  const flag = trader.nationality ? flagEmoji(trader.nationality) : '';
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.userRow, pressed && styles.userRowPressed]}
+      onPress={() => router.push(`/user/${trader.user_id}`)}
+    >
+      <Avatar
+        uri={trader.avatar_url}
+        displayName={displayName}
+        size={48}
+        profile={{
+          username: trader.username,
+          is_verified: trader.is_verified,
+          nationality: trader.nationality,
+          trade_style: trader.trade_style,
+        }}
+        onPress={() => router.push(`/user/${trader.user_id}`)}
+      />
+      <View style={styles.userInfo}>
+        <View style={styles.nameRow}>
+          <Text style={styles.displayName} numberOfLines={1}>
+            {displayName}
+          </Text>
+          {trader.is_verified && (
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="checkmark" size={10} color="#fff" />
+            </View>
+          )}
+        </View>
+        <Text style={styles.username}>
+          @{username}
+          {flag !== '' ? `  ${flag}` : ''}
+        </Text>
+      </View>
+      {trader.new_followers > 0 && (
+        <View style={styles.trendUp}>
+          <Ionicons name="trending-up" size={13} color={c.win} />
+          <Text style={styles.trendUpText}>+{trader.new_followers}</Text>
+        </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -384,6 +515,29 @@ function makeStyles(c: ThemeColors) {
       fontSize: 13,
       color: c.textSecondary,
     },
+    discoverTitle: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.textPrimary,
+      marginTop: 8,
+      marginBottom: 10,
+    },
+    tagCloud: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+    trendTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    trendTagText: { fontSize: 13, fontWeight: '600', color: c.accent },
+    trendTagCount: { fontSize: 11, color: c.textSecondary },
+    trendUp: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+    trendUpText: { fontSize: 12, fontWeight: '700', color: c.win },
     userRow: {
       flexDirection: 'row',
       alignItems: 'center',

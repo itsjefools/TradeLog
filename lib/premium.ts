@@ -15,7 +15,7 @@ export const FREE_LIMITS = {
  * これが true でも、各プレミアム箇所には「PRO」タグやテスト解放バナーを表示するので、
  * どこが本来プレミアム機能かは画面上で分かるようにしてある。
  */
-export const TEST_UNLOCK_PREMIUM = true;
+export const TEST_UNLOCK_PREMIUM = false;
 
 export type Plan = 'free' | 'premium';
 

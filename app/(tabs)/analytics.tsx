@@ -727,6 +727,20 @@ function CalendarView({
             const positive = hasPnl && pnl > 0;
             const negative = hasPnl && pnl < 0;
             const isSelected = selectedDay === day;
+            const isSun = ci === 0;
+            const isSat = ci === 6;
+            const weekendTint =
+              !hasPnl && isSun
+                ? { backgroundColor: c.loss + '10' }
+                : !hasPnl && isSat
+                  ? { backgroundColor: c.verified + '10' }
+                  : null;
+            const weekendNumColor =
+              !positive && !negative && isSun
+                ? { color: c.loss }
+                : !positive && !negative && isSat
+                  ? { color: c.verified }
+                  : null;
             return (
               <Pressable
                 key={ci}
@@ -734,6 +748,7 @@ function CalendarView({
                 hitSlop={2}
                 style={[
                   styles.calendarCell,
+                  weekendTint,
                   positive && styles.calendarCellWin,
                   negative && styles.calendarCellLoss,
                   isSelected && styles.calendarCellSelected,
@@ -742,6 +757,7 @@ function CalendarView({
                 <Text
                   style={[
                     styles.calendarDayNum,
+                    weekendNumColor,
                     (positive || negative) && { color: '#fff' },
                   ]}
                 >

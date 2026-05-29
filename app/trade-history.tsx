@@ -19,7 +19,6 @@ import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { useTrades } from '@/hooks/use-trades';
-import { getPlan } from '@/lib/premium';
 import { Trade } from '@/lib/types';
 
 export default function TradeHistoryScreen() {
@@ -29,7 +28,6 @@ export default function TradeHistoryScreen() {
   const router = useRouter();
   const { trades, refresh, deleteTrade } = useTrades();
   const { profile } = useProfile();
-  const isPremium = getPlan(profile?.is_premium, profile?.bonus_premium_until) === 'premium';
 
   useFocusEffect(
     useCallback(() => {
@@ -77,20 +75,6 @@ export default function TradeHistoryScreen() {
           >
             <Ionicons
               name="cloud-upload-outline"
-              size={20}
-              color={c.textPrimary}
-            />
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/export')}
-            hitSlop={12}
-            style={({ pressed }) => [
-              styles.exportButton,
-              pressed && styles.exportButtonPressed,
-            ]}
-          >
-            <Ionicons
-              name={isPremium ? 'share-outline' : 'lock-closed-outline'}
               size={20}
               color={c.textPrimary}
             />

@@ -706,7 +706,7 @@ export default {
     congratsTitle: 'Muito bem!',
     congratsBody: 'Você concluiu uma aula. Continue assim!',
     read_label: 'de leitura',
-    disclaimer: 'Aviso: Este conteúdo é apenas para fins educacionais e não constitui aconselhamento de investimento. O trading de FX envolve risco de perda superior ao investimento inicial. As decisões são sua responsabilidade.',
+    disclaimer: 'Aviso: Este conteúdo é apenas para fins educacionais e não constitui aconselhamento de investimento. O trading de Forex envolve risco de perda superior ao investimento inicial. As decisões são sua responsabilidade.',
     featured_videos: 'Vídeos em Destaque',
     recommended_books: 'Livros Recomendados',
     video_all: 'Todos',
@@ -806,10 +806,10 @@ export default {
   invite: {
     title: 'Convidar amigos',
     heroTitle: 'Convide e ganhe Premium',
-    heroSub: 'Quando um amigo usa seu código, vocês dois ganham 14 dias de Premium.',
+    heroSub: 'Quando um amigo usa seu código, vocês dois ganham 7 dias de Premium.',
     yourCode: 'Seu código de convite',
     share: 'Compartilhar código',
-    shareMessage: 'Entre no TradeLog! Use o código {{code}} para ganhar 14 dias de Premium.',
+    shareMessage: 'Entre no TradeLog! Use o código {{code}} para ganhar 7 dias de Premium.',
     invited: 'Convidados',
     active: 'Ativo',
     bonusNone: 'Sem bônus Premium',
@@ -883,7 +883,7 @@ export default {
     saved: 'Imagem salva na sua galeria',
     shareError: 'Falha ao compartilhar',
     permissionRequired: 'É necessário acesso à galeria de fotos',
-    shareMessage: 'Minhas estatísticas de FX no TradeLog',
+    shareMessage: 'Minhas estatísticas de Forex no TradeLog',
   },
   legal: {
     terms_of_service: 'Termos de Serviço',
@@ -935,8 +935,8 @@ export default {
       'Registre cada operação facilmente. Acompanhe pares, P&L e notas rapidamente.',
     slide2_title: 'Conecte-se com Traders',
     slide2_desc:
-      'Junte-se a uma comunidade global de traders FX. Compartilhe ideias e cresça junto.',
-    slide3_title: 'Aprenda Trading FX',
+      'Junte-se a uma comunidade global de traders Forex. Compartilhe ideias e cresça junto.',
+    slide3_title: 'Aprenda Trading Forex',
     slide3_desc:
       'Do iniciante ao avançado. Aprimore suas habilidades com lições de especialistas.',
     slide4_title: 'Seus Dados, Protegidos',

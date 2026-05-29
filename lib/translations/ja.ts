@@ -237,7 +237,7 @@ export default {
     calendar: 'カレンダー',
     dailyPnl: '日別P&L推移',
     dailyTapHint: 'バーをタップで日別の損益を表示',
-    projectionTitle: '将来予測',
+    projectionTitle: '今後の見通し',
     projectionCaption: 'このままのペースが続いた場合',
     projectionPaceLabel: '1日あたり',
     horizon_week: '今週末',
@@ -857,7 +857,7 @@ export default {
   invite: {
     title: '友達を招待',
     heroTitle: '招待してPremiumをGET',
-    heroSub: '友達があなたのコードを使うと、2人とも14日間のPremiumがもらえます。',
+    heroSub: '友達があなたのコードを使うと、2人とも7日間のPremiumがもらえます。',
     yourCode: 'あなたの招待コード',
     share: 'コードを共有',
     shareMessage: 'TradeLogを始めよう！招待コード {{code}} を入力すると14日間Premiumがもらえます。',

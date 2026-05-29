@@ -43,7 +43,6 @@ import {
 import { pickAndUploadImage } from '@/lib/upload-image';
 import {
   ALL_CURRENCY_PAIRS,
-  PRESET_TRADE_TAGS,
   Trade,
   TradeDirection,
   TradeInsert,
@@ -84,7 +83,6 @@ export default function RecordScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pairSearch, setPairSearch] = useState('');
-  const [tagInput, setTagInput] = useState('');
   const [tiltDismissed, setTiltDismissed] = useState(false);
 
   // カレンダーから日付パラメータが渡されたら反映（URL変更時）
@@ -194,30 +192,8 @@ export default function RecordScreen() {
     setPairSearch('');
   };
 
-  const toggleTag = (tag: string) => {
-    const value = tag.trim();
-    if (!value) return;
-    setForm((prev) => ({
-      ...prev,
-      tags: prev.tags.includes(value)
-        ? prev.tags.filter((x) => x !== value)
-        : [...prev.tags, value],
-    }));
-  };
-
-  const addCustomTag = () => {
-    const value = tagInput.trim();
-    if (!value) return;
-    setForm((prev) => ({
-      ...prev,
-      tags: prev.tags.includes(value) ? prev.tags : [...prev.tags, value],
-    }));
-    setTagInput('');
-  };
-
   const resetForm = () => {
     setForm(initialState);
-    setTagInput('');
   };
 
   const parseNum = parseNumOrNull;
@@ -738,78 +714,7 @@ export default function RecordScreen() {
             />
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.label}>{t('record.tagsLabel')}</Text>
-            <View style={styles.chipsRow}>
-              {PRESET_TRADE_TAGS.map((tag) => {
-                const selected = form.tags.includes(tag);
-                return (
-                  <Pressable
-                    key={tag}
-                    style={[styles.tagChip, selected && styles.tagChipSelected]}
-                    onPress={() => toggleTag(tag)}
-                    disabled={loading}
-                  >
-                    <Text
-                      style={[
-                        styles.tagChipText,
-                        selected && styles.tagChipTextSelected,
-                      ]}
-                    >
-                      {t(`tags.${tag}`)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            {/* 自由入力で追加したカスタムタグ（プリセット以外）も表示 */}
-            {form.tags.filter((tag) => !PRESET_TRADE_TAGS.includes(tag as never))
-              .length > 0 && (
-              <View style={[styles.chipsRow, styles.chipsRowMt]}>
-                {form.tags
-                  .filter((tag) => !PRESET_TRADE_TAGS.includes(tag as never))
-                  .map((tag) => (
-                    <Pressable
-                      key={tag}
-                      style={[styles.tagChip, styles.tagChipSelected]}
-                      onPress={() => toggleTag(tag)}
-                      disabled={loading}
-                    >
-                      <Text style={[styles.tagChipText, styles.tagChipTextSelected]}>
-                        {tag}
-                      </Text>
-                      <Ionicons name="close" size={13} color="#fff" />
-                    </Pressable>
-                  ))}
-              </View>
-            )}
-            <View style={styles.tagInputRow}>
-              <TextInput
-                style={[styles.input, styles.flex]}
-                value={tagInput}
-                onChangeText={setTagInput}
-                placeholder={t('record.tagsPlaceholder')}
-                placeholderTextColor={c.textSecondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="done"
-                onSubmitEditing={addCustomTag}
-                editable={!loading}
-              />
-              <Pressable
-                onPress={addCustomTag}
-                disabled={loading || tagInput.trim() === ''}
-                style={({ pressed }) => [
-                  styles.tagAddButton,
-                  (loading || tagInput.trim() === '') &&
-                    styles.tagAddButtonDisabled,
-                  pressed && styles.tagAddButtonPressed,
-                ]}
-              >
-                <Ionicons name="add" size={22} color="#fff" />
-              </Pressable>
-            </View>
-          </View>
+          {/* 手法タグはフォームから削除（編集画面から後で付与可能）。tags は空配列で保存される。 */}
 
           <View style={styles.section}>
             <Text style={styles.label}>{t('record.imagesLabel')}</Text>

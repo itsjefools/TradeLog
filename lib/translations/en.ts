@@ -700,7 +700,7 @@ export default {
     congratsTitle: 'Well done!',
     congratsBody: 'You completed a lesson. Keep up the momentum!',
     read_label: 'read',
-    disclaimer: 'Disclaimer: This content is for educational purposes only and does not constitute investment advice. FX trading involves risk of loss exceeding your initial investment. All trading decisions are your sole responsibility.',
+    disclaimer: 'Disclaimer: This content is for educational purposes only and does not constitute investment advice. Forex trading involves risk of loss exceeding your initial investment. All trading decisions are your sole responsibility.',
     featured_videos: 'Featured Videos',
     recommended_books: 'Recommended Books',
     video_all: 'All',
@@ -800,10 +800,10 @@ export default {
   invite: {
     title: 'Invite friends',
     heroTitle: 'Invite & get Premium',
-    heroSub: 'When a friend uses your code, you both get 14 days of Premium.',
+    heroSub: 'When a friend uses your code, you both get 7 days of Premium.',
     yourCode: 'Your invite code',
     share: 'Share code',
-    shareMessage: 'Join me on TradeLog! Enter invite code {{code}} for 14 days of Premium.',
+    shareMessage: 'Join me on TradeLog! Enter invite code {{code}} for 7 days of Premium.',
     invited: 'Invited',
     active: 'Active',
     bonusNone: 'No Premium bonus',
@@ -877,7 +877,7 @@ export default {
     saved: 'Image saved to your camera roll',
     shareError: 'Failed to share',
     permissionRequired: 'Photo library access is required',
-    shareMessage: 'My FX stats on TradeLog',
+    shareMessage: 'My Forex stats on TradeLog',
   },
   legal: {
     terms_of_service: 'Terms of Service',
@@ -929,8 +929,8 @@ export default {
       'Easily record every trade. Track currency pairs, P&L, and notes at a glance.',
     slide2_title: 'Connect with Traders',
     slide2_desc:
-      'Join a global community of FX traders. Share ideas and grow together.',
-    slide3_title: 'Learn FX Trading',
+      'Join a global community of Forex traders. Share ideas and grow together.',
+    slide3_title: 'Learn Forex Trading',
     slide3_desc:
       'From beginner to advanced. Level up your skills with expert-curated lessons.',
     slide4_title: 'Your Data, Protected',

@@ -425,6 +425,7 @@ export default {
     youtubeLabel: 'YouTube',
     youtubePlaceholder: 'ej. @tucanal o URL del canal',
     youtubeHelper: 'URL del canal de YouTube o @handle',
+    bannerHint: 'Toca para elegir una imagen de banner (mantén pulsado para quitar)',
     tradeStyleLabel: 'Estilo de trading',
     nationalityLabel: 'Nacionalidad',
     nationalitySearchPlaceholder: 'Buscar (ej. Japan, JP)',

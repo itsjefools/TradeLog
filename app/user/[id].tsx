@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -567,6 +568,15 @@ export default function UserProfileScreen() {
       )}
 
       <ScrollView contentContainerStyle={styles.body}>
+        {profile.banner_url ? (
+          <Image
+            source={{ uri: profile.banner_url }}
+            style={styles.userBanner}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={[styles.userBanner, { backgroundColor: c.surfaceAlt }]} />
+        )}
         <View style={styles.profileCard}>
           <Avatar
             uri={profile.avatar_url}
@@ -1004,6 +1014,12 @@ function makeStyles(c: ThemeColors) {
       padding: 16,
       paddingBottom: 40,
       gap: 16,
+    },
+    userBanner: {
+      width: '100%',
+      aspectRatio: 3,
+      borderRadius: 14,
+      marginBottom: 12,
     },
     profileCard: {
       backgroundColor: c.surface,

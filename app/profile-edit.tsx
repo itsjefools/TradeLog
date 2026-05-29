@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -59,6 +60,7 @@ export default function ProfileEditScreen() {
   const [countrySearch, setCountrySearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [bannerUploading, setBannerUploading] = useState(false);
 
   const fallbackName =
     displayName.trim() || username.trim() || profile?.email?.split('@')[0] || 'U';
@@ -114,6 +116,62 @@ export default function ProfileEditScreen() {
       Alert.alert(t('profileEdit.uploadFail'), msg);
     } finally {
       setAvatarUploading(false);
+    }
+  };
+
+  const pickBanner = async () => {
+    if (bannerUploading || saving) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('profileEdit.permissionTitle'), t('profileEdit.permissionBody'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [3, 1],
+      quality: 0.85,
+    });
+    if (result.canceled) return;
+    setBannerUploading(true);
+    try {
+      const asset = result.assets[0];
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) throw new Error(t('profileEdit.notLoggedIn'));
+      const response = await fetch(asset.uri);
+      const arrayBuffer = await response.arrayBuffer();
+      const mime = asset.mimeType ?? 'image/jpeg';
+      const ext = (mime.split('/')[1] ?? 'jpg').replace('jpeg', 'jpg');
+      const fileName = `${userId}/banner-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, arrayBuffer, { contentType: mime, upsert: true });
+      if (uploadError) throw new Error(uploadError.message);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      await updateProfile({ banner_url: publicUrl });
+    } catch (e) {
+      Alert.alert(
+        t('profileEdit.uploadFail'),
+        e instanceof Error ? e.message : String(e),
+      );
+    } finally {
+      setBannerUploading(false);
+    }
+  };
+
+  const removeBanner = async () => {
+    if (bannerUploading || saving) return;
+    if (!profile?.banner_url) return;
+    try {
+      await updateProfile({ banner_url: null });
+    } catch (e) {
+      Alert.alert(
+        t('profileEdit.deleteFail'),
+        e instanceof Error ? e.message : String(e),
+      );
     }
   };
 
@@ -227,6 +285,34 @@ export default function ProfileEditScreen() {
           keyboardShouldPersistTaps="handled"
           bounces={false}
         >
+          {/* バナー */}
+          <Pressable
+            onPress={pickBanner}
+            onLongPress={removeBanner}
+            disabled={bannerUploading || saving}
+            style={styles.bannerEditWrap}
+          >
+            {profile?.banner_url ? (
+              <Image
+                source={{ uri: profile.banner_url }}
+                style={styles.bannerEditImg}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={styles.bannerEditEmpty}>
+                <Ionicons name="image-outline" size={22} color={c.textSecondary} />
+                <Text style={styles.bannerEditHint}>
+                  {t('profileEdit.bannerHint')}
+                </Text>
+              </View>
+            )}
+            {bannerUploading && (
+              <View style={styles.bannerEditOverlay}>
+                <ActivityIndicator color="#fff" />
+              </View>
+            )}
+          </Pressable>
+
           <View style={styles.avatarSection}>
             <Pressable
               onPress={pickAvatar}
@@ -490,6 +576,32 @@ function makeStyles(c: ThemeColors) {
   body: {
     padding: 20,
     paddingBottom: 40,
+  },
+  bannerEditWrap: {
+    width: '100%',
+    aspectRatio: 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: c.surfaceAlt,
+    marginBottom: 12,
+  },
+  bannerEditImg: { width: '100%', height: '100%' },
+  bannerEditEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: c.border,
+    borderRadius: 12,
+  },
+  bannerEditHint: { fontSize: 12, color: c.textSecondary },
+  bannerEditOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarSection: {
     alignItems: 'center',

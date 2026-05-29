@@ -476,6 +476,7 @@ export default {
     youtubeLabel: 'YouTube',
     youtubePlaceholder: '例: @yourchannel または チャンネルURL',
     youtubeHelper: 'YouTubeチャンネルのURL、または @ハンドル',
+    bannerHint: 'タップしてバナー画像を選択（長押しで削除）',
     tradeStyleLabel: 'トレードスタイル',
     nationalityLabel: '国籍',
     nationalitySearchPlaceholder: '検索(例: Japan, JP, 日本)',

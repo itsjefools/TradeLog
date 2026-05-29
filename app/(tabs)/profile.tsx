@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useScrollToTop } from '@react-navigation/native';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -396,6 +397,15 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.profileSection}>
+          {profile?.banner_url ? (
+            <Image
+              source={{ uri: profile.banner_url }}
+              style={styles.profileBanner}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.profileBanner, styles.profileBannerEmpty]} />
+          )}
           <View style={styles.profileCard}>
             <View style={styles.editIconButton}>
               <Link href="/profile-edit" asChild>
@@ -627,6 +637,13 @@ function makeStyles(c: ThemeColors) {
       paddingTop: 20,
       gap: 14,
     },
+    profileBanner: {
+      width: '100%',
+      aspectRatio: 3,
+      borderRadius: 14,
+      backgroundColor: c.surfaceAlt,
+    },
+    profileBannerEmpty: { backgroundColor: c.surfaceAlt },
     profileCard: {
       backgroundColor: c.surface,
       borderRadius: 10,

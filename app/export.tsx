@@ -21,6 +21,7 @@ import { useTrades } from '@/hooks/use-trades';
 import { PremiumTag } from '@/components/premium-tag';
 import { AnalyticsEvents } from '@/lib/analytics';
 import { exportTradesCsv } from '@/lib/export-csv';
+import { exportTradesPdf } from '@/lib/export-pdf';
 import { selectionFeedback, successNotification } from '@/lib/haptics';
 import { getPlan } from '@/lib/premium';
 import { StatsPeriod } from '@/hooks/use-trade-stats';
@@ -61,9 +62,27 @@ export default function ExportScreen() {
       : trades;
   }, [trades, period]);
 
-  const handleExport = async () => {
+  const handleExportCsv = async () => {
+    if (filtered.length === 0) {
+      Alert.alert(t('export.noDataTitle'), t('export.noDataBody'));
+      return;
+    }
+    setExporting(true);
+    try {
+      await exportTradesCsv(filtered, locale);
+      AnalyticsEvents.csvExported(period);
+      successNotification();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      Alert.alert(t('export.exportFail'), msg);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
     if (!isPremium) {
-      Alert.alert(t('export.premiumTitle'), t('export.premiumBody'), [
+      Alert.alert(t('export.premiumTitle'), t('export.pdfPremiumBody'), [
         { text: t('common.cancel'), style: 'cancel' },
         {
           text: t('export.seePremium'),
@@ -78,8 +97,34 @@ export default function ExportScreen() {
     }
     setExporting(true);
     try {
-      await exportTradesCsv(filtered, locale);
-      AnalyticsEvents.csvExported(period);
+      await exportTradesPdf({
+        trades: filtered,
+        currency: profile?.currency,
+        user:
+          profile?.display_name?.trim() ||
+          profile?.username?.trim() ||
+          t('profile.defaultName'),
+        periodLabel: t(`stats.period_${period}`),
+        labels: {
+          reportTitle: t('export.reportTitle'),
+          user: t('export.user'),
+          period: t('export.period'),
+          generated: t('export.generated'),
+          summary: t('export.summary'),
+          totalPnl: t('stats.total_pnl'),
+          winRate: t('stats.win_rate'),
+          trades: t('weeklyReport.trades'),
+          profitFactor: t('stats.profit_factor'),
+          maxDrawdown: t('stats.max_drawdown'),
+          bestPair: t('shareCard.bestPair'),
+          equityCurve: t('export.equityCurve'),
+          byPair: t('export.byPair'),
+          pair: t('export.pair'),
+          pnl: t('stats.total_pnl'),
+          bestDay: t('export.bestDay'),
+          worstDay: t('export.worstDay'),
+        },
+      });
       successNotification();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -139,18 +184,52 @@ export default function ExportScreen() {
           })}
         </View>
 
+        <Text style={styles.sectionLabel}>{t('export.format')}</Text>
+
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={handleExport}
+          onPress={handleExportCsv}
           disabled={exporting}
-          style={[styles.exportBtn, exporting && { opacity: 0.5 }]}
+          style={[styles.formatBtn, { backgroundColor: c.surface, borderColor: c.border }]}
         >
-          {exporting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.exportBtnText}>{t('export.exportCsv')}</Text>
-          )}
+          <View style={styles.formatLeft}>
+            <Ionicons name="grid-outline" size={20} color={c.textPrimary} />
+            <View>
+              <Text style={styles.formatTitle}>CSV</Text>
+              <Text style={styles.formatSub}>{t('export.csvDesc')}</Text>
+            </View>
+          </View>
+          <View style={[styles.tag, { backgroundColor: c.surfaceAlt }]}>
+            <Text style={[styles.tagText, { color: c.textSecondary }]}>Free</Text>
+          </View>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={handleExportPdf}
+          disabled={exporting}
+          style={[
+            styles.formatBtn,
+            { backgroundColor: c.surface, borderColor: c.accent, borderWidth: 1.5 },
+          ]}
+        >
+          <View style={styles.formatLeft}>
+            <Ionicons name="document-text" size={20} color={c.accent} />
+            <View>
+              <Text style={styles.formatTitle}>PDF</Text>
+              <Text style={styles.formatSub}>{t('export.pdfDesc')}</Text>
+            </View>
+          </View>
+          <View style={[styles.tag, { backgroundColor: c.accent }]}>
+            <Text style={[styles.tagText, { color: '#fff' }]}>Premium</Text>
+          </View>
+        </TouchableOpacity>
+
+        {exporting && (
+          <View style={{ alignItems: 'center', marginTop: 10 }}>
+            <ActivityIndicator color={c.accent} />
+          </View>
+        )}
 
         <Text style={styles.note}>{t('export.csvNote')}</Text>
       </ScrollView>
@@ -203,6 +282,21 @@ function makeStyles(c: ThemeColors) {
       borderWidth: 1,
     },
     periodLabel: { flex: 1, fontSize: 15, color: c.textPrimary },
+    formatBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderWidth: 1,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      marginBottom: 10,
+    },
+    formatLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+    formatTitle: { fontSize: 16, fontWeight: '800', color: c.textPrimary, letterSpacing: 0.5 },
+    formatSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
+    tag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+    tagText: { fontSize: 11, fontWeight: '800' },
     exportBtn: {
       backgroundColor: c.accent,
       borderRadius: 12,

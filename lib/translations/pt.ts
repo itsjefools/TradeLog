@@ -885,6 +885,9 @@ export default {
     shareError: 'Falha ao compartilhar',
     permissionRequired: 'É necessário acesso à galeria de fotos',
     shareMessage: 'Minhas estatísticas de Forex no TradeLog',
+    theme_classic: 'Classic',
+    theme_gold: 'Gold',
+    theme_mint: 'Mint',
   },
   legal: {
     terms_of_service: 'Termos de Serviço',

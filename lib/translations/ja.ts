@@ -937,6 +937,9 @@ export default {
     shareError: 'シェアに失敗しました',
     permissionRequired: '写真へのアクセス許可が必要です',
     shareMessage: '私のFX成績をTradeLogでシェア',
+    theme_classic: 'Classic',
+    theme_gold: 'Gold',
+    theme_mint: 'Mint',
   },
   legal: {
     terms_of_service: '利用規約',

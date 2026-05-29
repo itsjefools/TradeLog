@@ -37,6 +37,77 @@ const CARD_LOSS = '#EF4444';
 
 type Period = 'day' | 'week' | 'month';
 
+type CardTheme = 'classic' | 'gold' | 'mint';
+
+const CARD_THEMES: Record<
+  CardTheme,
+  {
+    bg: string;
+    win: string;
+    loss: string;
+    accent: string;
+    logoTrade: string;
+    logoLog: string;
+    period: string;
+    netLabel: string;
+    statBg: string;
+    text: string;
+    muted: string;
+    border: string;
+    footerTag: string;
+    sparkNeutral: string;
+  }
+> = {
+  classic: {
+    bg: '#0B0B0F',
+    win: '#22C55E',
+    loss: '#EF4444',
+    accent: ACCENT_GREEN,
+    logoTrade: '#FFFFFF',
+    logoLog: ACCENT_GREEN,
+    period: ACCENT_INDIGO,
+    netLabel: 'rgba(255,255,255,0.5)',
+    statBg: 'rgba(255,255,255,0.04)',
+    text: '#FFFFFF',
+    muted: 'rgba(255,255,255,0.5)',
+    border: 'rgba(255,255,255,0.06)',
+    footerTag: ACCENT_GREEN,
+    sparkNeutral: ACCENT_INDIGO,
+  },
+  gold: {
+    bg: '#1A1306',
+    win: '#FFD66B',
+    loss: '#EF4444',
+    accent: '#FFD66B',
+    logoTrade: '#FFE89A',
+    logoLog: '#FFD66B',
+    period: '#FFD66B',
+    netLabel: 'rgba(255,234,170,0.6)',
+    statBg: 'rgba(255,247,214,0.06)',
+    text: '#FFF7D6',
+    muted: 'rgba(255,247,214,0.6)',
+    border: 'rgba(255,214,107,0.2)',
+    footerTag: '#FFD66B',
+    sparkNeutral: '#FFD66B',
+  },
+  mint: {
+    bg: '#F4FBF6',
+    win: '#0F7A45',
+    loss: '#D14F4F',
+    accent: ACCENT_GREEN,
+    logoTrade: '#0F172A',
+    logoLog: ACCENT_GREEN,
+    period: ACCENT_GREEN,
+    netLabel: '#6B7280',
+    statBg: 'rgba(16,185,129,0.08)',
+    text: '#0F172A',
+    muted: '#6B7280',
+    border: 'rgba(16,185,129,0.18)',
+    footerTag: ACCENT_GREEN,
+    sparkNeutral: ACCENT_GREEN,
+  },
+};
+
 type CardStats = {
   count: number;
   totalPnl: number;
@@ -188,7 +259,9 @@ export default function ShareCardScreen() {
   const viewShotRef = useRef<ViewShot>(null);
 
   const [period, setPeriod] = useState<Period>('week');
+  const [theme, setTheme] = useState<CardTheme>('classic');
   const [busy, setBusy] = useState(false);
+  const T = CARD_THEMES[theme];
 
   const currency = profile?.currency;
   const username = profile?.username ?? null;
@@ -209,12 +282,12 @@ export default function ShareCardScreen() {
         ? t('shareCard.periodWeek')
         : t('shareCard.periodMonth');
   const pnlColor = !stats.hasPnl
-    ? '#FFFFFF'
+    ? T.text
     : stats.totalPnl > 0
-      ? CARD_WIN
+      ? T.win
       : stats.totalPnl < 0
-        ? CARD_LOSS
-        : '#FFFFFF';
+        ? T.loss
+        : T.text;
 
   const handleShare = async () => {
     if (!viewShotRef.current || isEmpty) return;
@@ -312,6 +385,33 @@ export default function ShareCardScreen() {
           })}
         </View>
 
+        {/* テンプレ選択 */}
+        <View style={styles.themeRow}>
+          {(['classic', 'gold', 'mint'] as CardTheme[]).map((th) => {
+            const tt = CARD_THEMES[th];
+            const active = theme === th;
+            return (
+              <Pressable
+                key={th}
+                onPress={() => setTheme(th)}
+                style={[
+                  styles.themeSwatch,
+                  {
+                    backgroundColor: tt.bg,
+                    borderColor: active ? c.accent : tt.border,
+                    borderWidth: active ? 2 : 1,
+                  },
+                ]}
+              >
+                <View style={[styles.themeDot, { backgroundColor: tt.win }]} />
+                <Text style={[styles.themeLabel, { color: tt.text }]}>
+                  {t(`shareCard.theme_${th}`)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         {/* シェアカード本体（キャプチャ対象） */}
         <View style={styles.cardShadow}>
           <ViewShot
@@ -319,11 +419,11 @@ export default function ShareCardScreen() {
             options={{ format: 'png', quality: 1 }}
             style={[styles.viewShot, { width: CARD_WIDTH, height: CARD_HEIGHT }]}
           >
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: T.bg, borderColor: T.border }]}>
               {/* 上部: 期間 + ロゴ */}
               <View style={styles.cardTop}>
                 <View style={styles.periodWrap}>
-                  <Text style={styles.periodLabel}>{periodLabel}</Text>
+                  <Text style={[styles.periodLabel, { color: T.period }]}>{periodLabel}</Text>
                   {stats.verified ? (
                     <View style={styles.verifiedPill}>
                       <Ionicons name="shield-checkmark" size={11} color={ACCENT_GREEN} />
@@ -332,14 +432,14 @@ export default function ShareCardScreen() {
                   ) : null}
                 </View>
                 <View style={styles.logoRow}>
-                  <Text style={styles.logoTrade}>Trade</Text>
-                  <Text style={styles.logoLog}>Log</Text>
+                  <Text style={[styles.logoTrade, { color: T.logoTrade }]}>Trade</Text>
+                  <Text style={[styles.logoLog, { color: T.logoLog }]}>Log</Text>
                 </View>
               </View>
 
               {/* 中央: 純損益 + エクイティ曲線 */}
               <View style={styles.cardCenter}>
-                <Text style={styles.netLabel}>{t('shareCard.netPnl')}</Text>
+                <Text style={[styles.netLabel, { color: T.netLabel }]}>{t('shareCard.netPnl')}</Text>
                 <Text
                   style={[styles.netValue, { color: pnlColor }]}
                   numberOfLines={1}
@@ -351,7 +451,7 @@ export default function ShareCardScreen() {
                   <View style={styles.sparkWrap}>
                     <EquitySparkline
                       points={stats.curve}
-                      color={pnlColor === '#FFFFFF' ? ACCENT_INDIGO : pnlColor}
+                      color={pnlColor === T.text ? T.sparkNeutral : pnlColor}
                       width={CARD_WIDTH - 56}
                       height={76}
                     />
@@ -360,51 +460,51 @@ export default function ShareCardScreen() {
               </View>
 
               {/* 下部: サブ指標 */}
-              <View style={styles.statsRow}>
+              <View style={[styles.statsRow, { backgroundColor: T.statBg }]}>
                 <View style={styles.statBox}>
-                  <Text style={styles.statValue}>
+                  <Text style={[styles.statValue, { color: T.text }]}>
                     {stats.winRate === null ? '—' : `${stats.winRate}%`}
                   </Text>
-                  <Text style={styles.statLabel}>{t('shareCard.winRate')}</Text>
+                  <Text style={[styles.statLabel, { color: T.muted }]}>{t('shareCard.winRate')}</Text>
                 </View>
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, { backgroundColor: T.border }]} />
                 <View style={styles.statBox}>
-                  <Text style={styles.statValue}>
+                  <Text style={[styles.statValue, { color: T.text }]}>
                     {stats.profitFactor === null
                       ? '—'
                       : stats.profitFactor === Infinity
                         ? '∞'
                         : stats.profitFactor.toFixed(2)}
                   </Text>
-                  <Text style={styles.statLabel}>{t('shareCard.profitFactor')}</Text>
+                  <Text style={[styles.statLabel, { color: T.muted }]}>{t('shareCard.profitFactor')}</Text>
                 </View>
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, { backgroundColor: T.border }]} />
                 <View style={styles.statBox}>
-                  <Text style={styles.statValue}>{stats.count}</Text>
-                  <Text style={styles.statLabel}>{t('shareCard.trades')}</Text>
+                  <Text style={[styles.statValue, { color: T.text }]}>{stats.count}</Text>
+                  <Text style={[styles.statLabel, { color: T.muted }]}>{t('shareCard.trades')}</Text>
                 </View>
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, { backgroundColor: T.border }]} />
                 <View style={styles.statBox}>
-                  <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
+                  <Text style={[styles.statValue, { color: T.text }]} numberOfLines={1} adjustsFontSizeToFit>
                     {stats.bestPair ?? '—'}
                   </Text>
-                  <Text style={styles.statLabel}>{t('shareCard.bestPair')}</Text>
+                  <Text style={[styles.statLabel, { color: T.muted }]}>{t('shareCard.bestPair')}</Text>
                 </View>
               </View>
 
               {/* フッター: ユーザー名 + ハッシュタグ */}
               <View style={styles.cardFooter}>
                 <View style={styles.footerUser}>
-                  <Text style={styles.footerName} numberOfLines={1}>
+                  <Text style={[styles.footerName, { color: T.text }]} numberOfLines={1}>
                     {displayName}
                   </Text>
                   {username ? (
-                    <Text style={styles.footerHandle} numberOfLines={1}>
+                    <Text style={[styles.footerHandle, { color: T.muted }]} numberOfLines={1}>
                       @{username}
                     </Text>
                   ) : null}
                 </View>
-                <Text style={styles.footerTag}>#TradeLog</Text>
+                <Text style={[styles.footerTag, { color: T.footerTag }]}>#TradeLog</Text>
               </View>
             </View>
           </ViewShot>
@@ -479,6 +579,23 @@ function makeStyles(c: ThemeColors) {
     toggleText: { fontSize: 14, fontWeight: '700' },
     toggleTextActive: { color: c.onAccent },
     toggleTextInactive: { color: c.textSecondary },
+    themeRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 16,
+      alignSelf: 'stretch',
+    },
+    themeSwatch: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 10,
+      borderRadius: 12,
+    },
+    themeDot: { width: 10, height: 10, borderRadius: 5 },
+    themeLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
     cardShadow: {
       borderRadius: 24,
       shadowColor: '#000',

@@ -29,13 +29,13 @@ as $$
   with fol as (
     select following_id as uid, count(*) as nf
     from public.follows
-    where created_at >= now() - make_interval(days => days)
+    where created_at >= now() - (days * interval '1 day')
     group by following_id
   ),
   eng as (
     select user_id as uid, coalesce(sum(likes_count + comments_count), 0) as e
     from public.posts
-    where created_at >= now() - make_interval(days => days)
+    where created_at >= now() - (days * interval '1 day')
     group by user_id
   ),
   agg as (
@@ -77,7 +77,7 @@ set search_path = public
 as $$
   select lower(h) as tag, count(*) as uses
   from public.posts p, unnest(p.hashtags) as h
-  where p.created_at >= now() - make_interval(days => days)
+  where p.created_at >= now() - (days * interval '1 day')
     and p.hashtags is not null
     and length(trim(h)) > 0
   group by lower(h)

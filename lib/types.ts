@@ -43,6 +43,7 @@ export type Profile = {
   referral_code: string | null;
   referred_by: string | null;
   bonus_premium_until: string | null;
+  pip_unit: 'pips' | 'points' | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -57,7 +58,7 @@ export const PROFILE_COLUMNS = `
   trade_style, language, currency, is_premium, nationality, is_verified,
   monthly_pnl_goal, push_token, total_trades,
   website, twitter_handle, youtube, showcase_badges, show_badges,
-  referral_code, referred_by, bonus_premium_until,
+  referral_code, referred_by, bonus_premium_until, pip_unit,
   created_at, updated_at
 `;
 

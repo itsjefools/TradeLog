@@ -28,6 +28,7 @@ import { useBlocks } from '@/hooks/use-blocks';
 import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
+import { formatPips } from '@/lib/format-pips';
 import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
@@ -951,10 +952,6 @@ function TradeCard({ trade }: { trade: Trade }) {
 
 // formatPnl は formatPnlWithCurrency(n, currency) に置換済み
 
-function formatPips(n: number): string {
-  const sign = n > 0 ? '+' : '';
-  return `${sign}${n.toFixed(1)} pips`;
-}
 
 function pnlColor(n: number | null, c: ThemeColors): TextStyle | undefined {
   if (n === null || n === 0) return undefined;

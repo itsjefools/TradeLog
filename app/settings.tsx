@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
@@ -32,7 +33,7 @@ export default function SettingsScreen() {
   const c = useThemeColors();
   const router = useRouter();
   const { session } = useAuth();
-  const { profile } = useProfile();
+  const { profile, updateProfile } = useProfile();
   const { mode, setMode } = useTheme();
   const { locale, t } = useI18n();
 
@@ -330,6 +331,41 @@ export default function SettingsScreen() {
               onValueChange={handleToggleReminder}
               trackColor={{ false: c.surfaceAlt, true: c.accent }}
             />
+          }
+        />
+        <SettingRow
+          icon="swap-horizontal-outline"
+          label={t('settings.pipUnit')}
+          rightElement={
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {(['pips', 'points'] as const).map((u) => {
+                const active = (profile?.pip_unit ?? 'pips') === u;
+                return (
+                  <Pressable
+                    key={u}
+                    onPress={() => {
+                      if (!active) updateProfile({ pip_unit: u }).catch(() => {});
+                    }}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 5,
+                      borderRadius: 999,
+                      backgroundColor: active ? c.accent : c.surfaceAlt,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: '700',
+                        color: active ? '#fff' : c.textSecondary,
+                      }}
+                    >
+                      {u}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           }
         />
 

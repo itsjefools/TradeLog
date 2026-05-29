@@ -100,6 +100,7 @@ export default {
     bookmarks: 'ブックマーク',
     exportData: 'データエクスポート',
     invite: '友達を招待',
+    pipUnit: '値幅の表示',
     premium: 'Premium',
     premiumPlan: 'Premium プラン',
     tools: 'ツール',

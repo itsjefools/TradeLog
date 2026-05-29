@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 
+import { setPipUnit } from '@/lib/format-pips';
 import { supabase } from '@/lib/supabase';
 import { PROFILE_COLUMNS, Profile } from '@/lib/types';
 
@@ -43,7 +44,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (fetchError) {
       setError(fetchError.message);
     } else {
-      setProfile((data ?? null) as Profile | null);
+      const p = (data ?? null) as Profile | null;
+      setProfile(p);
+      setPipUnit(p?.pip_unit ?? 'pips');
     }
     setLoading(false);
   }, [session]);
@@ -66,7 +69,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         throw new Error(updateError.message);
       }
       if (data) {
-        setProfile(data as Profile);
+        const p = data as Profile;
+        setProfile(p);
+        setPipUnit(p.pip_unit ?? 'pips');
       }
     },
     [session],

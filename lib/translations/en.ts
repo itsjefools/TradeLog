@@ -949,6 +949,7 @@ export default {
     bookmarks: 'Bookmarks',
     exportData: 'Export data',
     invite: 'Invite friends',
+    pipUnit: 'Pip unit',
     premium: 'Premium',
     premiumPlan: 'Premium plan',
     tools: 'Tools',

@@ -33,6 +33,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
+import { formatPips } from '@/lib/format-pips';
 import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { formatRelativeTime } from '@/lib/format-time';
@@ -988,10 +989,6 @@ function LikeButton({
 
 // 通貨対応の P&L 表示は formatPnlWithCurrency(n, currency) を使う
 
-function formatPips(n: number): string {
-  const sign = n > 0 ? '+' : '';
-  return `${sign}${n.toFixed(1)} pips`;
-}
 
 function pnlColor(n: number | null, c: ThemeColors): TextStyle | undefined {
   if (n === null || n === 0) return undefined;

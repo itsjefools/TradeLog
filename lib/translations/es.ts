@@ -956,6 +956,7 @@ export default {
     bookmarks: 'Guardados',
     exportData: 'Exportar datos',
     invite: 'Invitar amigos',
+    pipUnit: 'Unidad de pip',
     premium: 'Premium',
     premiumPlan: 'Plan Premium',
     tools: 'Herramientas',

@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient as SvgGrad, Path, Rect, Stop } from 'react-native-svg';
 
 import { useToast } from '@/components/toast';
 import { ThemeColors } from '@/constants/theme';
@@ -104,19 +105,58 @@ export default function InviteScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
-        <View style={styles.hero}>
-          <Ionicons name="gift" size={36} color={c.accent} />
-          <Text style={styles.heroTitle}>{t('invite.heroTitle')}</Text>
-          <Text style={styles.heroSub}>{t('invite.heroSub')}</Text>
+        {/* ギラギラ ヒーローカード */}
+        <View style={styles.heroCard}>
+          <Svg width="100%" height="100%" style={StyleSheet.absoluteFillObject}>
+            <Defs>
+              <SvgGrad id="gold" x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor="#FFE89A" />
+                <Stop offset="0.45" stopColor="#E5B547" />
+                <Stop offset="0.85" stopColor="#A07020" />
+                <Stop offset="1" stopColor="#7A5618" />
+              </SvgGrad>
+              <SvgGrad id="shine" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.45" />
+                <Stop offset="0.55" stopColor="#FFFFFF" stopOpacity="0" />
+              </SvgGrad>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#gold)" rx="22" ry="22" />
+            <Rect x="0" y="0" width="100%" height="55%" fill="url(#shine)" rx="22" ry="22" />
+            <Path
+              d="M30,90 L36,100 L46,103 L36,106 L30,116 L24,106 L14,103 L24,100 Z"
+              fill="#FFF7D6"
+              opacity={0.85}
+            />
+            <Path
+              d="M280,55 L284,63 L292,65 L284,67 L280,75 L276,67 L268,65 L276,63 Z"
+              fill="#FFF7D6"
+              opacity={0.75}
+            />
+            <Path
+              d="M260,170 L264,178 L272,180 L264,182 L260,190 L256,182 L248,180 L256,178 Z"
+              fill="#FFF7D6"
+              opacity={0.7}
+            />
+          </Svg>
+          <View style={styles.heroInner}>
+            <View style={styles.heroBadge}>
+              <Ionicons name="sparkles" size={12} color="#7A5618" />
+              <Text style={styles.heroBadgeText}>{t('invite.heroTitle')}</Text>
+            </View>
+            <Text style={styles.heroCardSub}>{t('invite.heroSub')}</Text>
+            <Text style={styles.heroCodeLabel}>{t('invite.yourCode')}</Text>
+            <Text style={styles.heroCode} numberOfLines={1} adjustsFontSizeToFit>
+              {code || '—'}
+            </Text>
+          </View>
         </View>
 
-        {/* 自分のコード */}
-        <Text style={styles.label}>{t('invite.yourCode')}</Text>
-        <View style={styles.codeBox}>
-          <Text style={styles.code}>{code || '—'}</Text>
-        </View>
-        <Pressable style={styles.shareBtn} onPress={share} disabled={!code}>
-          <Ionicons name="share-social" size={18} color="#fff" />
+        <Pressable
+          style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.85 }]}
+          onPress={share}
+          disabled={!code}
+        >
+          <Ionicons name="share-social" size={18} color="#1A1306" />
           <Text style={styles.shareBtnText}>{t('invite.share')}</Text>
         </Pressable>
 
@@ -186,31 +226,78 @@ function makeStyles(c: ThemeColors) {
     },
     headerTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
     body: { padding: 20, paddingBottom: 48 },
-    hero: { alignItems: 'center', gap: 6, marginBottom: 24 },
-    heroTitle: { fontSize: 20, fontWeight: '800', color: c.textPrimary, marginTop: 6 },
-    heroSub: { fontSize: 13, color: c.textSecondary, textAlign: 'center', lineHeight: 19 },
     label: { fontSize: 13, fontWeight: '600', color: c.textSecondary, marginBottom: 8 },
-    codeBox: {
-      backgroundColor: c.surface,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderStyle: 'dashed',
-      paddingVertical: 18,
-      alignItems: 'center',
+    heroCard: {
+      borderRadius: 22,
+      paddingVertical: 28,
+      paddingHorizontal: 22,
+      marginBottom: 14,
+      overflow: 'hidden',
+      shadowColor: '#A07020',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.35,
+      shadowRadius: 16,
+      elevation: 10,
+      minHeight: 220,
     },
-    code: { fontSize: 28, fontWeight: '800', letterSpacing: 4, color: c.textPrimary },
+    heroInner: { alignItems: 'center', gap: 6 },
+    heroBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 999,
+      backgroundColor: 'rgba(255,247,214,0.85)',
+    },
+    heroBadgeText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: '#7A5618',
+      letterSpacing: 0.4,
+    },
+    heroCardSub: {
+      fontSize: 12,
+      color: '#FFF7D6',
+      textAlign: 'center',
+      lineHeight: 18,
+      marginTop: 4,
+      opacity: 0.9,
+    },
+    heroCodeLabel: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#FFF7D6',
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+      marginTop: 18,
+      opacity: 0.8,
+    },
+    heroCode: {
+      fontSize: 38,
+      fontWeight: '900',
+      letterSpacing: 6,
+      color: '#FFFFFF',
+      textShadowColor: 'rgba(0,0,0,0.25)',
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 4,
+      marginTop: 4,
+    },
     shareBtn: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: 8,
-      backgroundColor: c.accent,
-      borderRadius: 12,
-      paddingVertical: 14,
-      marginTop: 12,
+      backgroundColor: '#FFD66B',
+      borderRadius: 14,
+      paddingVertical: 15,
+      marginTop: 6,
+      shadowColor: '#A07020',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
     },
-    shareBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+    shareBtnText: { fontSize: 15, fontWeight: '800', color: '#1A1306' },
     statsRow: { flexDirection: 'row', gap: 12, marginTop: 20 },
     statBox: {
       flex: 1,

@@ -49,14 +49,19 @@ export default function SettingsScreen() {
   }, []);
 
   const handleToggleReminder = async (next: boolean) => {
-    // 楽観的に反映しつつ、失敗/拒否時は静かに元へ戻す
     setReminderEnabled(next);
     if (next) {
       const ok = await enableDailyReminder(
         t('reminder.title'),
         t('reminder.body'),
       );
-      if (!ok) setReminderEnabled(false);
+      if (!ok) {
+        setReminderEnabled(false);
+        Alert.alert(
+          t('reminder.permissionTitle'),
+          t('reminder.permissionBody'),
+        );
+      }
     } else {
       await disableDailyReminder();
     }

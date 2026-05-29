@@ -894,6 +894,8 @@ export default {
     connection_restored: 'Connection restored',
   },
   reminder: {
+    permissionTitle: 'Notifications not allowed',
+    permissionBody: 'Open iOS Settings → TradeLog → Notifications and allow notifications to receive the reminder.',
     title: 'Log today’s trades',
     body: 'One log a day makes your growth visible. Capture today’s review.',
   },

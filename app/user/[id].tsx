@@ -363,7 +363,10 @@ export default function UserProfileScreen() {
       } else {
         await supabase
           .from('reposts')
-          .insert({ user_id: myId, post_id: item.id });
+          .upsert(
+            { user_id: myId, post_id: item.id },
+            { onConflict: 'user_id,post_id', ignoreDuplicates: true },
+          );
       }
     } catch (e) {
       setItems((prev) =>

@@ -38,12 +38,11 @@ export async function enableDailyReminder(
 
     await Notifications.scheduleNotificationAsync({
       identifier: REMINDER_IDENTIFIER,
-      content: { title, body },
+      content: { title, body, sound: 'default' },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour: REMINDER_HOUR,
         minute: REMINDER_MINUTE,
-        repeats: true,
       },
     });
 

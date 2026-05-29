@@ -901,6 +901,8 @@ export default {
     connection_restored: 'Conexión restaurada',
   },
   reminder: {
+    permissionTitle: 'Notificaciones no permitidas',
+    permissionBody: 'Abre Ajustes de iOS → TradeLog → Notificaciones y permite las notificaciones para recibir el recordatorio.',
     title: 'Registra tus operaciones de hoy',
     body: 'Un registro al día hace visible tu progreso. Anota tu repaso de hoy.',
   },

@@ -953,6 +953,8 @@ export default {
   reminder: {
     title: '今日のトレードを記録しましょう',
     body: '1日1記録で成長を可視化。今日の振り返りを残そう。',
+    permissionTitle: '通知が許可されていません',
+    permissionBody: 'iOSの「設定」→「TradeLog」→「通知」から、通知を許可するとリマインダーを受け取れます。',
   },
   createPost: {
     title: '新規投稿',

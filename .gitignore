@@ -50,3 +50,4 @@ seed_mt5_import.sql
 ReportHistory-*.xlsx
 *.pdf
 _bugs_testflight.md
+_release_checklist_v1.0.md

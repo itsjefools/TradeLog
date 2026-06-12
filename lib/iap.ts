@@ -12,22 +12,46 @@ import {
 } from 'react-native-iap';
 
 import { supabase } from './supabase';
+import { PLAN_RANK, type Plan } from './premium';
 
-// App Store / Google Play の商品ID
+// App Store / Google Play の商品ID (Plus / Pro × 月額 / 年額)
 export const PRODUCT_IDS = {
-  PREMIUM_MONTHLY: Platform.select({
-    ios: 'com.kingjay.tradelog.premium.monthly',
-    android: 'premium_monthly',
-    default: 'premium_monthly',
+  PLUS_MONTHLY: Platform.select({
+    ios: 'com.kingjay.tradelog.plus.monthly',
+    android: 'plus_monthly',
+    default: 'plus_monthly',
   }),
-  PREMIUM_YEARLY: Platform.select({
-    ios: 'com.kingjay.tradelog.premium.yearly',
-    android: 'premium_yearly',
-    default: 'premium_yearly',
+  PLUS_YEARLY: Platform.select({
+    ios: 'com.kingjay.tradelog.plus.yearly',
+    android: 'plus_yearly',
+    default: 'plus_yearly',
+  }),
+  PRO_MONTHLY: Platform.select({
+    ios: 'com.kingjay.tradelog.pro.monthly',
+    android: 'pro_monthly',
+    default: 'pro_monthly',
+  }),
+  PRO_YEARLY: Platform.select({
+    ios: 'com.kingjay.tradelog.pro.yearly',
+    android: 'pro_yearly',
+    default: 'pro_yearly',
   }),
 } as const;
 
-const SKU_LIST: string[] = [PRODUCT_IDS.PREMIUM_MONTHLY, PRODUCT_IDS.PREMIUM_YEARLY];
+const SKU_LIST: string[] = [
+  PRODUCT_IDS.PLUS_MONTHLY,
+  PRODUCT_IDS.PLUS_YEARLY,
+  PRODUCT_IDS.PRO_MONTHLY,
+  PRODUCT_IDS.PRO_YEARLY,
+];
+
+/** 商品IDから購入ティアを判定する。'pro' を含めば pro、'plus' を含めば plus。 */
+export function tierForProduct(productId: string | null | undefined): Plan {
+  if (!productId) return 'free';
+  if (productId.includes('pro')) return 'pro';
+  if (productId.includes('plus')) return 'plus';
+  return 'free';
+}
 
 let connected = false;
 
@@ -156,10 +180,11 @@ export function setupPurchaseListeners(
           { onConflict: 'user_id,product_id' },
         );
 
-      // is_premium フラグを true に同期 (UI 即時反映用)
+      // plan_tier / is_premium を購入ティアで同期 (UI 即時反映用)
+      const tier = tierForProduct(productId);
       await supabase
         .from('profiles')
-        .update({ is_premium: true })
+        .update({ plan_tier: tier, is_premium: tier !== 'free' })
         .eq('id', userId);
 
       try {
@@ -187,19 +212,25 @@ export function setupPurchaseListeners(
 }
 
 /**
- * Supabase 上の購読レコードを参照して Premium 判定。
- * status='active' かつ expires_at が未来であれば Premium。
+ * Supabase 上の購読レコードを参照して現在のティアを判定する。
+ * status='active' かつ expires_at が未来の購読のうち、最上位ティアを返す。
+ * 無効/該当なしなら 'free'。
  */
-export async function checkPremiumStatus(userId: string): Promise<boolean> {
+export async function getActiveTier(userId: string): Promise<Plan> {
   const { data, error } = await supabase
     .from('user_subscriptions')
-    .select('status, expires_at')
+    .select('product_id, status, expires_at')
     .eq('user_id', userId)
     .eq('status', 'active')
-    .gte('expires_at', new Date().toISOString())
-    .limit(1)
-    .maybeSingle();
+    .gte('expires_at', new Date().toISOString());
 
-  if (error || !data) return false;
-  return true;
+  if (error || !data || data.length === 0) return 'free';
+
+  // 複数 active があれば最上位ティアを採用
+  let best: Plan = 'free';
+  for (const row of data) {
+    const tier = tierForProduct((row as { product_id?: string }).product_id);
+    if (PLAN_RANK[tier] > PLAN_RANK[best]) best = tier;
+  }
+  return best;
 }

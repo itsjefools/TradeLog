@@ -20,6 +20,21 @@ import { selectionFeedback } from '@/lib/haptics';
 import { supabase } from '@/lib/supabase';
 
 type Vote = 'bull' | 'bear';
+type PredFilter = 'open' | 'resolved' | 'popular';
+
+/** 期限までの残り時間ラベル。期限なし→null、期限切れ→expired。 */
+function countdownLabel(
+  expiresAt: string | null,
+  t: (k: string, p?: Record<string, unknown>) => string,
+): string | null {
+  if (!expiresAt) return null;
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (ms <= 0) return t('predictions.expired');
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 24) return t('predictions.expiresInDays', { n: Math.floor(hours / 24) });
+  if (hours >= 1) return t('predictions.expiresInHours', { n: hours });
+  return t('predictions.expiresInHours', { n: 1 });
+}
 
 type Prediction = {
   id: string;
@@ -40,6 +55,9 @@ type Prediction = {
   bull_count: number;
   bear_count: number;
   my_vote: Vote | null;
+  comment_count?: number;
+  author_win_rate?: number | null;
+  author_resolved?: number;
 };
 
 export default function PredictionsScreen() {
@@ -49,6 +67,7 @@ export default function PredictionsScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const [items, setItems] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<PredFilter>('open');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,6 +75,16 @@ export default function PredictionsScreen() {
     if (!error) setItems((data ?? []) as Prediction[]);
     setLoading(false);
   }, []);
+
+  const visible = useMemo(() => {
+    if (filter === 'resolved') return items.filter((p) => p.outcome !== 'open');
+    if (filter === 'popular') {
+      return [...items].sort(
+        (a, b) => b.bull_count + b.bear_count - (a.bull_count + a.bear_count),
+      );
+    }
+    return items.filter((p) => p.outcome === 'open');
+  }, [items, filter]);
 
   useFocusEffect(
     useCallback(() => {
@@ -108,19 +137,39 @@ export default function PredictionsScreen() {
         </Pressable>
       </View>
 
+      <View style={styles.tabs}>
+        {(['open', 'resolved', 'popular'] as PredFilter[]).map((f) => {
+          const active = filter === f;
+          return (
+            <Pressable
+              key={f}
+              style={[styles.tab, active && styles.tabActive]}
+              onPress={() => {
+                selectionFeedback();
+                setFilter(f);
+              }}
+            >
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                {t(`predictions.filter_${f}`)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={c.accent} size="large" />
         </View>
-      ) : items.length === 0 ? (
+      ) : visible.length === 0 ? (
         <EmptyState
-          icon="bulb-outline"
+          icon="pulse-outline"
           title={t('predictions.empty')}
           subtitle={t('predictions.emptySub')}
         />
       ) : (
         <ScrollView contentContainerStyle={styles.body}>
-          {items.map((p) => (
+          {visible.map((p) => (
             <PredictionCard key={p.id} pred={p} onVote={castVote} router={router} />
           ))}
         </ScrollView>
@@ -146,6 +195,8 @@ function PredictionCard({
   const bullPct = total > 0 ? Math.round((pred.bull_count / total) * 100) : 50;
   const isLong = pred.direction === 'long';
   const dirColor = isLong ? c.win : c.loss;
+  const countdown = pred.outcome === 'open' ? countdownLabel(pred.expires_at, t) : null;
+  const expired = countdown === t('predictions.expired');
 
   return (
     <View style={styles.card}>
@@ -160,6 +211,14 @@ function PredictionCard({
           <Text style={styles.name} numberOfLines={1}>{name}</Text>
           {pred.username ? <Text style={styles.handle}>@{pred.username}</Text> : null}
         </View>
+        {typeof pred.author_win_rate === 'number' && (pred.author_resolved ?? 0) >= 3 && (
+          <View style={styles.winRateChip}>
+            <Ionicons name="trophy" size={11} color={c.accent} />
+            <Text style={styles.winRateText}>
+              {t('predictions.winRate', { pct: pred.author_win_rate })}
+            </Text>
+          </View>
+        )}
         {pred.outcome !== 'open' && (
           <View
             style={[
@@ -182,6 +241,23 @@ function PredictionCard({
             {isLong ? t('common.long') : t('common.short')}
           </Text>
         </View>
+        {countdown && (
+          <View style={styles.countdown}>
+            <Ionicons
+              name="time-outline"
+              size={12}
+              color={expired ? c.textSecondary : c.accent}
+            />
+            <Text
+              style={[
+                styles.countdownText,
+                { color: expired ? c.textSecondary : c.accent },
+              ]}
+            >
+              {countdown}
+            </Text>
+          </View>
+        )}
       </View>
 
       {(pred.entry_price !== null || pred.target_price !== null || pred.stop_price !== null) && (
@@ -233,6 +309,22 @@ function PredictionCard({
           </Text>
         </Pressable>
       </View>
+
+      {/* 詳細・コメント・投票者へ */}
+      <Pressable
+        style={styles.detailRow}
+        onPress={() => router.push(`/prediction/${pred.id}`)}
+      >
+        <Ionicons name="chatbubble-outline" size={15} color={c.textSecondary} />
+        <Text style={styles.detailText}>
+          {t('predictions.commentsCount', { n: pred.comment_count ?? 0 })}
+        </Text>
+        <Ionicons name="people-outline" size={15} color={c.textSecondary} />
+        <Text style={styles.detailText}>{total}</Text>
+        <View style={{ flex: 1 }} />
+        <Text style={styles.detailLink}>{t('predictions.viewDetail')}</Text>
+        <Ionicons name="chevron-forward" size={14} color={c.accent} />
+      </Pressable>
     </View>
   );
 }
@@ -251,6 +343,25 @@ function makeStyles(c: ThemeColors) {
     },
     headerTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    tabs: {
+      flexDirection: 'row',
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    tab: {
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    tabActive: { backgroundColor: c.accent, borderColor: c.accent },
+    tabText: { fontSize: 13, fontWeight: '700', color: c.textSecondary },
+    tabTextActive: { color: '#fff' },
+    countdown: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 'auto' },
+    countdownText: { fontSize: 12, fontWeight: '700' },
     body: { padding: 16, gap: 12, paddingBottom: 40 },
     card: { backgroundColor: c.surface, borderRadius: 14, padding: 14, gap: 10 },
     cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -293,5 +404,26 @@ function makeStyles(c: ThemeColors) {
       borderColor: c.border,
     },
     voteBtnText: { fontSize: 13, fontWeight: '700' },
+    winRateChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      backgroundColor: `${c.accent}14`,
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    winRateText: { fontSize: 11, fontWeight: '800', color: c.accent },
+    detailRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      marginTop: 2,
+      paddingTop: 10,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    detailText: { fontSize: 12.5, color: c.textSecondary, fontWeight: '600', marginRight: 6 },
+    detailLink: { fontSize: 12.5, color: c.accent, fontWeight: '700' },
   });
 }

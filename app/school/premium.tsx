@@ -1,77 +1,62 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
-  Pressable,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemeColors } from '@/constants/theme';
+import { GoldGradient } from '@/components/gold-gradient';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
-import { usePremium } from '@/hooks/use-premium';
-import { useThemeColors } from '@/hooks/use-theme';
+import { useTheme } from '@/hooks/use-theme';
+import { AnalyticsEvents } from '@/lib/analytics';
+import { PLAN_COLORS } from '@/lib/design';
 import {
-  getSubscriptionProducts,
+  PRODUCT_IDS,
   purchaseSubscription,
   setupPurchaseListeners,
-  PRODUCT_IDS,
 } from '@/lib/iap';
-import { AnalyticsEvents } from '@/lib/analytics';
-import { PREMIUM_FEATURES } from '@/lib/premium-features';
+import { PLAN_FEATURES, type PlanCell } from '@/lib/premium-features';
 
-type Plan = 'monthly' | 'yearly';
+type BillingPeriod = 'monthly' | 'yearly';
+type PlanType = 'plus' | 'pro';
 
-type IapProduct = {
-  id?: string;
-  productId?: string;
-  displayPrice?: string;
-  price?: string | number;
-  localizedPrice?: string;
-  priceString?: string;
-};
+const PLANS = {
+  plus: { monthly: 580, yearly: 4800 },
+  pro: { monthly: 980, yearly: 7800 },
+} as const;
 
-function priceLabel(product: IapProduct | undefined, fallback: string): string {
-  if (!product) return fallback;
-  return (
-    product.displayPrice ||
-    product.localizedPrice ||
-    product.priceString ||
-    (typeof product.price === 'string' ? product.price : undefined) ||
-    fallback
-  );
+function productIdFor(plan: PlanType, period: BillingPeriod): string {
+  if (plan === 'pro')
+    return period === 'yearly' ? PRODUCT_IDS.PRO_YEARLY : PRODUCT_IDS.PRO_MONTHLY;
+  return period === 'yearly' ? PRODUCT_IDS.PLUS_YEARLY : PRODUCT_IDS.PLUS_MONTHLY;
 }
 
-export default function SchoolPremiumScreen() {
-  const c = useThemeColors();
-  const { t } = useI18n();
+export default function PlanScreen() {
+  const { resolved } = useTheme();
+  const isDark = resolved === 'dark';
+  const k = isDark ? 'dark' : 'light';
   const router = useRouter();
+  const { t } = useI18n();
   const { session } = useAuth();
-  const { isPremium, refresh } = usePremium();
-  const styles = useMemo(() => makeStyles(c), [c]);
 
-  const [products, setProducts] = useState<IapProduct[]>([]);
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>('plus');
   const [purchasing, setPurchasing] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<Plan>('monthly');
+
+  const c = PLAN_COLORS;
 
   useEffect(() => {
     AnalyticsEvents.paywallViewed('school');
-    let cancelled = false;
-    (async () => {
-      const subs = await getSubscriptionProducts();
-      if (!cancelled) setProducts(subs as IapProduct[]);
-    })();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
+  // IAP 購入リスナ（既存ロジック維持）
   useEffect(() => {
     const userId = session?.user.id;
     if (!userId) return;
@@ -79,331 +64,411 @@ export default function SchoolPremiumScreen() {
       userId,
       () => {
         setPurchasing(false);
-        refresh();
-        Alert.alert(
-          t('premium.success_title'),
-          t('premium.success_message'),
-          [{ text: 'OK', onPress: () => router.back() }],
-        );
+        Alert.alert(t('premium.success_title'), t('premium.success_message'), [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
       },
       (code) => {
         setPurchasing(false);
-        const msg =
+        Alert.alert(
+          t('premium.error_title'),
           code === 'purchase_processing_failed'
             ? t('premium.error_processing')
-            : t('premium.error_message');
-        Alert.alert(t('premium.error_title'), msg);
+            : t('premium.error_message'),
+        );
       },
     );
     return cleanup;
-  }, [session?.user.id, refresh, router, t]);
-
-  const monthlyProduct = products.find(
-    (p) => (p.id ?? p.productId) === PRODUCT_IDS.PREMIUM_MONTHLY,
-  );
-  const yearlyProduct = products.find(
-    (p) => (p.id ?? p.productId) === PRODUCT_IDS.PREMIUM_YEARLY,
-  );
+  }, [session?.user.id, router, t]);
 
   const handlePurchase = async () => {
-    const productId =
-      selectedPlan === 'yearly'
-        ? PRODUCT_IDS.PREMIUM_YEARLY
-        : PRODUCT_IDS.PREMIUM_MONTHLY;
-    AnalyticsEvents.subscriptionStarted(selectedPlan);
+    if (purchasing) return;
+    AnalyticsEvents.subscriptionStarted(`${selectedPlan}_${billingPeriod}`);
     setPurchasing(true);
-    await purchaseSubscription(productId);
-    // 結果は setupPurchaseListeners が拾う
+    await purchaseSubscription(productIdFor(selectedPlan, billingPeriod));
   };
 
-  if (isPremium) {
+  const renderCellValue = (value: PlanCell) => {
+    if (value === true) {
+      return <Ionicons name="checkmark" size={18} color="#10B981" />;
+    }
+    if (value === false) {
+      return (
+        <Text style={[styles.cellText, { color: c.textMuted[k] }]}>—</Text>
+      );
+    }
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Premium</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-        <View style={styles.alreadyWrap}>
-          <Text style={styles.alreadyEmoji}>✨</Text>
-          <Text style={styles.alreadyTitle}>{t('premium.already_premium')}</Text>
-          <Text style={styles.alreadyDesc}>
-            {t('premium.already_premium_desc')}
-          </Text>
-        </View>
-      </SafeAreaView>
+      <Text style={[styles.cellText, { color: c.textPrimary[k] }]}>{value}</Text>
     );
-  }
+  };
+
+  const renderPlanCard = (plan: PlanType) => {
+    const selected = selectedPlan === plan;
+    const isPro = plan === 'pro';
+    // Plus=エメラルド / Pro=ゴールド の選択色（ティア identity）
+    const selColor = isPro ? c.gold : c.plusBorder;
+    const price = billingPeriod === 'monthly' ? PLANS[plan].monthly : PLANS[plan].yearly;
+    return (
+      <TouchableOpacity
+        style={[
+          styles.planCard,
+          {
+            borderColor: selected ? selColor : c.proBorder[k],
+            borderWidth: selected ? 1.5 : 1,
+            backgroundColor: selected && !isPro ? c.plusBg[k] : 'transparent',
+            overflow: 'hidden',
+          },
+        ]}
+        onPress={() => setSelectedPlan(plan)}
+        activeOpacity={0.7}
+      >
+        {/* Pro 選択時はゴールドの光沢を薄く敷く */}
+        {selected && isPro && (
+          <View style={[StyleSheet.absoluteFill, { opacity: 0.18 }]} pointerEvents="none">
+            <GoldGradient id="proSelSheen" />
+          </View>
+        )}
+        {plan === 'plus' && (
+          <View style={styles.recommendBadge}>
+            <Text style={styles.recommendBadgeText}>{t('premium.recommended')}</Text>
+          </View>
+        )}
+        <View style={styles.planCardHeader}>
+          <View style={styles.planNameRow}>
+            <Text style={[styles.planIcon, { color: c.gold }]}>✦</Text>
+            <Text style={[styles.planName, { color: c.textPrimary[k] }]}>
+              {plan === 'plus' ? 'Plus' : 'Pro'}
+            </Text>
+          </View>
+          {selected ? (
+            <View style={[styles.checkCircle, { backgroundColor: selColor }]}>
+              <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+            </View>
+          ) : (
+            <View style={[styles.radioCircle, { borderColor: c.textMuted[k] }]} />
+          )}
+        </View>
+
+        <Text style={[styles.planPrice, { color: c.textPrimary[k] }]}>
+          ¥{price}
+          <Text style={[styles.planPricePeriod, { color: c.textSecondary[k] }]}>
+            /{billingPeriod === 'monthly' ? t('premium.perMonth').replace('/', '') : t('premium.perYear').replace('/', '')}
+          </Text>
+        </Text>
+
+        <Text style={[styles.planDescription, { color: c.textSecondary[k] }]}>
+          {t(`premium.tier_${plan}_tagline`)}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <View style={[styles.container, { backgroundColor: c.screenBg[k] }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Premium</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color={c.textPrimary[k]} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: c.textPrimary[k] }]}>
+          {t('premium.title')}
+        </Text>
+        <View style={styles.backButton} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={styles.heroBlock}>
-          <Ionicons name="diamond" size={48} color={c.accent} />
-          <Text style={styles.heroTitle}>TradeLog Premium</Text>
-          <Text style={styles.heroDesc}>{t('premium.description')}</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* ダイヤモンドアイコン */}
+        <View style={styles.iconContainer}>
+          <View
+            style={[
+              styles.diamondCircle,
+              {
+                borderColor: c.gold,
+                backgroundColor: isDark
+                  ? 'rgba(212, 168, 85, 0.1)'
+                  : 'rgba(212, 168, 85, 0.08)',
+              },
+            ]}
+          >
+            <Text style={styles.diamondEmoji}>💎</Text>
+          </View>
         </View>
 
-        <View style={styles.benefitList}>
-          {PREMIUM_FEATURES.map((feature) => (
-            <View key={feature.titleKey} style={styles.benefitRow}>
-              <View style={styles.benefitIconWrap}>
-                <Ionicons name={feature.iconName} size={18} color={c.accent} />
+        <Text style={[styles.mainTitle, { color: c.textPrimary[k] }]}>
+          {t('premium.intro_title')}
+        </Text>
+        <Text style={[styles.mainSubtitle, { color: c.textSecondary[k] }]}>
+          {t('premium.subtitle')}
+        </Text>
+
+        {/* 期間切り替え */}
+        <View
+          style={[
+            styles.periodToggle,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
+          ]}
+        >
+          <TouchableOpacity
+            style={[
+              styles.periodTab,
+              billingPeriod === 'monthly' && {
+                backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#FFFFFF',
+                ...Platform.select({
+                  ios: {
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: isDark ? 0.3 : 0.08,
+                    shadowRadius: 3,
+                  },
+                  android: { elevation: 2 },
+                }),
+              },
+            ]}
+            onPress={() => setBillingPeriod('monthly')}
+          >
+            <Text
+              style={[
+                styles.periodTabText,
+                {
+                  color:
+                    billingPeriod === 'monthly' ? c.textPrimary[k] : c.textSecondary[k],
+                  fontWeight: billingPeriod === 'monthly' ? '600' : '400',
+                },
+              ]}
+            >
+              {t('premium.monthly')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.periodTab,
+              billingPeriod === 'yearly' && {
+                backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#FFFFFF',
+                ...Platform.select({
+                  ios: {
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: isDark ? 0.3 : 0.08,
+                    shadowRadius: 3,
+                  },
+                  android: { elevation: 2 },
+                }),
+              },
+            ]}
+            onPress={() => setBillingPeriod('yearly')}
+          >
+            <View style={styles.yearlyTabContent}>
+              <Text
+                style={[
+                  styles.periodTabText,
+                  {
+                    color:
+                      billingPeriod === 'yearly' ? c.textPrimary[k] : c.textSecondary[k],
+                    fontWeight: billingPeriod === 'yearly' ? '600' : '400',
+                  },
+                ]}
+              >
+                {t('premium.yearly')}
+              </Text>
+              <View style={[styles.discountBadge, { backgroundColor: c.gold }]}>
+                <Text style={styles.discountBadgeText}>{t('premium.save_hint')}</Text>
               </View>
-              <View style={styles.benefitTextWrap}>
-                <Text style={styles.benefitTitle}>{t(feature.titleKey)}</Text>
-                <Text style={styles.benefitDesc}>
-                  {t(feature.descriptionKey)}
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* プランカード */}
+        <View style={styles.planCardsRow}>
+          {renderPlanCard('plus')}
+          {renderPlanCard('pro')}
+        </View>
+
+        {/* 比較テーブル */}
+        <Text style={[styles.comparisonTitle, { color: c.textPrimary[k] }]}>
+          {t('premium.compare_title')}
+        </Text>
+
+        <View style={[styles.comparisonTable, { borderColor: c.tableBorder[k] }]}>
+          <View
+            style={[
+              styles.tableHeaderRow,
+              { borderBottomColor: c.tableBorder[k], backgroundColor: c.tableHeaderBg[k] },
+            ]}
+          >
+            <View style={styles.tableFeatureCol} />
+            <Text style={[styles.tableHeaderText, { color: c.textSecondary[k] }]}>Free</Text>
+            <Text style={[styles.tableHeaderText, { color: '#10B981', fontWeight: '700' }]}>Plus</Text>
+            <Text style={[styles.tableHeaderText, { color: c.gold, fontWeight: '700' }]}>Pro</Text>
+          </View>
+
+          {PLAN_FEATURES.map((row, index) => (
+            <View
+              key={row.titleKey}
+              style={[
+                styles.tableRow,
+                index < PLAN_FEATURES.length - 1 && {
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                  borderBottomColor: c.tableBorder[k],
+                },
+              ]}
+            >
+              <View style={styles.tableFeatureCol}>
+                <Ionicons
+                  name={row.iconName}
+                  size={16}
+                  color={c.textSecondary[k]}
+                  style={styles.tableFeatureIcon}
+                />
+                <Text style={[styles.tableFeatureText, { color: c.textPrimary[k] }]} numberOfLines={1}>
+                  {t(row.titleKey)}
                 </Text>
               </View>
-              <Ionicons
-                name="checkmark-circle"
-                size={20}
-                color={c.accent}
-              />
+              <View style={styles.tableValueCol}>{renderCellValue(row.free)}</View>
+              <View style={styles.tableValueCol}>{renderCellValue(row.plus)}</View>
+              <View style={styles.tableValueCol}>{renderCellValue(row.pro)}</View>
             </View>
           ))}
         </View>
 
-        <View style={styles.plansWrap}>
-          <Pressable
-            onPress={() => setSelectedPlan('monthly')}
-            style={[
-              styles.planCard,
-              selectedPlan === 'monthly' && styles.planCardActive,
-            ]}
-          >
-            <View>
-              <Text style={styles.planLabel}>{t('premium.monthly')}</Text>
-              <Text style={styles.planNote}>{t('premium.cancel_anytime')}</Text>
-            </View>
-            <Text style={styles.planPrice}>
-              {priceLabel(monthlyProduct, '¥980/月')}
-            </Text>
-          </Pressable>
+        <View style={{ height: 120 }} />
+      </ScrollView>
 
-          <Pressable
-            onPress={() => setSelectedPlan('yearly')}
-            style={[
-              styles.planCard,
-              selectedPlan === 'yearly' && styles.planCardActive,
-            ]}
-          >
-            <View>
-              <View style={styles.planLabelRow}>
-                <Text style={styles.planLabel}>{t('premium.yearly')}</Text>
-                <View style={styles.saveBadge}>
-                  <Text style={styles.saveBadgeText}>{t('premium.save_34')}</Text>
-                </View>
-              </View>
-              <Text style={styles.planSave}>{t('premium.yearly_save')}</Text>
-            </View>
-            <Text style={styles.planPrice}>
-              {priceLabel(yearlyProduct, '¥7,800/年')}
-            </Text>
-          </Pressable>
-        </View>
-
-        <Pressable
+      {/* 固定購入ボタン */}
+      <View
+        style={[
+          styles.purchaseFooter,
+          { backgroundColor: c.screenBg[k], borderTopColor: c.tableBorder[k] },
+        ]}
+      >
+        <TouchableOpacity
+          style={[styles.purchaseButton, purchasing && { opacity: 0.6 }]}
+          activeOpacity={0.8}
           onPress={handlePurchase}
           disabled={purchasing}
-          style={({ pressed }) => [
-            styles.subscribeButton,
-            pressed && !purchasing && styles.subscribeButtonPressed,
-            purchasing && styles.subscribeButtonDisabled,
-          ]}
         >
-          {purchasing ? (
-            <ActivityIndicator color={c.onAccent} />
-          ) : (
-            <Text style={styles.subscribeButtonText}>
-              {t('premium.subscribe_button')}
-            </Text>
-          )}
-        </Pressable>
-
-        <Text style={styles.termsNotice}>{t('premium.terms_notice')}</Text>
-      </ScrollView>
-    </SafeAreaView>
+          <Text style={styles.purchaseButtonText}>
+            {t('premium.subscribe_to', { plan: selectedPlan === 'plus' ? 'Plus' : 'Pro' })}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
-function makeStyles(c: ThemeColors) {
-  return StyleSheet.create({
-    container: { flex: 1, backgroundColor: c.background },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: c.border,
-    },
-    headerTitle: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: c.textPrimary,
-    },
-    headerSpacer: { width: 26 },
-    body: {
-      padding: 20,
-      paddingBottom: 60,
-    },
-    heroBlock: {
-      alignItems: 'center',
-      paddingVertical: 18,
-      marginBottom: 16,
-    },
-    heroTitle: {
-      fontSize: 24,
-      fontWeight: '800',
-      color: c.textPrimary,
-      letterSpacing: -0.4,
-      marginTop: 10,
-      marginBottom: 6,
-    },
-    heroDesc: {
-      fontSize: 14,
-      color: c.textSecondary,
-      textAlign: 'center',
-      lineHeight: 21,
-      paddingHorizontal: 16,
-    },
-    benefitList: {
-      gap: 14,
-      marginBottom: 24,
-    },
-    benefitRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    benefitIconWrap: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: `${c.accent}1F`,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 14,
-    },
-    benefitTextWrap: {
-      flex: 1,
-      marginRight: 10,
-    },
-    benefitTitle: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: c.textPrimary,
-    },
-    benefitDesc: {
-      fontSize: 13,
-      color: c.textSecondary,
-      marginTop: 2,
-      lineHeight: 19,
-    },
-    planLabelRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    saveBadge: {
-      backgroundColor: c.accent,
-      borderRadius: 4,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-    },
-    saveBadgeText: {
-      fontSize: 10,
-      fontWeight: '700',
-      color: '#fff',
-    },
-    plansWrap: {
-      gap: 10,
-      marginBottom: 20,
-    },
-    planCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 16,
-      borderRadius: 12,
-      borderWidth: 2,
-      borderColor: c.border,
-      backgroundColor: c.surface,
-    },
-    planCardActive: {
-      borderColor: c.accent,
-    },
-    planLabel: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: c.textPrimary,
-    },
-    planNote: {
-      fontSize: 12,
-      color: c.textSecondary,
-      marginTop: 2,
-    },
-    planSave: {
-      fontSize: 12,
-      color: c.accent,
-      fontWeight: '600',
-      marginTop: 2,
-    },
-    planPrice: {
-      fontSize: 17,
-      fontWeight: '800',
-      color: c.textPrimary,
-    },
-    subscribeButton: {
-      backgroundColor: c.accent,
-      borderRadius: 12,
-      paddingVertical: 16,
-      alignItems: 'center',
-    },
-    subscribeButtonPressed: { opacity: 0.85 },
-    subscribeButtonDisabled: { opacity: 0.6 },
-    subscribeButtonText: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: c.onAccent,
-    },
-    termsNotice: {
-      fontSize: 11,
-      color: c.textSecondary,
-      textAlign: 'center',
-      marginTop: 14,
-      lineHeight: 16,
-    },
-    alreadyWrap: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 40,
-    },
-    alreadyEmoji: { fontSize: 48, marginBottom: 16 },
-    alreadyTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: c.textPrimary,
-      marginBottom: 8,
-    },
-    alreadyDesc: {
-      fontSize: 14,
-      color: c.textSecondary,
-      textAlign: 'center',
-    },
-  });
-}
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 56 : 16,
+    paddingBottom: 12,
+  },
+  backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 17, fontWeight: '600', letterSpacing: -0.3 },
+  scrollContent: { paddingHorizontal: 20 },
+  iconContainer: { alignItems: 'center', marginTop: 8, marginBottom: 16 },
+  diamondCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#D4A855',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 14,
+  },
+  diamondEmoji: { fontSize: 28 },
+  mainTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  mainSubtitle: { fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  periodToggle: { flexDirection: 'row', borderRadius: 10, padding: 3, marginBottom: 20 },
+  periodTab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  periodTabText: { fontSize: 14, fontWeight: '400' },
+  yearlyTabContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  discountBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  discountBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
+  planCardsRow: { flexDirection: 'row', gap: 12, marginBottom: 32 },
+  planCard: { flex: 1, borderRadius: 14, padding: 16, minHeight: 140 },
+  planCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  planNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  planIcon: { fontSize: 14, fontWeight: '600' },
+  planName: { fontSize: 17, fontWeight: '700' },
+  recommendBadge: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  recommendBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
+  checkCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioCircle: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5 },
+  planPrice: { fontSize: 28, fontWeight: '800', letterSpacing: -1, marginBottom: 4 },
+  planPricePeriod: { fontSize: 14, fontWeight: '400' },
+  planDescription: { fontSize: 12, lineHeight: 16, marginTop: 4 },
+  comparisonTitle: { fontSize: 16, fontWeight: '600', marginBottom: 12 },
+  comparisonTable: {
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  tableHeaderText: { fontSize: 13, fontWeight: '600', width: 48, textAlign: 'center' },
+  tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 },
+  tableFeatureCol: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  tableFeatureIcon: { marginRight: 8 },
+  tableFeatureText: { fontSize: 13, fontWeight: '400', flex: 1 },
+  tableValueCol: { width: 48, alignItems: 'center', justifyContent: 'center' },
+  cellText: { fontSize: 13, fontWeight: '500' },
+  purchaseFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  purchaseButton: {
+    backgroundColor: '#10B981',
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  purchaseButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+});

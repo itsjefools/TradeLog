@@ -77,12 +77,12 @@ export default function AiReviewScreen() {
         <View style={styles.headerTitleWrap}>
           <Ionicons name="analytics-outline" size={18} color={c.accent} />
           <Text style={styles.headerTitle}>{t('aiReview.title')}</Text>
-          <PremiumTag />
+          <PremiumTag tier="pro" />
         </View>
         <View style={styles.headerSpacer} />
       </View>
 
-      <PremiumGate feature="stats">
+      <PremiumGate feature="ai_review" requiredTier="pro">
         <ScrollView contentContainerStyle={styles.body}>
           {!hasTrades ? (
             <EmptyState

@@ -38,6 +38,18 @@ const VERIFIED = '#10B981';
 const DANGER = '#EF4444';
 const ON_ACCENT = '#000000';
 
+// プランティア色（ラグジュアリー路線：エメラルド × シャンパンゴールド）
+// Plus = エメラルド（宝石）、Pro = ゴールド（貴金属・最上位）。
+export const TIER_COLORS = {
+  plus: '#0E9F6E',
+  pro: '#C9A227', // クリーンなディープゴールド（白地のテキスト/チェック用）
+} as const;
+// 招待・高級アクセント用ゴールド & オニキス（ダークラグジュアリー背景）
+export const GOLD = '#C9A227'; // 白地アクセント
+export const GOLD_SOFT = '#EAD08A'; // 暗地（オニキス）上の金文字＝シャンパン
+export const ONYX = '#15161B';
+export const ONYX_ALT = '#20222B';
+
 export const darkColors: ThemeColors = {
   background: '#000000',
   // 真っ黒の上に乗せるカード/入力欄。背景との差はごく僅か。

@@ -1,35 +1,40 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { checkPremiumStatus } from '@/lib/iap';
-import { isBonusPremiumActive, TEST_UNLOCK_PREMIUM } from '@/lib/premium';
+import { getActiveTier } from '@/lib/iap';
+import {
+  getPlan,
+  planAtLeast,
+  TEST_UNLOCK_PREMIUM,
+  type Plan,
+} from '@/lib/premium';
 
 import { useAuth } from './use-auth';
 import { useProfile } from './use-profile';
 
 /**
- * Premium 状態を Supabase の user_subscriptions テーブル経由で判定する。
- * profiles.is_premium も補助的に参照 (即時更新のため)。
+ * プラン状態 (free / plus / pro) を Supabase の user_subscriptions テーブル経由で判定する。
+ * profiles.plan_tier も補助的に参照 (即時更新のため)、招待ボーナス (bonus_premium_until) も加味する。
  */
 export function usePremium() {
   const { session } = useAuth();
   const { profile } = useProfile();
   const userId = session?.user.id ?? null;
-  const profileFlag = profile?.is_premium ?? false;
+  const profileTier = (profile?.plan_tier as Plan | undefined) ?? 'free';
 
-  const [dbPremium, setDbPremium] = useState(false);
+  const [dbTier, setDbTier] = useState<Plan>('free');
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     if (!userId) {
-      setDbPremium(false);
+      setDbTier('free');
       setLoading(false);
       return;
     }
     try {
-      const status = await checkPremiumStatus(userId);
-      setDbPremium(status);
+      const tier = await getActiveTier(userId);
+      setDbTier(tier);
     } catch {
-      setDbPremium(false);
+      setDbTier('free');
     } finally {
       setLoading(false);
     }
@@ -39,16 +44,27 @@ export function usePremium() {
     refresh();
   }, [refresh]);
 
-  const bonusActive = isBonusPremiumActive(profile?.bonus_premium_until);
-  const realPremium = dbPremium || profileFlag || bonusActive;
+  // DB 購読 / profile 即時フラグ のうち上位ティアを採用し、ボーナス・テスト解放を getPlan で合算
+  const baseTier: Plan = planAtLeast(dbTier, profileTier) ? dbTier : profileTier;
+  const plan = getPlan(baseTier, profile?.bonus_premium_until);
+
+  // テスト解放やボーナスを除いた「実際に課金しているティア」
+  const realPlan = getPlan(baseTier, null);
+  const realPaid = realPlan !== 'free';
 
   return {
-    // 機能の解放判定。テスト解放フラグが立っていれば全員解放。
-    isPremium: realPremium || TEST_UNLOCK_PREMIUM,
-    // 実際に課金しているか（表示の出し分け用）
-    realPremium,
-    // テスト解放で開いているだけの状態か（バナー/タグ表示用）
-    testUnlock: TEST_UNLOCK_PREMIUM && !realPremium,
+    /** 現在の有効プラン (free / plus / pro)。テスト解放・ボーナス込み。 */
+    plan,
+    /** Plus 以上か */
+    isPlus: planAtLeast(plan, 'plus'),
+    /** Pro か */
+    isPro: plan === 'pro',
+    /** 後方互換: Plus 以上を Premium とみなす */
+    isPremium: planAtLeast(plan, 'plus'),
+    /** 実際に課金しているか（表示の出し分け用） */
+    realPremium: realPaid,
+    /** テスト解放で開いているだけの状態か（バナー/タグ表示用） */
+    testUnlock: TEST_UNLOCK_PREMIUM && !realPaid,
     loading,
     refresh,
   };

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CurrencyPairField } from '@/components/currency-pair-field';
 import { useToast } from '@/components/toast';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
@@ -23,14 +24,18 @@ import { notifySuccess } from '@/lib/haptics';
 import { supabase } from '@/lib/supabase';
 import { parseNumOrNull } from '@/lib/trade-math';
 
-type Expiry = '24h' | '3d' | '1w' | 'none';
+// 有効期限の相対プリセット（時間／日）
+const EXPIRY_OPTIONS = [
+  { key: '1h', hours: 1 },
+  { key: '6h', hours: 6 },
+  { key: '12h', hours: 12 },
+  { key: '1d', hours: 24 },
+  { key: '3d', hours: 72 },
+  { key: '1w', hours: 168 },
+  { key: 'none', hours: null },
+] as const;
 
-const EXPIRY_HOURS: Record<Expiry, number | null> = {
-  '24h': 24,
-  '3d': 72,
-  '1w': 168,
-  none: null,
-};
+type ExpiryKey = (typeof EXPIRY_OPTIONS)[number]['key'];
 
 export default function PredictionNewScreen() {
   const c = useThemeColors();
@@ -45,7 +50,7 @@ export default function PredictionNewScreen() {
   const [target, setTarget] = useState('');
   const [stop, setStop] = useState('');
   const [rationale, setRationale] = useState('');
-  const [expiry, setExpiry] = useState<Expiry>('3d');
+  const [expiry, setExpiry] = useState<ExpiryKey>('1d');
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
@@ -57,7 +62,7 @@ export default function PredictionNewScreen() {
     try {
       const uid = (await supabase.auth.getUser()).data.user?.id;
       if (!uid) throw new Error('no session');
-      const hours = EXPIRY_HOURS[expiry];
+      const hours = EXPIRY_OPTIONS.find((o) => o.key === expiry)?.hours ?? null;
       const expires_at =
         hours === null ? null : new Date(Date.now() + hours * 3600_000).toISOString();
       const { error } = await supabase.from('predictions').insert({
@@ -81,8 +86,6 @@ export default function PredictionNewScreen() {
     }
   };
 
-  const expiryOptions: Expiry[] = ['24h', '3d', '1w', 'none'];
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -99,16 +102,7 @@ export default function PredictionNewScreen() {
       >
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t('predictions.pair')}</Text>
-          <TextInput
-            style={styles.input}
-            value={pair}
-            onChangeText={setPair}
-            placeholder="USD/JPY"
-            placeholderTextColor={c.textSecondary}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            editable={!saving}
-          />
+          <CurrencyPairField value={pair} onChange={setPair} editable={!saving} />
 
           <Text style={styles.label}>{t('predictions.direction')}</Text>
           <View style={styles.segment}>
@@ -188,17 +182,17 @@ export default function PredictionNewScreen() {
 
           <Text style={styles.label}>{t('predictions.expiry')}</Text>
           <View style={styles.chipsRow}>
-            {expiryOptions.map((e) => {
-              const active = expiry === e;
+            {EXPIRY_OPTIONS.map((o) => {
+              const active = expiry === o.key;
               return (
                 <Pressable
-                  key={e}
+                  key={o.key}
                   style={[styles.chip, active && styles.chipActive]}
-                  onPress={() => setExpiry(e)}
+                  onPress={() => setExpiry(o.key)}
                   disabled={saving}
                 >
                   <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                    {t(`predictions.expiry_${e}`)}
+                    {t(`predictions.expiry_${o.key}`)}
                   </Text>
                 </Pressable>
               );
@@ -266,16 +260,16 @@ function makeStyles(c: ThemeColors) {
     segText: { fontSize: 14, fontWeight: '700', color: c.textPrimary },
     chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: {
-      paddingHorizontal: 14,
-      paddingVertical: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 9,
       borderRadius: 999,
-      backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
+      backgroundColor: c.surface,
     },
     chipActive: { backgroundColor: c.accent, borderColor: c.accent },
-    chipText: { fontSize: 13, fontWeight: '600', color: c.textPrimary },
-    chipTextActive: { color: '#fff' },
+    chipText: { fontSize: 13, fontWeight: '700', color: c.textPrimary },
+    chipTextActive: { color: c.onAccent },
     submit: {
       backgroundColor: c.accent,
       borderRadius: 12,

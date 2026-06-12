@@ -30,6 +30,7 @@ export type Profile = {
   language: string | null;
   currency: string | null;
   is_premium: boolean | null;
+  plan_tier: 'free' | 'plus' | 'pro' | null;
   nationality: string | null;
   is_verified: boolean | null;
   monthly_pnl_goal: number | null;
@@ -56,7 +57,7 @@ export type Profile = {
  */
 export const PROFILE_COLUMNS = `
   id, email, username, display_name, avatar_url, bio,
-  trade_style, language, currency, is_premium, nationality, is_verified,
+  trade_style, language, currency, is_premium, plan_tier, nationality, is_verified,
   monthly_pnl_goal, push_token, total_trades,
   website, twitter_handle, youtube, showcase_badges, show_badges,
   referral_code, referred_by, bonus_premium_until, pip_unit, banner_url,

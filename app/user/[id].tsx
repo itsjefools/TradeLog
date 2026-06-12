@@ -39,7 +39,16 @@ import { Post, PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/ty
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const TAB_WIDTH = SCREEN_WIDTH / 4;
 
-type TabKey = 'posts' | 'trades' | 'shares' | 'likes';
+type TabKey = 'posts' | 'trades' | 'predictions' | 'shares' | 'likes';
+
+type UserPred = {
+  id: string;
+  currency_pair: string;
+  direction: 'long' | 'short';
+  outcome: 'open' | 'win' | 'loss';
+  bull_count: number;
+  bear_count: number;
+};
 
 type RawPost = Post & {
   trade: Trade | null;
@@ -135,6 +144,7 @@ export default function UserProfileScreen() {
 
   const [tab, setTab] = useState<TabKey>('posts');
   const [items, setItems] = useState<FeedCardItem[]>([]);
+  const [userPredictions, setUserPredictions] = useState<UserPred[]>([]);
   const [tabLoading, setTabLoading] = useState(false);
 
   const decorateItems = useCallback(
@@ -235,6 +245,12 @@ export default function UserProfileScreen() {
           } catch {
             setItems([]);
           }
+        } else if (which === 'predictions') {
+          const { data } = await supabase.rpc('get_predictions', {
+            top_n: 50,
+            p_user: targetId,
+          });
+          setUserPredictions((data ?? []) as UserPred[]);
         } else {
           // shares (reposts)
           const { data } = await supabase
@@ -518,6 +534,7 @@ export default function UserProfileScreen() {
   }[] = [
     { key: 'posts', icon: 'grid-outline' },
     { key: 'trades', icon: 'bar-chart-outline' },
+    { key: 'predictions', icon: 'pulse-outline' },
     { key: 'shares', icon: 'repeat' },
     { key: 'likes', icon: 'heart-outline' },
   ];
@@ -747,6 +764,52 @@ export default function UserProfileScreen() {
                   <TradeCard key={tr.id} trade={tr} />
                 ))}
               </>
+            )
+          ) : tab === 'predictions' ? (
+            tabLoading ? (
+              <View style={styles.tabCenter}>
+                <ActivityIndicator color={c.accent} />
+              </View>
+            ) : userPredictions.length === 0 ? (
+              <EmptyState icon="pulse-outline" title={t('predictions.empty')} subtitle="" />
+            ) : (
+              userPredictions.map((p) => (
+                <Pressable
+                  key={p.id}
+                  style={styles.predRow}
+                  onPress={() => router.push(`/prediction/${p.id}`)}
+                >
+                  <Text style={styles.predPair}>{p.currency_pair}</Text>
+                  <View
+                    style={[
+                      styles.predDir,
+                      { backgroundColor: p.direction === 'long' ? c.win : c.loss },
+                    ]}
+                  >
+                    <Text style={styles.predDirText}>
+                      {p.direction === 'long' ? t('common.long') : t('common.short')}
+                    </Text>
+                  </View>
+                  {p.outcome !== 'open' && (
+                    <View
+                      style={[
+                        styles.predOutcome,
+                        { backgroundColor: p.outcome === 'win' ? c.win : c.loss },
+                      ]}
+                    >
+                      <Text style={styles.predDirText}>
+                        {p.outcome === 'win' ? t('predictions.win') : t('predictions.loss')}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }} />
+                  <Ionicons name="trending-up" size={14} color={c.win} />
+                  <Text style={styles.predCount}>{p.bull_count}</Text>
+                  <Ionicons name="trending-down" size={14} color={c.loss} />
+                  <Text style={styles.predCount}>{p.bear_count}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={c.textSecondary} />
+                </Pressable>
+              ))
             )
           ) : tabLoading ? (
             <View style={styles.tabCenter}>
@@ -1248,6 +1311,20 @@ function makeStyles(c: ThemeColors) {
       paddingVertical: 40,
       alignItems: 'center',
     },
+    predRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    predPair: { fontSize: 15, fontWeight: '800', color: c.textPrimary, letterSpacing: 0.3 },
+    predDir: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+    predOutcome: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+    predDirText: { fontSize: 10, fontWeight: '800', color: '#fff' },
+    predCount: { fontSize: 13, fontWeight: '700', color: c.textPrimary, marginRight: 4 },
     emptyBox: {
       backgroundColor: c.surface,
       borderRadius: 10,

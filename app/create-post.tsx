@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,8 +24,7 @@ import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { AnalyticsEvents } from '@/lib/analytics';
-import { notifyError, notifySuccess, notifyWarning } from '@/lib/haptics';
-import { FREE_LIMITS, getPlan } from '@/lib/premium';
+import { notifyError, notifySuccess } from '@/lib/haptics';
 import { supabase } from '@/lib/supabase';
 import {
   LocalMedia,
@@ -56,31 +55,11 @@ export default function CreatePostScreen() {
   const [text, setText] = useState('');
   const [media, setMedia] = useState<LocalMedia[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [monthlyCount, setMonthlyCount] = useState<number | null>(null);
 
-  const plan = getPlan(profile?.is_premium, profile?.bonus_premium_until);
-  const isPremium = plan === 'premium';
-  const overLimit =
-    !isPremium &&
-    monthlyCount !== null &&
-    monthlyCount >= FREE_LIMITS.monthlyPosts;
-
+  // 投稿は全プラン無制限
   const trimmed = text.trim();
   const canSubmit =
-    !submitting && (trimmed.length > 0 || media.length > 0) && !overLimit;
-
-  useEffect(() => {
-    if (!myId) return;
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-    supabase
-      .from('posts')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', myId)
-      .gte('created_at', monthStart.toISOString())
-      .then(({ count }) => setMonthlyCount(count ?? 0));
-  }, [myId]);
+    !submitting && (trimmed.length > 0 || media.length > 0);
 
   const fallbackName = profile?.email?.split('@')[0] ?? t('profile.defaultName');
   const displayName =
@@ -143,21 +122,6 @@ export default function CreatePostScreen() {
 
   const handleSubmit = async () => {
     if (!myId) return;
-    if (overLimit) {
-      notifyWarning();
-      Alert.alert(
-        t('createPost.freePlanLimit'),
-        t('createPost.freePlanLimitBody', { count: FREE_LIMITS.monthlyPosts }),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('createPost.seePremium'),
-            onPress: () => router.push('/premium'),
-          },
-        ],
-      );
-      return;
-    }
     setSubmitting(true);
     try {
       const { imageUrls, videoUrls } = await uploadPostMedia(media);
@@ -288,17 +252,6 @@ export default function CreatePostScreen() {
                   </Pressable>
                 </View>
               ))}
-            </View>
-          )}
-
-          {overLimit && (
-            <View style={styles.warningBox}>
-              <Ionicons name="lock-closed" size={16} color={c.danger} />
-              <Text style={styles.warningText}>
-                {t('createPost.limitReachedBanner', {
-                  count: FREE_LIMITS.monthlyPosts,
-                })}
-              </Text>
             </View>
           )}
         </ScrollView>
@@ -497,23 +450,6 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: 'rgba(0,0,0,0.7)',
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    warningBox: {
-      marginTop: 18,
-      flexDirection: 'row',
-      gap: 8,
-      backgroundColor: c.surface,
-      borderRadius: 10,
-      padding: 12,
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: c.danger,
-    },
-    warningText: {
-      flex: 1,
-      fontSize: 12,
-      color: c.textSecondary,
-      lineHeight: 17,
     },
     toolbar: {
       flexDirection: 'row',

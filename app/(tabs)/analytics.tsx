@@ -37,7 +37,7 @@ import { useTheme, useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
 import { formatPips } from '@/lib/format-pips';
 import { formatPnlWithCurrency } from '@/lib/format-currency';
-import { getPlan } from '@/lib/premium';
+import { getPlan, planAtLeast } from '@/lib/premium';
 import { formatDate, pickerLocale } from '@/lib/format-date';
 import { Trade } from '@/lib/types';
 
@@ -52,7 +52,10 @@ export default function AnalyticsScreen() {
   const { trades, loading, error, refresh, deleteTrade } = useTrades();
   const { profile } = useProfile();
   const router = useRouter();
-  const isPremium = getPlan(profile?.is_premium, profile?.bonus_premium_until) === 'premium';
+  const isPremium = planAtLeast(
+    getPlan(profile?.plan_tier, profile?.bonus_premium_until),
+    'plus',
+  );
   const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
@@ -351,7 +354,7 @@ export default function AnalyticsScreen() {
                     <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
                       {t('analytics.dailyPnl')}
                     </Text>
-                    <PremiumTag />
+                    <PremiumTag tier="plus" />
                   </View>
                   <View style={styles.dataCard}>
                     <DailyBars data={dailyData} currency={profile?.currency} />

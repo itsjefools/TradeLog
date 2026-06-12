@@ -19,6 +19,7 @@ import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
+import { getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
 
 type CategoryKey = 'general' | 'strategy' | 'analysis' | 'beginner' | 'advanced';
@@ -55,7 +56,7 @@ export default function CreateCommunityScreen() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('is_verified, is_premium, total_trades')
+      .select('is_verified, plan_tier, bonus_premium_until, total_trades')
       .eq('id', userId)
       .maybeSingle();
 
@@ -64,7 +65,7 @@ export default function CreateCommunityScreen() {
         Alert.alert(t('community.error'), t('community.need_verification'));
         return;
       }
-      if (!profile?.is_premium) {
+      if (getPlan(profile?.plan_tier, profile?.bonus_premium_until) !== 'pro') {
         Alert.alert(t('community.error'), t('community.need_premium'));
         return;
       }
@@ -87,7 +88,8 @@ export default function CreateCommunityScreen() {
           is_paid: isPaid,
           monthly_price: monthlyPrice,
           owner_verified: profile?.is_verified ?? false,
-          owner_is_premium: profile?.is_premium ?? false,
+          owner_is_premium:
+            getPlan(profile?.plan_tier, profile?.bonus_premium_until) !== 'free',
         })
         .select('id')
         .single();

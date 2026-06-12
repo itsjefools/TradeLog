@@ -13,12 +13,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemeColors } from '@/constants/theme';
+import { ThemeColors, TIER_COLORS } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { useTrades } from '@/hooks/use-trades';
-import { PremiumTag } from '@/components/premium-tag';
 import { AnalyticsEvents } from '@/lib/analytics';
 import { exportTradesCsv } from '@/lib/export-csv';
 import { exportTradesPdf } from '@/lib/export-pdf';
@@ -51,7 +50,8 @@ export default function ExportScreen() {
   const router = useRouter();
   const { trades } = useTrades();
   const { profile } = useProfile();
-  const isPremium = getPlan(profile?.is_premium, profile?.bonus_premium_until) === 'premium';
+  // PDF は Pro 限定。CSV は全プラン無料。
+  const isPro = getPlan(profile?.plan_tier, profile?.bonus_premium_until) === 'pro';
   const [period, setPeriod] = useState<StatsPeriod>('all');
   const [exporting, setExporting] = useState(false);
 
@@ -81,7 +81,7 @@ export default function ExportScreen() {
   };
 
   const handleExportPdf = async () => {
-    if (!isPremium) {
+    if (!isPro) {
       Alert.alert(t('export.premiumTitle'), t('export.pdfPremiumBody'), [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -142,7 +142,6 @@ export default function ExportScreen() {
         </Pressable>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.headerTitle}>{t('export.title')}</Text>
-          <PremiumTag />
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -210,18 +209,18 @@ export default function ExportScreen() {
           disabled={exporting}
           style={[
             styles.formatBtn,
-            { backgroundColor: c.surface, borderColor: c.accent, borderWidth: 1.5 },
+            { backgroundColor: c.surface, borderColor: TIER_COLORS.pro, borderWidth: 1.5 },
           ]}
         >
           <View style={styles.formatLeft}>
-            <Ionicons name="document-text" size={20} color={c.accent} />
+            <Ionicons name="document-text" size={20} color={TIER_COLORS.pro} />
             <View>
               <Text style={styles.formatTitle}>PDF</Text>
               <Text style={styles.formatSub}>{t('export.pdfDesc')}</Text>
             </View>
           </View>
-          <View style={[styles.tag, { backgroundColor: c.accent }]}>
-            <Text style={[styles.tagText, { color: '#fff' }]}>Premium</Text>
+          <View style={[styles.tag, { backgroundColor: TIER_COLORS.pro }]}>
+            <Text style={[styles.tagText, { color: '#1B1B1B' }]}>Pro</Text>
           </View>
         </TouchableOpacity>
 

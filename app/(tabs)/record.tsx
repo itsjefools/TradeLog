@@ -32,7 +32,7 @@ import { formatDate, pickerLocale } from '@/lib/format-date';
 import { AnalyticsEvents } from '@/lib/analytics';
 import { notifyError, notifySuccess } from '@/lib/haptics';
 import { checkRatingPrompt } from '@/lib/rating';
-import { FREE_LIMITS, getPlan } from '@/lib/premium';
+import { PLAN_LIMITS, getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
 import {
   applySignToNum,
@@ -105,17 +105,17 @@ export default function RecordScreen() {
   const { favorites, isFavorite, toggleFavorite } = useFavoritePairs();
   const { profile } = useProfile();
   const toast = useToast();
-  const plan = getPlan(profile?.is_premium, profile?.bonus_premium_until);
+  const plan = getPlan(profile?.plan_tier, profile?.bonus_premium_until);
 
-  // 今月の取引数（Free プラン制限用）
+  // 今月の取引数（プラン別の月間制限用）
   const monthlyTradeCount = useMemo(() => {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     return trades.filter((t) => new Date(t.traded_at) >= monthStart).length;
   }, [trades]);
 
-  const isOverFreeLimit =
-    plan === 'free' && monthlyTradeCount >= FREE_LIMITS.monthlyTrades;
+  const monthlyLimit = PLAN_LIMITS[plan].monthlyTrades;
+  const isOverFreeLimit = monthlyTradeCount >= monthlyLimit;
 
   // 連敗ティルト検知: 直近の取引から連続する負けを数える
   const lossStreak = useMemo(() => {
@@ -216,7 +216,7 @@ export default function RecordScreen() {
     if (isOverFreeLimit) {
       Alert.alert(
         t('record.freePlanLimit'),
-        t('record.freeLimitBody', { count: FREE_LIMITS.monthlyTrades }),
+        t('record.freeLimitBody', { count: monthlyLimit }),
       );
       return;
     }
@@ -320,6 +320,35 @@ export default function RecordScreen() {
         <View style={styles.flex}>
           <Text style={styles.title}>{t('record.title')}</Text>
           <Text style={styles.subtitle}>{t('record.subtitle')}</Text>
+          <Pressable
+            onPress={() => plan !== 'pro' && router.push('/premium')}
+            disabled={plan === 'pro'}
+            style={[
+              styles.quotaChip,
+              {
+                backgroundColor: isOverFreeLimit ? `${c.loss}1A` : `${c.accent}14`,
+              },
+            ]}
+          >
+            <Ionicons
+              name={plan === 'pro' ? 'infinite' : 'document-text-outline'}
+              size={12}
+              color={isOverFreeLimit ? c.loss : c.accent}
+            />
+            <Text
+              style={[
+                styles.quotaText,
+                { color: isOverFreeLimit ? c.loss : c.accent },
+              ]}
+            >
+              {plan === 'pro'
+                ? t('record.quotaUnlimited', { count: monthlyTradeCount })
+                : t('record.quota', {
+                    count: monthlyTradeCount,
+                    limit: monthlyLimit,
+                  })}
+            </Text>
+          </Pressable>
         </View>
         <Pressable
           onPress={() => router.push('/import-trades')}
@@ -834,6 +863,17 @@ function makeStyles(c: ThemeColors) {
     color: c.textSecondary,
     marginTop: 4,
   },
+  quotaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    marginTop: 8,
+  },
+  quotaText: { fontSize: 12, fontWeight: '700' },
   body: {
     paddingHorizontal: 20,
     paddingTop: 16,

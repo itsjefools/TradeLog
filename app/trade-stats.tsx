@@ -62,7 +62,7 @@ export default function TradeStatsScreen() {
         </Pressable>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.headerTitle}>{t('stats.title')}</Text>
-          <PremiumTag />
+          <PremiumTag tier="plus" />
         </View>
         <Pressable
           onPress={() => router.push('/ai-review')}
@@ -73,7 +73,7 @@ export default function TradeStatsScreen() {
         </Pressable>
       </View>
 
-      <PremiumGate feature="stats">
+      <PremiumGate feature="stats" requiredTier="plus">
       <ScrollView contentContainerStyle={styles.body}>
         {/* 期間フィルター */}
         <View style={styles.periodRow}>

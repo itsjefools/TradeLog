@@ -71,3 +71,94 @@ export const ACTIVE_OPACITY = 0.7;
 // セパレーター色 (テーマに依存しない共通アルファ)
 export const separatorColor = (isDark: boolean) =>
   isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+// === プラン・招待画面専用カラー ===
+export const PLAN_COLORS = {
+  // ゴールド系
+  gold: '#D4A855',
+  goldLight: '#E8C97A',
+  goldDark: '#B8912E',
+  goldBorder: 'rgba(212, 168, 85, 0.6)',
+  goldBorderStrong: 'rgba(212, 168, 85, 0.8)',
+  goldGlow: 'rgba(212, 168, 85, 0.15)',
+
+  // プランカード
+  plusBorder: '#10B981',
+  plusBorderLight: 'rgba(16, 185, 129, 0.3)',
+  plusBg: {
+    light: 'rgba(16, 185, 129, 0.04)',
+    dark: 'rgba(16, 185, 129, 0.08)',
+  },
+  proBorder: {
+    light: 'rgba(0, 0, 0, 0.08)',
+    dark: 'rgba(255, 255, 255, 0.1)',
+  },
+  proBg: {
+    light: 'rgba(0, 0, 0, 0.02)',
+    dark: 'rgba(255, 255, 255, 0.04)',
+  },
+
+  // 招待画面ヒーロー背景
+  inviteHeroBg: {
+    light: '#FDF6E3',
+    dark: '#1A1508',
+  },
+  inviteHeroBorder: {
+    light: 'rgba(212, 168, 85, 0.2)',
+    dark: 'rgba(212, 168, 85, 0.3)',
+  },
+
+  // ボタン
+  shareButton: {
+    light: '#F5E6B8',
+    dark: 'rgba(212, 168, 85, 0.2)',
+  },
+  shareButtonText: {
+    light: '#8B6914',
+    dark: '#D4A855',
+  },
+
+  // テーブル
+  tableBorder: {
+    light: 'rgba(0, 0, 0, 0.06)',
+    dark: 'rgba(255, 255, 255, 0.06)',
+  },
+  tableHeaderBg: {
+    light: 'rgba(0, 0, 0, 0.02)',
+    dark: 'rgba(255, 255, 255, 0.03)',
+  },
+
+  // 統計カード
+  statCardBg: {
+    light: '#FFFFFF',
+    dark: 'rgba(255, 255, 255, 0.05)',
+  },
+  statCardBorder: {
+    light: 'rgba(0, 0, 0, 0.06)',
+    dark: 'rgba(255, 255, 255, 0.08)',
+  },
+
+  // テキスト
+  textPrimary: {
+    light: '#000000',
+    dark: '#FFFFFF',
+  },
+  textSecondary: {
+    light: '#666666',
+    dark: '#999999',
+  },
+  textMuted: {
+    light: '#999999',
+    dark: '#666666',
+  },
+
+  // 背景
+  screenBg: {
+    light: '#FFFFFF',
+    dark: '#000000',
+  },
+  cardBg: {
+    light: '#FFFFFF',
+    dark: 'rgba(255, 255, 255, 0.05)',
+  },
+} as const;

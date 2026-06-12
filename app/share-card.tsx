@@ -17,6 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Path, Stop, Line } from 'react-native-svg';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 
+import { PremiumGate } from '@/components/premium-gate';
+import { PremiumTag } from '@/components/premium-tag';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
@@ -347,10 +349,14 @@ export default function ShareCardScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={26} color={c.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('shareCard.title')}</Text>
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitle}>{t('shareCard.title')}</Text>
+          <PremiumTag tier="pro" />
+        </View>
         <View style={styles.headerSpacer} />
       </View>
 
+      <PremiumGate feature="share_card" requiredTier="pro">
       <ScrollView
         contentContainerStyle={styles.body}
         bounces={false}
@@ -543,6 +549,7 @@ export default function ShareCardScreen() {
           </View>
         )}
       </ScrollView>
+      </PremiumGate>
     </SafeAreaView>
   );
 }
@@ -559,6 +566,7 @@ function makeStyles(c: ThemeColors) {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
     },
+    headerTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     headerTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
     headerSpacer: { width: 26 },
     body: { padding: 20, paddingBottom: 48, alignItems: 'center' },

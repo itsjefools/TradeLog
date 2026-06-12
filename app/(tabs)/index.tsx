@@ -339,7 +339,7 @@ export default function FeedScreen() {
                   pressed && styles.headerButtonPressed,
                 ]}
               >
-                <Ionicons name="bulb-outline" size={20} color={c.textPrimary} />
+                <Ionicons name="pulse-outline" size={20} color={c.textPrimary} />
               </Pressable>
             </Link>
             <Link href="/messages" asChild>

@@ -132,12 +132,12 @@ export default function ImportTradesScreen() {
         </Pressable>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.headerTitle}>{t('mt5Import.title')}</Text>
-          <PremiumTag />
+          <PremiumTag tier="plus" />
         </View>
         <View style={styles.headerSpacer} />
       </View>
 
-      <PremiumGate feature="stats">
+      <PremiumGate feature="stats" requiredTier="plus">
         <ScrollView contentContainerStyle={styles.body}>
           <Text style={styles.desc}>{t('mt5Import.desc')}</Text>
 

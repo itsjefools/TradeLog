@@ -24,6 +24,62 @@ import { notifySuccess } from '@/lib/haptics';
 import { isBonusPremiumActive } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
 
+/** ヒーローの静的装飾：ダーク=金スパークル / ライト=金コンフェッティ（リファレンス準拠） */
+function HeroDecor({ isDark }: { isDark: boolean }) {
+  if (isDark) {
+    const sparkles: { top: number; left?: number; right?: number; size: number; op: number }[] = [
+      { top: 16, left: 26, size: 13, op: 0.75 },
+      { top: 30, right: 30, size: 9, op: 0.5 },
+      { top: 12, right: 64, size: 6, op: 0.4 },
+      { top: 64, left: 20, size: 8, op: 0.5 },
+      { top: 74, right: 26, size: 11, op: 0.6 },
+      { top: 48, left: 54, size: 6, op: 0.35 },
+    ];
+    return (
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {sparkles.map((s, i) => (
+          <Ionicons
+            key={i}
+            name="sparkles"
+            size={s.size}
+            color="#E8C97A"
+            style={{ position: 'absolute', top: s.top, left: s.left, right: s.right, opacity: s.op }}
+          />
+        ))}
+      </View>
+    );
+  }
+  const confetti: { top: number; left?: number; right?: number; w: number; h: number; rot: string; bg: string }[] = [
+    { top: 16, left: 34, w: 11, h: 5, rot: '22deg', bg: '#E8C97A' },
+    { top: 24, right: 40, w: 8, h: 4, rot: '-16deg', bg: '#D4A855' },
+    { top: 44, left: 24, w: 7, h: 7, rot: '32deg', bg: '#F0D070' },
+    { top: 60, right: 30, w: 9, h: 4, rot: '-26deg', bg: '#E8C97A' },
+    { top: 74, left: 44, w: 7, h: 4, rot: '12deg', bg: '#D4A855' },
+    { top: 30, left: 64, w: 5, h: 5, rot: '42deg', bg: '#F0D070' },
+  ];
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {confetti.map((cf, i) => (
+        <View
+          key={i}
+          style={{
+            position: 'absolute',
+            top: cf.top,
+            left: cf.left,
+            right: cf.right,
+            width: cf.w,
+            height: cf.h,
+            backgroundColor: cf.bg,
+            borderRadius: 1.5,
+            opacity: 0.85,
+            transform: [{ rotate: cf.rot }],
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
 export default function InviteScreen() {
   const { resolved } = useTheme();
   const isDark = resolved === 'dark';
@@ -116,6 +172,7 @@ export default function InviteScreen() {
           ]}
         >
           {isDark ? <DarkLuxBg id="inviteHeroBg" /> : <LightLuxBg id="inviteHeroBg" />}
+          <HeroDecor isDark={isDark} />
 
           <View style={styles.giftIconContainer}>
             <View style={styles.giftCircle}>
@@ -125,7 +182,7 @@ export default function InviteScreen() {
           </View>
 
           <Text
-            style={[styles.heroTitle, { color: isDark ? c.goldLight : c.textPrimary[k] }]}
+            style={[styles.heroTitle, { color: isDark ? c.goldLight : c.goldDark }]}
           >
             {t('invite.heroTitle')}
           </Text>
@@ -134,30 +191,38 @@ export default function InviteScreen() {
           </Text>
 
           <View style={styles.codeBoxWrapper}>
-            <Text style={[styles.codeLabel, { color: c.gold }]}>{t('invite.yourCode')}</Text>
             <TouchableOpacity
               style={[
                 styles.codeBox,
                 {
-                  borderColor: c.goldBorder,
-                  backgroundColor: isDark
-                    ? 'rgba(212, 168, 85, 0.08)'
-                    : 'rgba(212, 168, 85, 0.06)',
+                  backgroundColor: isDark ? 'rgba(0,0,0,0.28)' : '#FFFFFF',
+                  borderColor: isDark
+                    ? 'rgba(212, 168, 85, 0.28)'
+                    : 'rgba(212, 168, 85, 0.20)',
                 },
+                !isDark && styles.codeBoxShadow,
               ]}
               onPress={handleShare}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
-              <Text style={[styles.codeText, { color: c.textPrimary[k] }]} numberOfLines={1} adjustsFontSizeToFit>
-                {inviteCode || '— — — —'}
-              </Text>
+              <Text style={[styles.codeLabel, { color: c.gold }]}>{t('invite.yourCode')}</Text>
+              <View style={styles.codeRow}>
+                <Text
+                  style={[styles.codeText, { color: c.textPrimary[k] }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {inviteCode || '— — — —'}
+                </Text>
+                <Ionicons name="copy-outline" size={20} color={c.gold} />
+              </View>
+              <View style={styles.tapToShareRow}>
+                <Ionicons name="share-social-outline" size={13} color={c.textSecondary[k]} />
+                <Text style={[styles.tapToShare, { color: c.textSecondary[k] }]}>
+                  {t('invite.tapToShare')}
+                </Text>
+              </View>
             </TouchableOpacity>
-            <View style={styles.tapToShareRow}>
-              <Ionicons name="share-social-outline" size={14} color={c.textSecondary[k]} />
-              <Text style={[styles.tapToShare, { color: c.textSecondary[k] }]}>
-                {t('invite.tapToShare')}
-              </Text>
-            </View>
           </View>
         </View>
 
@@ -180,8 +245,8 @@ export default function InviteScreen() {
               { backgroundColor: c.statCardBg[k], borderColor: c.statCardBorder[k] },
             ]}
           >
-            <Ionicons name="people" size={24} color={c.textSecondary[k]} />
-            <Text style={[styles.statNumber, { color: c.textPrimary[k] }]}>
+            <Ionicons name="people" size={24} color={c.gold} />
+            <Text style={[styles.statNumber, { color: isDark ? c.gold : c.textPrimary[k] }]}>
               {invitedCount ?? '—'}
             </Text>
             <Text style={[styles.statLabel, { color: c.textSecondary[k] }]}>
@@ -195,8 +260,8 @@ export default function InviteScreen() {
               { backgroundColor: c.statCardBg[k], borderColor: c.statCardBorder[k] },
             ]}
           >
-            <Text style={[styles.statIcon, { color: proBonusDays > 0 ? c.gold : c.textSecondary[k] }]}>✦</Text>
-            <Text style={[styles.statNumber, { color: c.textPrimary[k] }]}>
+            <Ionicons name="sparkles" size={22} color={c.gold} />
+            <Text style={[styles.statNumber, { color: isDark ? c.gold : c.textPrimary[k] }]}>
               {proBonusDays > 0 ? `${proBonusDays}日` : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: c.textSecondary[k] }]}>
@@ -226,10 +291,10 @@ export default function InviteScreen() {
             <View
               style={[
                 styles.stepNumber,
-                { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' },
+                { backgroundColor: isDark ? 'rgba(212,168,85,0.15)' : 'rgba(212,168,85,0.12)' },
               ]}
             >
-              <Text style={[styles.stepNumberText, { color: c.textPrimary[k] }]}>{step.num}</Text>
+              <Text style={[styles.stepNumberText, { color: c.gold }]}>{step.num}</Text>
             </View>
             <Ionicons name={step.icon} size={18} color={c.textSecondary[k]} style={styles.stepIcon} />
             <Text style={[styles.stepText, { color: c.textPrimary[k] }]}>{step.text}</Text>
@@ -331,15 +396,33 @@ const styles = StyleSheet.create({
   codeBoxWrapper: { width: '100%', alignItems: 'center' },
   codeLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 8 },
   codeBox: {
-    borderWidth: 1.5,
-    borderRadius: 14,
+    borderWidth: 1,
+    borderRadius: 16,
     paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingHorizontal: 20,
     width: '100%',
     alignItems: 'center',
   },
-  codeText: { fontSize: 32, fontWeight: '800', letterSpacing: 6, fontVariant: ['tabular-nums'] },
-  tapToShareRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 10 },
+  codeBoxShadow: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#8B6914',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.18,
+        shadowRadius: 12,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  codeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
+  codeText: { fontSize: 30, fontWeight: '800', letterSpacing: 5, fontVariant: ['tabular-nums'] },
+  tapToShareRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 12 },
   tapToShare: { fontSize: 12 },
 
   shareButton: { marginTop: 16, marginBottom: 20 },

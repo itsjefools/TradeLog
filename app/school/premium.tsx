@@ -88,9 +88,9 @@ export default function PlanScreen() {
     await purchaseSubscription(productIdFor(selectedPlan, billingPeriod));
   };
 
-  const renderCellValue = (value: PlanCell) => {
+  const renderCellValue = (value: PlanCell, tint: string) => {
     if (value === true) {
-      return <Ionicons name="checkmark" size={18} color="#10B981" />;
+      return <Ionicons name="checkmark" size={18} color={tint} />;
     }
     if (value === false) {
       return (
@@ -128,15 +128,10 @@ export default function PlanScreen() {
             <GoldGradient id="proSelSheen" />
           </View>
         )}
-        {plan === 'plus' && (
-          <View style={styles.recommendBadge}>
-            <Text style={styles.recommendBadgeText}>{t('premium.recommended')}</Text>
-          </View>
-        )}
         <View style={styles.planCardHeader}>
           <View style={styles.planNameRow}>
-            <Text style={[styles.planIcon, { color: c.gold }]}>✦</Text>
-            <Text style={[styles.planName, { color: c.textPrimary[k] }]}>
+            <Ionicons name="sparkles" size={15} color={isPro ? c.gold : c.plusBorder} />
+            <Text style={[styles.planName, { color: isPro ? c.gold : c.plusBorder }]}>
               {plan === 'plus' ? 'Plus' : 'Pro'}
             </Text>
           </View>
@@ -148,6 +143,11 @@ export default function PlanScreen() {
             <View style={[styles.radioCircle, { borderColor: c.textMuted[k] }]} />
           )}
         </View>
+        {plan === 'plus' && (
+          <View style={styles.recommendBadge}>
+            <Text style={styles.recommendBadgeText}>{t('premium.recommended')}</Text>
+          </View>
+        )}
 
         <Text style={[styles.planPrice, { color: c.textPrimary[k] }]}>
           ¥{price}
@@ -159,6 +159,70 @@ export default function PlanScreen() {
         <Text style={[styles.planDescription, { color: c.textSecondary[k] }]}>
           {t(`premium.tier_${plan}_tagline`)}
         </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderPeriodTab = (period: BillingPeriod, label: string, withBadge = false) => {
+    const active = billingPeriod === period;
+    const goldActive = active && isDark;
+    return (
+      <TouchableOpacity
+        style={[
+          styles.periodTab,
+          active &&
+            !isDark && {
+              backgroundColor: '#FFFFFF',
+              ...Platform.select({
+                ios: {
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 3,
+                },
+                android: { elevation: 2 },
+              }),
+            },
+          goldActive && { backgroundColor: c.goldDark },
+        ]}
+        onPress={() => setBillingPeriod(period)}
+        activeOpacity={0.8}
+      >
+        {goldActive && <GoldGradient id={`period_${period}`} />}
+        <View style={styles.yearlyTabContent}>
+          <Text
+            style={[
+              styles.periodTabText,
+              {
+                color: goldActive
+                  ? '#3A2E0A'
+                  : active
+                    ? c.textPrimary[k]
+                    : c.textSecondary[k],
+                fontWeight: active ? '600' : '400',
+              },
+            ]}
+          >
+            {label}
+          </Text>
+          {withBadge && (
+            <View
+              style={[
+                styles.discountBadge,
+                { backgroundColor: goldActive ? '#3A2E0A' : c.gold },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.discountBadgeText,
+                  { color: goldActive ? c.goldLight : '#FFFFFF' },
+                ]}
+              >
+                {t('premium.save_hint')}
+              </Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -189,7 +253,7 @@ export default function PlanScreen() {
               },
             ]}
           >
-            <Text style={styles.diamondEmoji}>💎</Text>
+            <Ionicons name="diamond" size={30} color={c.gold} />
           </View>
         </View>
 
@@ -207,74 +271,8 @@ export default function PlanScreen() {
             { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
           ]}
         >
-          <TouchableOpacity
-            style={[
-              styles.periodTab,
-              billingPeriod === 'monthly' && {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#FFFFFF',
-                ...Platform.select({
-                  ios: {
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: isDark ? 0.3 : 0.08,
-                    shadowRadius: 3,
-                  },
-                  android: { elevation: 2 },
-                }),
-              },
-            ]}
-            onPress={() => setBillingPeriod('monthly')}
-          >
-            <Text
-              style={[
-                styles.periodTabText,
-                {
-                  color:
-                    billingPeriod === 'monthly' ? c.textPrimary[k] : c.textSecondary[k],
-                  fontWeight: billingPeriod === 'monthly' ? '600' : '400',
-                },
-              ]}
-            >
-              {t('premium.monthly')}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.periodTab,
-              billingPeriod === 'yearly' && {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#FFFFFF',
-                ...Platform.select({
-                  ios: {
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: isDark ? 0.3 : 0.08,
-                    shadowRadius: 3,
-                  },
-                  android: { elevation: 2 },
-                }),
-              },
-            ]}
-            onPress={() => setBillingPeriod('yearly')}
-          >
-            <View style={styles.yearlyTabContent}>
-              <Text
-                style={[
-                  styles.periodTabText,
-                  {
-                    color:
-                      billingPeriod === 'yearly' ? c.textPrimary[k] : c.textSecondary[k],
-                    fontWeight: billingPeriod === 'yearly' ? '600' : '400',
-                  },
-                ]}
-              >
-                {t('premium.yearly')}
-              </Text>
-              <View style={[styles.discountBadge, { backgroundColor: c.gold }]}>
-                <Text style={styles.discountBadgeText}>{t('premium.save_hint')}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
+          {renderPeriodTab('monthly', t('premium.monthly'))}
+          {renderPeriodTab('yearly', t('premium.yearly'), true)}
         </View>
 
         {/* プランカード */}
@@ -323,9 +321,9 @@ export default function PlanScreen() {
                   {t(row.titleKey)}
                 </Text>
               </View>
-              <View style={styles.tableValueCol}>{renderCellValue(row.free)}</View>
-              <View style={styles.tableValueCol}>{renderCellValue(row.plus)}</View>
-              <View style={styles.tableValueCol}>{renderCellValue(row.pro)}</View>
+              <View style={styles.tableValueCol}>{renderCellValue(row.free, '#10B981')}</View>
+              <View style={styles.tableValueCol}>{renderCellValue(row.plus, '#10B981')}</View>
+              <View style={styles.tableValueCol}>{renderCellValue(row.pro, c.gold)}</View>
             </View>
           ))}
         </View>
@@ -397,6 +395,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   periodTabText: { fontSize: 14, fontWeight: '400' },
   yearlyTabContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },

@@ -1,5 +1,6 @@
-import { StyleSheet } from 'react-native';
-import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 /**
  * 明るいシャンパン→ゴールドのメタリックグラデーション背景（絶対配置の塗り）。
@@ -48,79 +49,69 @@ export function GoldGradient({
   );
 }
 
-/** ダークラグジュアリー背景：漆黒のグラデ + 下方からのゴールド放射グロー（リファレンス準拠） */
-export function DarkLuxBg({ id = 'darkLux' }: { id?: string }) {
+type Stops = { offset: string; color: string }[];
+
+/**
+ * 動的高の親でも確実に全面を塗る縦リニアグラデ背景。
+ * react-native-svg は「%指定の Rect 高さが動的高の親に追従しない」不具合があり、
+ * 覆い漏れた右・下に親 View の単色背景が透けて“逆L字”ムラになる。対策として
+ * onLayout で実寸を測り、Svg/Rect に数値で渡す（viewBox も % も使わない）。
+ * リニアは objectBoundingBox(0..1) の縦方向のみ＝左右対称でムラ・帯が出ない。
+ */
+function LuxBg({ id, stops }: { id: string; stops: Stops }) {
+  const [size, setSize] = useState({ w: 0, h: 0 });
   return (
-    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
-      <Defs>
-        <LinearGradient id={`${id}_b`} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#1C1710" />
-          <Stop offset="1" stopColor="#0A0805" />
-        </LinearGradient>
-        {/* 下方からのゴールド放射グロー（強め） */}
-        <RadialGradient id={`${id}_g`} cx="50%" cy="82%" r="75%">
-          <Stop offset="0" stopColor="#E0B85E" stopOpacity="0.5" />
-          <Stop offset="0.5" stopColor="#C9A24A" stopOpacity="0.14" />
-          <Stop offset="1" stopColor="#C9A24A" stopOpacity="0" />
-        </RadialGradient>
-        {/* ギフト章の後光ハロー */}
-        <RadialGradient id={`${id}_halo`} cx="50%" cy="24%" r="42%">
-          <Stop offset="0" stopColor="#F0D070" stopOpacity="0.28" />
-          <Stop offset="1" stopColor="#F0D070" stopOpacity="0" />
-        </RadialGradient>
-        {/* 斜めのメタリック金ライトストリーク（光の筋） */}
-        <LinearGradient id={`${id}_streak`} x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0.28" stopColor="#EBC871" stopOpacity="0" />
-          <Stop offset="0.36" stopColor="#F2DC8C" stopOpacity="0.22" />
-          <Stop offset="0.42" stopColor="#EBC871" stopOpacity="0" />
-          <Stop offset="0.60" stopColor="#EBC871" stopOpacity="0" />
-          <Stop offset="0.67" stopColor="#F2DC8C" stopOpacity="0.16" />
-          <Stop offset="0.73" stopColor="#EBC871" stopOpacity="0" />
-        </LinearGradient>
-      </Defs>
-      <Rect x="0" y="0" width="100%" height={2000} fill={`url(#${id}_b)`} />
-      <Rect x="0" y="0" width="100%" height={2000} fill={`url(#${id}_streak)`} />
-      <Rect x="0" y="0" width="100%" height={2000} fill={`url(#${id}_halo)`} />
-      <Rect x="0" y="0" width="100%" height={2000} fill={`url(#${id}_g)`} />
-    </Svg>
+    <View
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        const w = Math.ceil(width);
+        const h = Math.ceil(height);
+        setSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
+      }}
+    >
+      {size.w > 0 && size.h > 0 && (
+        <Svg width={size.w} height={size.h} pointerEvents="none">
+          <Defs>
+            <LinearGradient id={`${id}_b`} x1="0" y1="0" x2="0" y2="1">
+              {stops.map((s) => (
+                <Stop key={s.offset} offset={s.offset} stopColor={s.color} />
+              ))}
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${id}_b)`} />
+        </Svg>
+      )}
+    </View>
   );
 }
 
-/**
- * ライトラグジュアリー背景：クリスプな白地 + ゴールドの放射グロー（ハロー）。
- * DarkLuxBg の反転版。白×ゴールドの上質感を出す。
- */
-export function LightLuxBg({ id = 'lightLux' }: { id?: string }) {
-  // viewBox 0..100 + preserveAspectRatio="none" で実寸に正しくマッピング。
-  // 放射グラデは cx=50（中央）で左右対称＝帯やムラが出ない。
-  // ダークと同じ「上=後光ハロー / 下=ゴールドグロー」を明るい地に再現。
+/** ダークラグジュアリー背景：上=暖色グロー帯 / 下=漆黒（縦リニアのみ）。 */
+export function DarkLuxBg({ id = 'darkLux' }: { id?: string }) {
   return (
-    <Svg
-      style={StyleSheet.absoluteFill}
-      width="100%"
-      height="100%"
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      pointerEvents="none"
-    >
-      <Defs>
-        <LinearGradient id={`${id}_b`} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#FFFDF6" />
-          <Stop offset="1" stopColor="#F6ECCF" />
-        </LinearGradient>
-        <RadialGradient id={`${id}_halo`} cx="50" cy="20" r="42" gradientUnits="userSpaceOnUse">
-          <Stop offset="0" stopColor="#F0D070" stopOpacity="0.4" />
-          <Stop offset="1" stopColor="#F0D070" stopOpacity="0" />
-        </RadialGradient>
-        <RadialGradient id={`${id}_g`} cx="50" cy="94" r="58" gradientUnits="userSpaceOnUse">
-          <Stop offset="0" stopColor="#E0B85E" stopOpacity="0.42" />
-          <Stop offset="0.55" stopColor="#D4A855" stopOpacity="0.12" />
-          <Stop offset="1" stopColor="#D4A855" stopOpacity="0" />
-        </RadialGradient>
-      </Defs>
-      <Rect x="0" y="0" width="100" height="100" fill={`url(#${id}_b)`} />
-      <Rect x="0" y="0" width="100" height="100" fill={`url(#${id}_halo)`} />
-      <Rect x="0" y="0" width="100" height="100" fill={`url(#${id}_g)`} />
-    </Svg>
+    <LuxBg
+      id={id}
+      stops={[
+        { offset: '0', color: '#15110A' },
+        { offset: '0.32', color: '#2E2611' },
+        { offset: '0.66', color: '#1A1409' },
+        { offset: '1', color: '#100C06' },
+      ]}
+    />
+  );
+}
+
+/** ライトラグジュアリー背景：白に近い地→暖色クリーム（縦リニアのみ）。 */
+export function LightLuxBg({ id = 'lightLux' }: { id?: string }) {
+  return (
+    <LuxBg
+      id={id}
+      stops={[
+        { offset: '0', color: '#FFFDF7' },
+        { offset: '0.45', color: '#FAF1D6' },
+        { offset: '1', color: '#F1E2BA' },
+      ]}
+    />
   );
 }

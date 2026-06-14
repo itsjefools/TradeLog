@@ -258,12 +258,6 @@ export default function TradeDetailScreen() {
             value={String(trade.lot_size)}
             c={c}
             isDark={isDark}
-          />
-          <DetailRow
-            label={t('tradeDetail.sharedToFeed')}
-            value={trade.is_shared ? '✓' : '—'}
-            c={c}
-            isDark={isDark}
             isLast={!trade.memo && images.length === 0}
           />
           {trade.memo && trade.memo.trim() !== '' && (

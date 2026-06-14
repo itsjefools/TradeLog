@@ -7,18 +7,15 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextStyle,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/empty-state';
+import { TradeRow } from '@/components/trade-row';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
-import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
-import { formatPips } from '@/lib/format-pips';
-import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { useTrades } from '@/hooks/use-trades';
 import { Trade } from '@/lib/types';
 
@@ -28,7 +25,6 @@ export default function TradeHistoryScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const { trades, refresh, deleteTrade } = useTrades();
-  const { profile } = useProfile();
 
   useFocusEffect(
     useCallback(() => {
@@ -105,76 +101,6 @@ export default function TradeHistoryScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function TradeRow({
-  trade,
-  onPress,
-  onLongPress,
-}: {
-  trade: Trade;
-  onPress: () => void;
-  onLongPress: () => void;
-}) {
-  const c = useThemeColors();
-  const { t } = useI18n();
-  const { profile } = useProfile();
-  const currency = profile?.currency;
-  const styles = useMemo(() => makeStyles(c), [c]);
-  const directionLabel = trade.direction === 'long' ? t('common.long') : t('common.short');
-  const resultLabel =
-    trade.result === 'win' ? t('common.win') : trade.result === 'loss' ? t('common.loss') : null;
-  const date = new Date(trade.traded_at);
-  const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-    >
-      <View style={styles.rowTop}>
-        <Text style={styles.pair}>{trade.currency_pair}</Text>
-        <Text style={styles.direction}>{directionLabel}</Text>
-        {resultLabel && (
-          <View
-            style={[
-              styles.resultBadge,
-              trade.result === 'win'
-                ? styles.resultBadgeWin
-                : styles.resultBadgeLoss,
-            ]}
-          >
-            <Text style={styles.resultBadgeText}>{resultLabel}</Text>
-          </View>
-        )}
-        <Text style={styles.date}>{dateStr}</Text>
-      </View>
-      <View style={styles.rowMid}>
-        <Text style={[styles.pnl, pnlColor(trade.pnl, c)]}>
-          {trade.pnl !== null ? formatPnlWithCurrency(trade.pnl, currency) : '—'}
-        </Text>
-        {trade.pnl_pips !== null && (
-          <Text style={[styles.pips, pnlColor(trade.pnl_pips, c)]}>
-            {formatPips(trade.pnl_pips)}
-          </Text>
-        )}
-      </View>
-      <Text style={styles.hint}>{t('tradeHistory.hint')}</Text>
-    </Pressable>
-  );
-}
-
-// formatPnl は formatPnlWithCurrency(n, currency) に置換済み
-
-
-function pnlColor(n: number | null, c: ThemeColors): TextStyle | undefined {
-  if (n === null || n === 0) return undefined;
-  return { color: n > 0 ? c.win : c.loss };
-}
-
-function pad(n: number): string {
-  return String(n).padStart(2, '0');
 }
 
 function makeStyles(c: ThemeColors) {

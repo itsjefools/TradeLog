@@ -15,11 +15,12 @@ import {
 } from 'react-native';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const TAB_WIDTH = SCREEN_WIDTH / 3;
+const TAB_WIDTH = SCREEN_WIDTH / 4;
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
 import { FeedCard, FeedCardItem } from '@/components/feed-card';
+import { TradeRow } from '@/components/trade-row';
 import { ProfileLinks } from '@/components/profile-links';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
@@ -33,7 +34,7 @@ import { computeStreak } from '@/lib/streak';
 import { supabase } from '@/lib/supabase';
 import { Post, PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
-type TabKey = 'posts' | 'likes' | 'reposts';
+type TabKey = 'records' | 'posts' | 'likes' | 'reposts';
 
 type RawPost = Post & {
   trade: Trade | null;
@@ -61,7 +62,7 @@ export default function ProfileScreen() {
   const [followingCount, setFollowingCount] = useState(0);
   const [tradeCount, setTradeCount] = useState(0);
 
-  const [tab, setTab] = useState<TabKey>('posts');
+  const [tab, setTab] = useState<TabKey>('records');
   const [items, setItems] = useState<FeedCardItem[]>([]);
   const [tabLoading, setTabLoading] = useState(false);
 
@@ -89,8 +90,7 @@ export default function ProfileScreen() {
       supabase
         .from('trades')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', myId)
-        .eq('is_shared', true),
+        .eq('user_id', myId),
     ]);
     setFollowerCount(followerRes.count ?? 0);
     setFollowingCount(followingRes.count ?? 0);
@@ -148,6 +148,11 @@ export default function ProfileScreen() {
     async (which: TabKey) => {
       if (!myId) {
         setItems([]);
+        return;
+      }
+      // 記録タブは useTrades の trades をそのまま描画（DB 取得不要・即時）
+      if (which === 'records') {
+        setTabLoading(false);
         return;
       }
       setTabLoading(true);
@@ -360,17 +365,20 @@ export default function ProfileScreen() {
   const styleText = tradeStyleLabel(profile?.trade_style);
 
   const tabs: { key: TabKey; icon: React.ComponentProps<typeof Ionicons>['name']; label: string }[] = [
+    { key: 'records', icon: 'document-text-outline', label: t('profile.tabTrades') },
     { key: 'posts', icon: 'grid-outline', label: t('profile.tabPosts') },
     { key: 'likes', icon: 'heart-outline', label: t('profile.tabLikes') },
     { key: 'reposts', icon: 'repeat', label: t('profile.tabReposts') },
   ];
 
   const emptyMessage =
-    tab === 'posts'
-      ? t('profile.emptyPosts')
-      : tab === 'likes'
-        ? t('profile.emptyLikes')
-        : t('profile.emptyReposts');
+    tab === 'records'
+      ? t('empty.trades_title')
+      : tab === 'posts'
+        ? t('profile.emptyPosts')
+        : tab === 'likes'
+          ? t('profile.emptyLikes')
+          : t('profile.emptyReposts');
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -505,7 +513,7 @@ export default function ProfileScreen() {
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{tradeCount}</Text>
-              <Text style={styles.statLabel}>{t('profile.sharedTrades')}</Text>
+              <Text style={styles.statLabel}>{t('profile.tabTrades')}</Text>
             </View>
             <View style={styles.statDivider} />
             <Pressable
@@ -568,7 +576,24 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.tabContent}>
-          {tabLoading ? (
+          {tab === 'records' ? (
+            trades.length === 0 ? (
+              <View style={styles.emptyBox}>
+                <Text style={styles.emptyTitle}>{emptyMessage}</Text>
+              </View>
+            ) : (
+              <View style={styles.recordsList}>
+                {trades.map((tr) => (
+                  <TradeRow
+                    key={tr.id}
+                    trade={tr}
+                    showHint={false}
+                    onPress={() => router.push(`/trade/${tr.id}`)}
+                  />
+                ))}
+              </View>
+            )
+          ) : tabLoading ? (
             <View style={styles.center}>
               <ActivityIndicator color={c.accent} />
             </View>
@@ -823,6 +848,9 @@ function makeStyles(c: ThemeColors) {
       paddingHorizontal: 12,
       paddingTop: 10,
       gap: 10,
+    },
+    recordsList: {
+      gap: 8,
     },
     center: {
       paddingVertical: 40,

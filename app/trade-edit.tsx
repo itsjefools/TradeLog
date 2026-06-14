@@ -9,7 +9,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -46,7 +45,6 @@ type FormState = {
   pnl: string;
   pnlPips: string;
   memo: string;
-  isShared: boolean;
   tags: string[];
 };
 
@@ -65,7 +63,6 @@ function tradeToForm(t: Trade): FormState {
     pnl: t.pnl !== null ? String(t.pnl) : '',
     pnlPips: t.pnl_pips !== null ? String(t.pnl_pips) : '',
     memo: merged,
-    isShared: t.is_shared,
     tags: t.tags ?? [],
   };
 }
@@ -223,7 +220,7 @@ export default function TradeEditScreen() {
           memo: form.memo.trim() || null,
           post_memo: null,
           review_memo: null,
-          is_shared: form.isShared,
+          is_shared: false,
           tags: form.tags,
         })
         .eq('id', id);
@@ -563,19 +560,6 @@ export default function TradeEditScreen() {
             </View>
           </View>
 
-          <View style={[styles.section, styles.switchRow]}>
-            <View style={styles.flex}>
-              <Text style={styles.label}>{t('record.shareFeedLabel')}</Text>
-              <Text style={styles.helperText}>{t('record.shareFeedShortHelp')}</Text>
-            </View>
-            <Switch
-              value={form.isShared}
-              onValueChange={(v) => setField('isShared', v)}
-              trackColor={{ false: c.border, true: c.accent }}
-              thumbColor="#fff"
-              disabled={saving}
-            />
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -711,15 +695,5 @@ function makeStyles(c: ThemeColors) {
     resultButtonLossSelected: { backgroundColor: c.loss, borderColor: c.loss },
     resultButtonText: { fontSize: 15, fontWeight: '700' },
     resultButtonTextSelected: { color: '#fff' },
-    switchRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: 10,
-      padding: 16,
-      marginBottom: 24,
-    },
   });
 }

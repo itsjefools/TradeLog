@@ -9,7 +9,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -59,7 +58,6 @@ const initialState = {
   pnl: '',
   pnlPips: '',
   memo: '',
-  isShared: false,
   imageUrls: [] as string[],
   tags: [] as string[],
 };
@@ -250,7 +248,7 @@ export default function RecordScreen() {
         memo: form.memo.trim() || null,
         post_memo: null,
         review_memo: null,
-        is_shared: form.isShared,
+        is_shared: false,
         image_urls: form.imageUrls,
         tags: form.tags,
         traded_at: tradedAt.toISOString(),
@@ -780,20 +778,6 @@ export default function RecordScreen() {
             </View>
           </View>
 
-          <View style={[styles.section, styles.switchRow]}>
-            <View style={styles.flex}>
-              <Text style={styles.label}>{t('record.shareFeedLabel')}</Text>
-              <Text style={styles.helperText}>{t('record.shareFeedHelp')}</Text>
-            </View>
-            <Switch
-              value={form.isShared}
-              onValueChange={(v) => setField('isShared', v)}
-              trackColor={{ false: c.border, true: c.accent }}
-              thumbColor="#fff"
-              disabled={loading}
-            />
-          </View>
-
           <Pressable
             style={({ pressed }) => [
               styles.submitButton,
@@ -1198,16 +1182,6 @@ function makeStyles(c: ThemeColors) {
   },
   imageAddButtonDisabled: {
     opacity: 0.5,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 24,
   },
   submitButton: {
     backgroundColor: c.accent,

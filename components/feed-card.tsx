@@ -40,7 +40,7 @@ import { formatRelativeTime } from '@/lib/format-time';
 import { tapSuccess } from '@/lib/haptics';
 import { supabase } from '@/lib/supabase';
 import { isVideoUrl } from '@/lib/upload-media';
-import { Post, Profile, Trade, tradeStyleLabel } from '@/lib/types';
+import { Post, Profile, Trade } from '@/lib/types';
 import { VerifiedTradeBadge } from '@/components/verified-trade-badge';
 
 export type FeedCardItem = Post & {
@@ -144,9 +144,6 @@ function FeedCardBase({
   const username = profile?.username?.trim() || fallbackName;
   const flag = profile?.nationality ? flagEmoji(profile.nationality) : '';
   const country = findCountry(profile?.nationality ?? null);
-  const styleText = profile?.trade_style
-    ? tradeStyleLabel(profile.trade_style)
-    : '';
 
   const directionLabel = trade
     ? trade.direction === 'long'
@@ -438,6 +435,7 @@ function FeedCardBase({
                   <Text style={styles.verifiedBadgeText}>✓</Text>
                 </View>
               )}
+              <Text style={styles.dateTop}>{dateStr}</Text>
             </View>
             <View style={styles.userMeta}>
               <Text style={styles.username}>@{username}</Text>
@@ -448,12 +446,6 @@ function FeedCardBase({
                   {country && (
                     <Text style={styles.metaText}>{country.name}</Text>
                   )}
-                </>
-              )}
-              {styleText && (
-                <>
-                  <Text style={styles.metaSep}>·</Text>
-                  <Text style={styles.metaText}>{styleText}</Text>
                 </>
               )}
             </View>
@@ -624,7 +616,6 @@ function FeedCardBase({
           />
         </Pressable>
 
-        <Text style={styles.date}>{dateStr}</Text>
       </View>
 
       {renderMenu()}
@@ -1128,6 +1119,7 @@ function makeStyles(c: ThemeColors) {
       fontSize: 14,
       fontWeight: '700',
       color: c.textPrimary,
+      flexShrink: 1,
     },
     verifiedBadge: {
       width: 16,
@@ -1269,6 +1261,12 @@ function makeStyles(c: ThemeColors) {
       fontSize: 11,
       color: c.textSecondary,
       marginLeft: 'auto',
+    },
+    dateTop: {
+      fontSize: 12,
+      color: c.textSecondary,
+      marginLeft: 'auto',
+      paddingLeft: 6,
     },
   });
 }

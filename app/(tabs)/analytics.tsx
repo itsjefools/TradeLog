@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { useScrollToTop } from '@react-navigation/native';
+import { useIsFocused, useScrollToTop } from '@react-navigation/native';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { Freeze } from 'react-freeze';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -59,6 +60,8 @@ export default function AnalyticsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
+  // 非フォーカス時は重いチャート群の再描画を凍結（常駐コスト削減・最後のフレーム保持）
+  const isFocused = useIsFocused();
 
   // 月選択 (offset=0 が今月、-1 で先月)
   const [monthOffset, setMonthOffset] = useState(0);
@@ -159,6 +162,7 @@ export default function AnalyticsScreen() {
   );
 
   return (
+    <Freeze freeze={!isFocused}>
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerText}>
@@ -485,6 +489,7 @@ export default function AnalyticsScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+    </Freeze>
   );
 }
 

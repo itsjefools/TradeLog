@@ -191,6 +191,7 @@ export default {
     heatmapTitle: 'Mapa de calor de operações',
     heatmapHint: 'Toque numa célula para ver o L&P do dia (último ano)',
     pairBreakdown: 'L&P por par',
+    equityCurve: 'Curva de capital',
     winLossRatio: 'Razão vitórias/derrotas',
     hourlyPerf: 'Desempenho por hora',
     weekdayPerf: 'Desempenho por dia',

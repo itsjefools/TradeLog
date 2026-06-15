@@ -192,6 +192,7 @@ export default {
     heatmapTitle: 'Mapa de calor de operaciones',
     heatmapHint: 'Toca una celda para ver el P&G del día (último año)',
     pairBreakdown: 'P&G por par',
+    equityCurve: 'Curva de capital',
     winLossRatio: 'Ratio victorias/derrotas',
     hourlyPerf: 'Rendimiento por hora',
     weekdayPerf: 'Rendimiento por día',

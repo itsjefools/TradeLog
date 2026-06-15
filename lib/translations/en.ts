@@ -187,6 +187,7 @@ export default {
     heatmapTitle: 'Trade heatmap',
     heatmapHint: 'Tap a cell to see that day’s P&L (past year)',
     pairBreakdown: 'P&L by pair',
+    equityCurve: 'Equity curve',
     winLossRatio: 'Win/Loss ratio',
     hourlyPerf: 'Performance by hour',
     weekdayPerf: 'Performance by weekday',

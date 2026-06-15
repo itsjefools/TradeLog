@@ -278,6 +278,7 @@ export default {
     heatmapTitle: '取引ヒートマップ',
     heatmapHint: 'マスをタップでその日の損益を表示（過去1年）',
     pairBreakdown: '通貨ペア別損益',
+    equityCurve: '資産推移',
     winLossRatio: '勝敗比率',
     hourlyPerf: '時間帯別パフォーマンス',
     weekdayPerf: '曜日別パフォーマンス',

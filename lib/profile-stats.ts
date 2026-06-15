@@ -177,6 +177,74 @@ export function computeStat(
   }
 }
 
+/** get_user_stats RPC が返す行。他ユーザーの成績はRLSで集計できないためサーバ算出。 */
+export type UserStatsRow = {
+  win_rate: number | null;
+  streak: number | null;
+  max_streak: number | null;
+  cumulative_pnl: number | null;
+  trade_count: number | null;
+  avg_rr: number | null;
+  profit_factor: number | null;
+  month_pnl: number | null;
+  best_pair: string | null;
+  avg_pips: number | null;
+};
+
+/** RPC行から指標1つの表示値を算出。computeStat の他ユーザー版。 */
+export function formatUserStat(
+  key: StatKey,
+  row: UserStatsRow | null,
+  currency: string | null | undefined,
+): StatValue {
+  if (!row) return DASH;
+  const n = (v: number | null) => (v == null ? null : Number(v));
+  switch (key) {
+    case 'win_rate':
+      return row.win_rate == null
+        ? DASH
+        : { value: `${Math.round(n(row.win_rate)!)}%`, tone: 'neutral' };
+    case 'streak':
+      return { value: String(row.streak ?? 0), tone: (row.streak ?? 0) > 0 ? 'pos' : 'neutral' };
+    case 'max_streak':
+      return {
+        value: String(row.max_streak ?? 0),
+        tone: (row.max_streak ?? 0) > 0 ? 'pos' : 'neutral',
+      };
+    case 'cumulative_pnl':
+      return !row.trade_count
+        ? DASH
+        : {
+            value: formatPnlCompact(n(row.cumulative_pnl) ?? 0, currency),
+            tone: toneBySign(n(row.cumulative_pnl) ?? 0),
+          };
+    case 'trade_count':
+      return { value: String(row.trade_count ?? 0), tone: 'neutral' };
+    case 'avg_rr':
+      return row.avg_rr == null
+        ? DASH
+        : { value: n(row.avg_rr)!.toFixed(1), tone: 'neutral' };
+    case 'profit_factor':
+      return row.profit_factor == null
+        ? DASH
+        : { value: n(row.profit_factor)!.toFixed(2), tone: 'neutral' };
+    case 'month_pnl':
+      return {
+        value: formatPnlCompact(n(row.month_pnl) ?? 0, currency),
+        tone: toneBySign(n(row.month_pnl) ?? 0),
+      };
+    case 'best_pair':
+      return row.best_pair ? { value: row.best_pair, tone: 'neutral' } : DASH;
+    case 'avg_pips': {
+      if (row.avg_pips == null) return DASH;
+      const v = n(row.avg_pips)!;
+      return { value: `${v >= 0 ? '+' : ''}${v.toFixed(1)}`, tone: toneBySign(v) };
+    }
+    default:
+      return DASH;
+  }
+}
+
 /** 保存値を検証し、最大3件・無効値除外・未設定はデフォルトにフォールバック。 */
 export function resolveShowcaseStats(
   stats: string[] | null | undefined,

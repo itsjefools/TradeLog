@@ -5,7 +5,7 @@ import {
 } from '@react-navigation/material-top-tabs';
 import { withLayoutContext } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -99,12 +99,28 @@ function BottomTabBar({ state, navigation }: MaterialTopTabBarProps) {
   );
 }
 
+function LazyPlaceholder() {
+  const c = useThemeColors();
+  return (
+    <View style={[styles.placeholder, { backgroundColor: c.background }]}>
+      <ActivityIndicator color={c.accent} />
+    </View>
+  );
+}
+
 export default function TabLayout() {
   return (
     <MaterialTopTabs
       tabBarPosition="bottom"
       tabBar={(props) => <BottomTabBar {...props} />}
-      screenOptions={{ swipeEnabled: true, lazy: false }}
+      // リリース向け最適化: 起動時は到達タブ＋隣接のみマウントし、重い画面の常駐を回避。
+      // 隣接は事前ロードして指追従スワイプの体感を維持する。
+      screenOptions={{
+        swipeEnabled: true,
+        lazy: true,
+        lazyPreloadDistance: 1,
+        lazyPlaceholder: () => <LazyPlaceholder />,
+      }}
     >
       <MaterialTopTabs.Screen name="index" />
       <MaterialTopTabs.Screen name="record" />
@@ -120,6 +136,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderTopWidth: StyleSheet.hairlineWidth,
   },
+  placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   item: {
     flex: 1,
     alignItems: 'center',

@@ -5,18 +5,52 @@ export type TradeStyle =
   | 'scalping'
   | 'day_trading'
   | 'swing'
-  | 'position';
+  | 'position'
+  | 'smc'
+  | 'ict'
+  | 'price_action'
+  | 'dow'
+  | 'elliott'
+  | 'fibonacci'
+  | 'bollinger'
+  | 'fimathe'
+  | 'trend_follow'
+  | 'breakout'
+  | 'harmonic'
+  | 'grid';
 
-export const TRADE_STYLE_OPTIONS: { value: TradeStyle; label: string }[] = [
-  { value: 'scalping', label: 'スキャルピング' },
-  { value: 'day_trading', label: 'デイトレード' },
-  { value: 'swing', label: 'スイング' },
-  { value: 'position', label: 'ポジショントレード' },
+// i18nKey があれば多言語ラベルを優先、無ければ label（固有名詞/手法名）をそのまま表示
+export const TRADE_STYLE_OPTIONS: {
+  value: TradeStyle;
+  label: string;
+  i18nKey?: string;
+}[] = [
+  { value: 'scalping', label: 'スキャルピング', i18nKey: 'auth.styleScalping' },
+  { value: 'day_trading', label: 'デイトレード', i18nKey: 'auth.styleDayTrading' },
+  { value: 'swing', label: 'スイング', i18nKey: 'auth.styleSwing' },
+  { value: 'position', label: 'ポジショントレード', i18nKey: 'auth.stylePosition' },
+  { value: 'smc', label: 'SMC' },
+  { value: 'ict', label: 'ICT' },
+  { value: 'price_action', label: 'プライスアクション' },
+  { value: 'dow', label: 'ダウ理論' },
+  { value: 'elliott', label: 'エリオット波動' },
+  { value: 'fibonacci', label: 'フィボナッチ' },
+  { value: 'bollinger', label: 'ボリンジャーバンド' },
+  { value: 'fimathe', label: 'Fimathe' },
+  { value: 'trend_follow', label: 'トレンドフォロー' },
+  { value: 'breakout', label: 'ブレイクアウト' },
+  { value: 'harmonic', label: 'ハーモニック' },
+  { value: 'grid', label: 'グリッド' },
 ];
 
 export function tradeStyleLabel(style: string | null | undefined): string {
   const found = TRADE_STYLE_OPTIONS.find((o) => o.value === style);
   return found ? found.label : '未設定';
+}
+
+/** 編集UI用：i18nキー（無い手法は undefined → label を使う） */
+export function tradeStyleI18nKey(value: string): string | undefined {
+  return TRADE_STYLE_OPTIONS.find((o) => o.value === value)?.i18nKey;
 }
 
 export type Profile = {
@@ -40,6 +74,7 @@ export type Profile = {
   twitter_handle: string | null;
   youtube: string | null;
   showcase_badges: string[] | null;
+  showcase_stats: string[] | null;
   show_badges: boolean | null;
   referral_code: string | null;
   referred_by: string | null;
@@ -59,7 +94,7 @@ export const PROFILE_COLUMNS = `
   id, email, username, display_name, avatar_url, bio,
   trade_style, language, currency, is_premium, plan_tier, nationality, is_verified,
   monthly_pnl_goal, push_token, total_trades,
-  website, twitter_handle, youtube, showcase_badges, show_badges,
+  website, twitter_handle, youtube, showcase_badges, showcase_stats, show_badges,
   referral_code, referred_by, bonus_premium_until, pip_unit, banner_url,
   created_at, updated_at
 `;

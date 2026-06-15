@@ -23,21 +23,14 @@ import { useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useThemeColors } from '@/hooks/use-theme';
 import { COUNTRIES, flagEmoji } from '@/lib/countries';
+import {
+  DEFAULT_SHOWCASE_STATS,
+  MAX_SHOWCASE_STATS,
+  STAT_KEYS,
+  STAT_LABEL_KEY,
+} from '@/lib/profile-stats';
 import { supabase } from '@/lib/supabase';
 import { TRADE_STYLE_OPTIONS, TradeStyle } from '@/lib/types';
-
-function tradeStyleI18nKey(value: TradeStyle): string {
-  switch (value) {
-    case 'scalping':
-      return 'auth.styleScalping';
-    case 'day_trading':
-      return 'auth.styleDayTrading';
-    case 'swing':
-      return 'auth.styleSwing';
-    case 'position':
-      return 'auth.stylePosition';
-  }
-}
 
 export default function ProfileEditScreen() {
   const c = useThemeColors();
@@ -56,6 +49,11 @@ export default function ProfileEditScreen() {
   );
   const [nationality, setNationality] = useState<string | null>(
     profile?.nationality ?? null,
+  );
+  const [showcaseStats, setShowcaseStats] = useState<string[]>(
+    profile?.showcase_stats && profile.showcase_stats.length > 0
+      ? profile.showcase_stats
+      : DEFAULT_SHOWCASE_STATS,
   );
   const [countrySearch, setCountrySearch] = useState('');
   const [saving, setSaving] = useState(false);
@@ -236,6 +234,7 @@ export default function ProfileEditScreen() {
         nationality: nationality?.toUpperCase() ?? null,
         website: trimmedWebsite || null,
         youtube: trimmedYoutube || null,
+        showcase_stats: showcaseStats.length > 0 ? showcaseStats : null,
       });
       router.back();
     } catch (e) {
@@ -248,6 +247,18 @@ export default function ProfileEditScreen() {
 
   const toggleTradeStyle = (value: TradeStyle) => {
     setTradeStyle((prev) => (prev === value ? null : value));
+  };
+
+  const toggleStat = (key: string) => {
+    setShowcaseStats((prev) => {
+      if (prev.includes(key)) return prev.filter((k) => k !== key);
+      if (prev.length >= MAX_SHOWCASE_STATS) return prev;
+      return [...prev, key];
+    });
+  };
+
+  const removeStatAt = (i: number) => {
+    setShowcaseStats((prev) => prev.filter((_, j) => j !== i));
   };
 
   const selectCountry = (code: string) => {
@@ -417,26 +428,6 @@ export default function ProfileEditScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>{t('badges.manageTitle')}</Text>
-            <Pressable
-              style={({ pressed }) => [
-                styles.navRow,
-                pressed && { opacity: 0.7 },
-              ]}
-              onPress={() => router.push('/badges')}
-              disabled={saving}
-            >
-              <Ionicons name="ribbon-outline" size={18} color={c.accent} />
-              <Text style={styles.navRowText}>{t('badges.editShowcase')}</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={c.textSecondary}
-              />
-            </Pressable>
-          </View>
-
-          <View style={styles.section}>
             <Text style={styles.label}>{t('profileEdit.tradeStyleLabel')}</Text>
             <View style={styles.chipsRow}>
               {TRADE_STYLE_OPTIONS.map((opt) => {
@@ -454,7 +445,71 @@ export default function ProfileEditScreen() {
                         selected && styles.chipTextSelected,
                       ]}
                     >
-                      {t(tradeStyleI18nKey(opt.value))}
+                      {opt.i18nKey ? t(opt.i18nKey) : opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>{t('profile.statsManageTitle')}</Text>
+            {/* 左・中・右の3枠プレビュー（選択順＝プロフィールでの表示順） */}
+            <View style={styles.statPreviewRow}>
+              {[0, 1, 2].map((i) => {
+                const key = showcaseStats[i] as keyof typeof STAT_LABEL_KEY | undefined;
+                return (
+                  <Pressable
+                    key={i}
+                    style={styles.statSlot}
+                    onPress={() => key && !saving && removeStatAt(i)}
+                    disabled={!key || saving}
+                  >
+                    <Text style={styles.statSlotPos}>{i + 1}</Text>
+                    {key ? (
+                      <View style={styles.statSlotFilled}>
+                        <Text style={styles.statSlotLabel} numberOfLines={1}>
+                          {t(STAT_LABEL_KEY[key])}
+                        </Text>
+                        <Ionicons name="close-circle" size={14} color={c.textSecondary} />
+                      </View>
+                    ) : (
+                      <Text style={styles.statSlotEmpty}>—</Text>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+            {/* 候補（番号＝配置順） */}
+            <View style={[styles.chipsRow, styles.chipsRowMt]}>
+              {STAT_KEYS.map((key) => {
+                const idx = showcaseStats.indexOf(key);
+                const selected = idx >= 0;
+                const disabled =
+                  saving ||
+                  (!selected && showcaseStats.length >= MAX_SHOWCASE_STATS);
+                return (
+                  <Pressable
+                    key={key}
+                    style={[
+                      styles.chip,
+                      styles.chipWithNum,
+                      selected && styles.chipSelected,
+                      disabled && !selected && { opacity: 0.4 },
+                    ]}
+                    onPress={() => toggleStat(key)}
+                    disabled={disabled}
+                  >
+                    {selected && (
+                      <View style={styles.chipNum}>
+                        <Text style={styles.chipNumText}>{idx + 1}</Text>
+                      </View>
+                    )}
+                    <Text
+                      style={[styles.chipText, selected && styles.chipTextSelected]}
+                    >
+                      {t(STAT_LABEL_KEY[key])}
                     </Text>
                   </Pressable>
                 );
@@ -689,6 +744,34 @@ function makeStyles(c: ThemeColors) {
     backgroundColor: c.accent,
     borderColor: c.accent,
   },
+  chipWithNum: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  chipNum: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipNumText: { fontSize: 10, fontWeight: '800', color: c.accent },
+  statPreviewRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  statSlot: {
+    flex: 1,
+    minHeight: 54,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    gap: 3,
+  },
+  statSlotPos: { fontSize: 10, fontWeight: '700', color: c.textSecondary },
+  statSlotFilled: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statSlotLabel: { fontSize: 12, fontWeight: '600', color: c.textPrimary },
+  statSlotEmpty: { fontSize: 16, color: c.textSecondary },
   chipText: {
     fontSize: 13,
     color: c.textPrimary,

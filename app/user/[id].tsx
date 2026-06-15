@@ -33,7 +33,6 @@ import { formatPips } from '@/lib/format-pips';
 import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { findCountry, flagEmoji } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
-import { badgesByIds, tierColor } from '@/lib/badges';
 import { Post, PROFILE_COLUMNS, Profile, Trade, tradeStyleLabel } from '@/lib/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -525,7 +524,6 @@ export default function UserProfileScreen() {
   const username = profile.username?.trim() || fallbackName;
   const flag = profile.nationality ? flagEmoji(profile.nationality) : '';
   const country = findCountry(profile.nationality ?? null);
-  const showcaseBadges = badgesByIds(profile.showcase_badges, profile.currency);
   const styleText = profile.trade_style ? tradeStyleLabel(profile.trade_style) : '';
 
   const tabs: {
@@ -636,22 +634,6 @@ export default function UserProfileScreen() {
             website={profile.website}
             youtube={profile.youtube}
           />
-
-          {profile.show_badges !== false && showcaseBadges.length > 0 && (
-            <View style={styles.badgesRow}>
-              {showcaseBadges.map((b) => (
-                <View
-                  key={b.id}
-                  style={[styles.badgeChip, { borderColor: tierColor(b.tier) }]}
-                >
-                  <Text style={styles.badgeEmoji}>{b.emoji}</Text>
-                  <Text style={[styles.badgeLabel, { color: tierColor(b.tier) }]}>
-                    {t(b.labelKey, b.labelParams)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
 
           {!isMyself && (
             <View style={styles.actionRow}>

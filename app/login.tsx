@@ -29,19 +29,6 @@ type Mode = 'signIn' | 'signUp';
 
 const ACCENT = '#10B981';
 
-function tradeStyleI18nKey(value: TradeStyle): string {
-  switch (value) {
-    case 'scalping':
-      return 'auth.styleScalping';
-    case 'day_trading':
-      return 'auth.styleDayTrading';
-    case 'swing':
-      return 'auth.styleSwing';
-    case 'position':
-      return 'auth.stylePosition';
-  }
-}
-
 export default function LoginScreen() {
   const c = useThemeColors();
   const { t } = useI18n();
@@ -381,7 +368,7 @@ export default function LoginScreen() {
                           selected && styles.chipTextSelected,
                         ]}
                       >
-                        {t(tradeStyleI18nKey(opt.value))}
+                        {opt.i18nKey ? t(opt.i18nKey) : opt.label}
                       </Text>
                     </TouchableOpacity>
                   );

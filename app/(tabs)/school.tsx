@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SchoolBooks } from '@/components/school/school-books';
+import { SchoolBrokers } from '@/components/school/school-brokers';
 import { SchoolCommunity } from '@/components/school/school-community';
 import { SchoolLessons } from '@/components/school/school-lessons';
 import { SchoolVideos } from '@/components/school/school-videos';
@@ -10,7 +11,7 @@ import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 
-type SchoolTab = 'lessons' | 'videos' | 'books' | 'community';
+type SchoolTab = 'lessons' | 'videos' | 'books' | 'brokers' | 'community';
 
 export default function SchoolScreen() {
   const c = useThemeColors();
@@ -22,6 +23,7 @@ export default function SchoolScreen() {
     { key: 'lessons', label: t('school.tab_lessons') },
     { key: 'videos', label: t('school.tab_videos') },
     { key: 'books', label: t('school.tab_books') },
+    { key: 'brokers', label: t('school.tab_brokers') },
     { key: 'community', label: t('school.tab_community') },
   ];
 
@@ -33,6 +35,8 @@ export default function SchoolScreen() {
         return <SchoolVideos />;
       case 'books':
         return <SchoolBooks />;
+      case 'brokers':
+        return <SchoolBrokers />;
       case 'community':
         return <SchoolCommunity />;
     }

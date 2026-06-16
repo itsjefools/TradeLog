@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -14,6 +13,7 @@ import {
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
+import { openAffiliate } from '@/lib/affiliate';
 import { supabase } from '@/lib/supabase';
 
 type Locale = 'ja' | 'en' | 'pt' | 'es';
@@ -90,11 +90,9 @@ export function SchoolBooks() {
 
   const featuredBooks = useMemo(() => books.filter((b) => b.is_featured), [books]);
 
-  const handleBookPress = async (book: Book) => {
+  const handleBookPress = (book: Book) => {
     const url = pickAffiliateUrl(book, lang);
-    if (!url) return;
-    const supported = await Linking.canOpenURL(url);
-    if (supported) Linking.openURL(url);
+    void openAffiliate(url, { kind: 'book', itemId: book.id });
   };
 
   const renderStars = (rating: number) => {
@@ -127,6 +125,19 @@ export function SchoolBooks() {
       data={books}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
+      ListEmptyComponent={
+        <View style={styles.emptyWrap}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="library-outline" size={28} color={c.textSecondary} />
+          </View>
+          <Text style={styles.emptyText}>{t('school.emptyBooks')}</Text>
+        </View>
+      }
+      ListFooterComponent={
+        books.length > 0 ? (
+          <Text style={styles.disclosure}>{t('school.affiliateDisclosure')}</Text>
+        ) : null
+      }
       ListHeaderComponent={
         featuredBooks.length > 0 ? (
           <View style={styles.featuredBlock}>
@@ -143,17 +154,22 @@ export function SchoolBooks() {
                   activeOpacity={0.85}
                   style={styles.featuredCard}
                 >
-                  {item.cover_image_url ? (
-                    <Image
-                      source={{ uri: item.cover_image_url }}
-                      style={styles.featuredCover}
-                      contentFit="cover"
-                    />
-                  ) : (
-                    <View style={styles.featuredCoverPlaceholder}>
-                      <Ionicons name="book" size={32} color={c.textSecondary} />
+                  <View style={styles.featuredCoverWrap}>
+                    {item.cover_image_url ? (
+                      <Image
+                        source={{ uri: item.cover_image_url }}
+                        style={styles.featuredCover}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View style={styles.featuredCoverPlaceholder}>
+                        <Ionicons name="book" size={32} color={c.textSecondary} />
+                      </View>
+                    )}
+                    <View style={styles.prBadgeOverlay}>
+                      <Text style={styles.prBadgeText}>{t('school.pr_label')}</Text>
                     </View>
-                  )}
+                  </View>
                   <Text style={styles.featuredTitle} numberOfLines={2}>
                     {pickLocalized(item, 'title', lang)}
                   </Text>
@@ -201,6 +217,9 @@ export function SchoolBooks() {
             ) : null}
           </View>
           <View style={styles.rowExternalIcon}>
+            <View style={styles.prBadge}>
+              <Text style={styles.prBadgeText}>{t('school.pr_label')}</Text>
+            </View>
             <Ionicons name="open-outline" size={16} color={c.textSecondary} />
           </View>
         </TouchableOpacity>
@@ -223,11 +242,54 @@ function makeStyles(c: ThemeColors) {
     },
     featuredList: { paddingHorizontal: 16 },
     featuredCard: { width: 130, marginHorizontal: 6 },
+    featuredCoverWrap: { position: 'relative', borderRadius: 8, overflow: 'hidden' },
     featuredCover: {
       width: 130,
       height: 190,
       borderRadius: 8,
       backgroundColor: c.surfaceAlt,
+    },
+    prBadgeOverlay: {
+      position: 'absolute',
+      top: 6,
+      right: 6,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 5,
+    },
+    prBadge: {
+      backgroundColor: c.surfaceAlt,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 5,
+      marginBottom: 6,
+    },
+    prBadgeText: {
+      fontSize: 9,
+      fontWeight: '800',
+      color: c.textSecondary,
+      letterSpacing: 0.6,
+    },
+    emptyWrap: { alignItems: 'center', paddingTop: 64, paddingHorizontal: 40 },
+    emptyIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: c.surfaceAlt,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 14,
+    },
+    emptyText: { fontSize: 14, color: c.textSecondary, textAlign: 'center' },
+    disclosure: {
+      fontSize: 11,
+      color: c.textSecondary,
+      lineHeight: 17,
+      opacity: 0.7,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 8,
     },
     featuredCoverPlaceholder: {
       width: 130,
@@ -298,6 +360,7 @@ function makeStyles(c: ThemeColors) {
     },
     rowExternalIcon: {
       justifyContent: 'center',
+      alignItems: 'center',
       paddingLeft: 8,
     },
     starsRow: { flexDirection: 'row' },

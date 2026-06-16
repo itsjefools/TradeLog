@@ -136,6 +136,14 @@ export function SchoolVideos() {
       data={filteredVideos}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
+      ListEmptyComponent={
+        <View style={styles.emptyWrap}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="videocam-outline" size={28} color={c.textSecondary} />
+          </View>
+          <Text style={styles.emptyText}>{t('school.emptyVideos')}</Text>
+        </View>
+      }
       ListHeaderComponent={
         <View>
           {selectedCategory === 'all' && featuredVideos.length > 0 && (
@@ -262,6 +270,17 @@ function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     listContent: { paddingBottom: 40 },
+    emptyWrap: { alignItems: 'center', paddingTop: 64, paddingHorizontal: 40 },
+    emptyIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: c.surfaceAlt,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 14,
+    },
+    emptyText: { fontSize: 14, color: c.textSecondary, textAlign: 'center' },
     featuredBlock: { marginBottom: 16, paddingTop: 12 },
     sectionLabel: {
       fontSize: 17,

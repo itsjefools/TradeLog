@@ -14,6 +14,7 @@ import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { openAffiliate } from '@/lib/affiliate';
+import { colorFromString } from '@/lib/cover-color';
 import { supabase } from '@/lib/supabase';
 
 type Locale = 'ja' | 'en' | 'pt' | 'es';
@@ -157,7 +158,12 @@ export function SchoolBrokers() {
               {item.logo_url ? (
                 <Image source={{ uri: item.logo_url }} style={styles.logo} contentFit="contain" />
               ) : (
-                <View style={styles.logoPlaceholder}>
+                <View
+                  style={[
+                    styles.logoPlaceholder,
+                    { backgroundColor: colorFromString(item.name) },
+                  ]}
+                >
                   <Text style={styles.logoInitial}>{item.name.slice(0, 1)}</Text>
                 </View>
               )}
@@ -241,7 +247,7 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    logoInitial: { fontSize: 20, fontWeight: '800', color: c.textSecondary },
+    logoInitial: { fontSize: 20, fontWeight: '800', color: '#fff' },
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
     name: { fontSize: 17, fontWeight: '800', color: c.textPrimary, letterSpacing: -0.2 },
     tagBadge: {

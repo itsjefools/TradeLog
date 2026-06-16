@@ -14,6 +14,7 @@ import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { openAffiliate } from '@/lib/affiliate';
+import { colorFromString } from '@/lib/cover-color';
 import { supabase } from '@/lib/supabase';
 
 type Locale = 'ja' | 'en' | 'pt' | 'es';
@@ -162,8 +163,18 @@ export function SchoolBooks() {
                         contentFit="cover"
                       />
                     ) : (
-                      <View style={styles.featuredCoverPlaceholder}>
-                        <Ionicons name="book" size={32} color={c.textSecondary} />
+                      <View
+                        style={[
+                          styles.featuredCoverPlaceholder,
+                          { backgroundColor: colorFromString(item.title_ja) },
+                        ]}
+                      >
+                        <Text style={styles.genCoverTitle} numberOfLines={4}>
+                          {pickLocalized(item, 'title', lang)}
+                        </Text>
+                        <Text style={styles.genCoverAuthor} numberOfLines={1}>
+                          {item.author}
+                        </Text>
                       </View>
                     )}
                     <View style={styles.prBadgeOverlay}>
@@ -195,8 +206,13 @@ export function SchoolBooks() {
               contentFit="cover"
             />
           ) : (
-            <View style={styles.rowCoverPlaceholder}>
-              <Ionicons name="book" size={20} color={c.textSecondary} />
+            <View
+              style={[
+                styles.rowCoverPlaceholder,
+                { backgroundColor: colorFromString(item.title_ja) },
+              ]}
+            >
+              <Ionicons name="book" size={20} color="rgba(255,255,255,0.92)" />
             </View>
           )}
           <View style={styles.rowBody}>
@@ -296,8 +312,20 @@ function makeStyles(c: ThemeColors) {
       height: 190,
       borderRadius: 8,
       backgroundColor: c.surfaceAlt,
-      justifyContent: 'center',
-      alignItems: 'center',
+      padding: 12,
+      justifyContent: 'space-between',
+    },
+    genCoverTitle: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: '#fff',
+      lineHeight: 19,
+      letterSpacing: -0.2,
+    },
+    genCoverAuthor: {
+      fontSize: 10,
+      color: 'rgba(255,255,255,0.75)',
+      fontWeight: '600',
     },
     featuredTitle: {
       fontSize: 13,

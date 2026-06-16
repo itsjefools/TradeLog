@@ -140,7 +140,7 @@ export function SchoolBooks() {
       }
       ListFooterComponent={
         anyAff ? (
-          <Text style={styles.disclosure}>{t('school.affiliateDisclosure')}</Text>
+          <Text style={styles.disclosure}>{t('school.amazonDisclosure')}</Text>
         ) : null
       }
       ListHeaderComponent={

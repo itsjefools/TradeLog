@@ -23,7 +23,7 @@ select * from (values
    'psychology', 'intermediate', 4.4, false, 6),
   ('魔術師たちの心理学', 'Trade Your Way to Financial Freedom', 'バン・K・タープ',
    'ポジションサイジング(資金管理)と期待値の考え方を徹底解説。「手法より資金管理」を学べる一冊。',
-   'risk', 'advanced', 4.4, false, 7),
+   'strategy', 'advanced', 4.4, false, 7),
   ('タートル流投資の魔術', 'Way of the Turtle', 'カーティス・フェイス',
    '実在のトレード集団「タートルズ」のルールを公開。再現性あるルールベース・トレードの教科書。',
    'strategy', 'advanced', 4.3, false, 8)

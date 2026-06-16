@@ -91,10 +91,14 @@ export function SchoolBooks() {
 
   const featuredBooks = useMemo(() => books.filter((b) => b.is_featured), [books]);
 
+  const hasAff = (book: Book) => !!pickAffiliateUrl(book, lang);
+
   const handleBookPress = (book: Book) => {
     const url = pickAffiliateUrl(book, lang);
     void openAffiliate(url, { kind: 'book', itemId: book.id });
   };
+
+  const anyAff = books.some((b) => hasAff(b));
 
   const renderStars = (rating: number) => {
     const filled = Math.round(rating);
@@ -135,7 +139,7 @@ export function SchoolBooks() {
         </View>
       }
       ListFooterComponent={
-        books.length > 0 ? (
+        anyAff ? (
           <Text style={styles.disclosure}>{t('school.affiliateDisclosure')}</Text>
         ) : null
       }
@@ -152,6 +156,7 @@ export function SchoolBooks() {
               renderItem={({ item }) => (
                 <TouchableOpacity
                   onPress={() => handleBookPress(item)}
+                  disabled={!hasAff(item)}
                   activeOpacity={0.85}
                   style={styles.featuredCard}
                 >
@@ -177,9 +182,11 @@ export function SchoolBooks() {
                         </Text>
                       </View>
                     )}
-                    <View style={styles.prBadgeOverlay}>
-                      <Text style={styles.prBadgeText}>{t('school.pr_label')}</Text>
-                    </View>
+                    {hasAff(item) && (
+                      <View style={styles.prBadgeOverlay}>
+                        <Text style={styles.prBadgeText}>{t('school.pr_label')}</Text>
+                      </View>
+                    )}
                   </View>
                   <Text style={styles.featuredTitle} numberOfLines={2}>
                     {pickLocalized(item, 'title', lang)}
@@ -196,6 +203,7 @@ export function SchoolBooks() {
       renderItem={({ item }) => (
         <TouchableOpacity
           onPress={() => handleBookPress(item)}
+          disabled={!hasAff(item)}
           activeOpacity={0.7}
           style={styles.row}
         >
@@ -232,12 +240,14 @@ export function SchoolBooks() {
               </Text>
             ) : null}
           </View>
-          <View style={styles.rowExternalIcon}>
-            <View style={styles.prBadge}>
-              <Text style={styles.prBadgeText}>{t('school.pr_label')}</Text>
+          {hasAff(item) && (
+            <View style={styles.rowExternalIcon}>
+              <View style={styles.prBadge}>
+                <Text style={styles.prBadgeText}>{t('school.pr_label')}</Text>
+              </View>
+              <Ionicons name="open-outline" size={16} color={c.textSecondary} />
             </View>
-            <Ionicons name="open-outline" size={16} color={c.textSecondary} />
-          </View>
+          )}
         </TouchableOpacity>
       )}
     />

@@ -886,6 +886,8 @@ export default {
     cat_analysis: '分析',
     cat_beginner: '初心者',
     cat_advanced: '上級者',
+    cat_all: 'すべて',
+    popular: '人気',
     paid_toggle: '有料コミュニティ',
     paid_toggle_desc: '月額課金で参加できるコミュニティ',
     price_label: '月額料金',

@@ -800,6 +800,8 @@ export default {
     cat_analysis: 'Analysis',
     cat_beginner: 'Beginner',
     cat_advanced: 'Advanced',
+    cat_all: 'All',
+    popular: 'Popular',
     paid_toggle: 'Paid Community',
     paid_toggle_desc: 'Members pay a monthly fee to join',
     price_label: 'Monthly Price',

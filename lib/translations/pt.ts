@@ -806,6 +806,8 @@ export default {
     cat_analysis: 'Análise',
     cat_beginner: 'Iniciante',
     cat_advanced: 'Avançado',
+    cat_all: 'Todos',
+    popular: 'Popular',
     paid_toggle: 'Comunidade paga',
     paid_toggle_desc: 'Os membros pagam uma mensalidade para entrar',
     price_label: 'Preço mensal',

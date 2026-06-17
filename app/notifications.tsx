@@ -49,8 +49,32 @@ function sectionFor(date: Date): SectionKey {
   return 'older';
 }
 
-function groupByDay(items: NotificationItem[]) {
-  const sections: { key: SectionKey; data: NotificationItem[] }[] = [];
+type GroupedItem = NotificationItem & { othersCount: number };
+
+// 同じ投稿への like / repost を1件に集約（"○○さん 他N人がいいね"）。
+// items は created_at 降順前提なので、各キーの最初の出現を代表にする。
+function groupNotifications(items: NotificationItem[]): GroupedItem[] {
+  const result: GroupedItem[] = [];
+  const indexByKey = new Map<string, number>();
+  for (const it of items) {
+    if ((it.type === 'like' || it.type === 'repost') && it.post_id) {
+      const key = `${it.type}:${it.post_id}`;
+      const existing = indexByKey.get(key);
+      if (existing !== undefined) {
+        result[existing].othersCount += 1;
+        continue;
+      }
+      indexByKey.set(key, result.length);
+      result.push({ ...it, othersCount: 0 });
+    } else {
+      result.push({ ...it, othersCount: 0 });
+    }
+  }
+  return result;
+}
+
+function groupByDay(items: GroupedItem[]) {
+  const sections: { key: SectionKey; data: GroupedItem[] }[] = [];
   for (const it of items) {
     const k = sectionFor(new Date(it.created_at));
     let bucket = sections.find((s) => s.key === k);
@@ -81,7 +105,7 @@ export default function NotificationsScreen() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const sections = useMemo(() => groupByDay(items), [items]);
+  const sections = useMemo(() => groupByDay(groupNotifications(items)), [items]);
 
   const load = useCallback(async () => {
     if (!myId) return;
@@ -165,6 +189,8 @@ export default function NotificationsScreen() {
               icon="notifications-outline"
               title={t('empty.notifications_title')}
               subtitle={t('empty.notifications_subtitle')}
+              actionLabel={t('empty.feed_discover')}
+              onAction={() => router.push('/ranking')}
             />
           ) : (
             sections.map((section) => (
@@ -184,17 +210,21 @@ export default function NotificationsScreen() {
   );
 }
 
-function NotificationRow({ item }: { item: NotificationItem }) {
+function NotificationRow({ item }: { item: GroupedItem }) {
   const c = useThemeColors();
   const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const actor = item.actor;
   const fallbackName = actor?.email?.split('@')[0] ?? t('profile.defaultName');
-  const displayName =
+  const baseName =
     actor?.display_name?.trim() ||
     actor?.username?.trim() ||
     fallbackName;
+  const displayName =
+    item.othersCount > 0
+      ? `${baseName} ${t('notifications.andOthers', { count: item.othersCount })}`
+      : baseName;
   const dateStr = formatRelativeTime(item.created_at);
 
   const message =

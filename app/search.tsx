@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Router, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -42,6 +43,10 @@ type TrendingTrader = {
 
 type TrendingTag = { tag: string; uses: number };
 
+type RecentSearch = { term: string; mode: SearchMode };
+const RECENTS_KEY = 'search_recents_v1';
+const MAX_RECENTS = 8;
+
 export default function SearchScreen() {
   const c = useThemeColors();
   const { t } = useI18n();
@@ -57,7 +62,40 @@ export default function SearchScreen() {
   const [error, setError] = useState<string | null>(null);
   const [trendingTraders, setTrendingTraders] = useState<TrendingTrader[]>([]);
   const [trendingTags, setTrendingTags] = useState<TrendingTag[]>([]);
+  const [recents, setRecents] = useState<RecentSearch[]>([]);
   const { isBlocked } = useBlocks();
+
+  // 最近の検索を読み込み。
+  useEffect(() => {
+    AsyncStorage.getItem(RECENTS_KEY).then((raw) => {
+      if (raw) {
+        try {
+          setRecents(JSON.parse(raw) as RecentSearch[]);
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+  }, []);
+
+  // 検索結果をタップしたときに最近の検索へ保存（同一語は先頭へ寄せ、最大8件）。
+  const addRecent = useCallback(() => {
+    const term = query.trim();
+    if (!term) return;
+    setRecents((prev) => {
+      const next = [
+        { term, mode },
+        ...prev.filter((r) => !(r.term === term && r.mode === mode)),
+      ].slice(0, MAX_RECENTS);
+      AsyncStorage.setItem(RECENTS_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  }, [query, mode]);
+
+  const clearRecents = useCallback(() => {
+    setRecents([]);
+    AsyncStorage.removeItem(RECENTS_KEY).catch(() => {});
+  }, []);
 
   // 発見: 急上昇トレーダー & トレンドタグ（マウント時に取得）
   useEffect(() => {
@@ -204,6 +242,36 @@ export default function SearchScreen() {
 
         {!loading && query.trim() === '' && (
           <>
+            {recents.length > 0 && (
+              <>
+                <View style={styles.recentHead}>
+                  <Text style={styles.discoverTitle}>{t('search.recent')}</Text>
+                  <Pressable onPress={clearRecents} hitSlop={8}>
+                    <Text style={styles.clearAll}>{t('search.clearAll')}</Text>
+                  </Pressable>
+                </View>
+                {recents.map((r) => (
+                  <Pressable
+                    key={`${r.mode}:${r.term}`}
+                    style={styles.recentRow}
+                    onPress={() => {
+                      setMode(r.mode);
+                      setQuery(r.term);
+                    }}
+                  >
+                    <Ionicons
+                      name="time-outline"
+                      size={16}
+                      color={c.textSecondary}
+                    />
+                    <Text style={styles.recentText} numberOfLines={1}>
+                      {r.mode === 'tags' ? `#${r.term}` : r.term}
+                    </Text>
+                  </Pressable>
+                ))}
+              </>
+            )}
+
             {trendingTags.length > 0 && (
               <>
                 <Text style={styles.discoverTitle}>
@@ -255,7 +323,7 @@ export default function SearchScreen() {
             )}
             {mode === 'users' &&
               userResults.map((p) => (
-                <UserRow key={p.id} profile={p} router={router} />
+                <UserRow key={p.id} profile={p} router={router} onPick={addRecent} />
               ))}
 
             {mode === 'tags' && tagResults.length === 0 && !error && (
@@ -263,7 +331,7 @@ export default function SearchScreen() {
             )}
             {mode === 'tags' &&
               tagResults.map((p) => (
-                <TagPostRow key={p.id} post={p} router={router} />
+                <TagPostRow key={p.id} post={p} router={router} onPick={addRecent} />
               ))}
           </>
         )}
@@ -334,9 +402,11 @@ function TrendingTraderRow({
 function UserRow({
   profile,
   router,
+  onPick,
 }: {
   profile: Profile;
   router: Router;
+  onPick?: () => void;
 }) {
   const c = useThemeColors();
   const { t } = useI18n();
@@ -354,7 +424,10 @@ function UserRow({
   return (
     <Pressable
       style={({ pressed }) => [styles.userRow, pressed && styles.userRowPressed]}
-      onPress={() => router.push(`/user/${profile.id}`)}
+      onPress={() => {
+        onPick?.();
+        router.push(`/user/${profile.id}`);
+      }}
     >
       <Avatar
         uri={profile.avatar_url}
@@ -395,7 +468,15 @@ function UserRow({
   );
 }
 
-function TagPostRow({ post, router }: { post: TagPost; router: Router }) {
+function TagPostRow({
+  post,
+  router,
+  onPick,
+}: {
+  post: TagPost;
+  router: Router;
+  onPick?: () => void;
+}) {
   const c = useThemeColors();
   const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
@@ -411,7 +492,10 @@ function TagPostRow({ post, router }: { post: TagPost; router: Router }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.tagPost, pressed && styles.userRowPressed]}
-      onPress={() => router.push(`/comments?postId=${post.id}`)}
+      onPress={() => {
+        onPick?.();
+        router.push(`/comments?postId=${post.id}`);
+      }}
     >
       <View style={styles.tagPostHead}>
         <Avatar
@@ -522,6 +606,19 @@ function makeStyles(c: ThemeColors) {
       marginTop: 8,
       marginBottom: 10,
     },
+    recentHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    clearAll: { fontSize: 12, color: c.accent, fontWeight: '600' },
+    recentRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 10,
+    },
+    recentText: { flex: 1, fontSize: 14, color: c.textPrimary },
     tagCloud: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
     trendTag: {
       flexDirection: 'row',

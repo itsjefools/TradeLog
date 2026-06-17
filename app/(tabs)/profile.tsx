@@ -308,6 +308,19 @@ export default function ProfileScreen() {
     [openSettings],
   );
 
+  // プロフィール完成度（主要5項目の充足率）。未完成のときだけ導線を出す。
+  const completion = useMemo(() => {
+    if (!profile) return 1;
+    const checks = [
+      !!profile.avatar_url,
+      !!(profile.bio && profile.bio.trim()),
+      !!profile.nationality,
+      !!profile.trade_style,
+      !!(profile.website || profile.youtube),
+    ];
+    return checks.filter(Boolean).length / checks.length;
+  }, [profile]);
+
   const renderHeader = () => (
     <GestureDetector gesture={headerSwipe}>
     <View style={styles.profileSection}>
@@ -411,6 +424,25 @@ export default function ProfileScreen() {
         )}
 
         <ProfileLinks website={profile?.website} youtube={profile?.youtube} />
+
+        {profile && completion < 1 && (
+          <Pressable
+            style={({ pressed }) => [styles.completeCard, pressed && styles.pressed]}
+            onPress={() => router.push('/profile-edit')}
+          >
+            <View style={styles.completeTextWrap}>
+              <Text style={styles.completeTitle}>
+                {t('profile.completeProfile')}
+              </Text>
+              <Text style={styles.completePct}>{Math.round(completion * 100)}%</Text>
+            </View>
+            <View style={styles.completeTrack}>
+              <View
+                style={[styles.completeFill, { width: `${completion * 100}%` }]}
+              />
+            </View>
+          </Pressable>
+        )}
 
         {streak >= 1 && (
           <View style={styles.streakChip}>
@@ -630,6 +662,34 @@ function makeStyles(c: ThemeColors) {
       marginTop: 12,
       textAlign: 'center',
       lineHeight: 20,
+    },
+    completeCard: {
+      alignSelf: 'stretch',
+      marginTop: 16,
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+    },
+    completeTextWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+    },
+    completeTitle: { fontSize: 13, fontWeight: '700', color: c.textPrimary },
+    completePct: { fontSize: 13, fontWeight: '800', color: c.accent },
+    completeTrack: {
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: c.surfaceAlt,
+      overflow: 'hidden',
+    },
+    completeFill: {
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: c.accent,
     },
     streakChip: {
       flexDirection: 'row',

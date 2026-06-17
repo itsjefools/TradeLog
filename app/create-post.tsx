@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -55,6 +55,38 @@ export default function CreatePostScreen() {
   const [text, setText] = useState('');
   const [media, setMedia] = useState<LocalMedia[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [trendingTags, setTrendingTags] = useState<string[]>([]);
+
+  // トレンドタグを取得（# 入力時の候補に使う）。
+  useEffect(() => {
+    supabase
+      .rpc('get_trending_hashtags', { days: 30, top_n: 30 })
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setTrendingTags((data as { tag: string }[]).map((d) => d.tag));
+        }
+      });
+  }, []);
+
+  // テキスト末尾が「#...」なら、その部分入力に一致するトレンドタグを候補表示。
+  const hashtagPartial = useMemo(() => {
+    const m = text.match(/#([A-Za-z0-9_぀-ゟ゠-ヿ一-鿿]*)$/);
+    return m ? m[1].toLowerCase() : null;
+  }, [text]);
+  const tagSuggestions = useMemo(() => {
+    if (hashtagPartial === null) return [];
+    return trendingTags
+      .filter((tg) => tg.startsWith(hashtagPartial) && tg !== hashtagPartial)
+      .slice(0, 6);
+  }, [hashtagPartial, trendingTags]);
+
+  const applyHashtag = (tag: string) => {
+    setText((prev) => {
+      const m = prev.match(/#([A-Za-z0-9_぀-ゟ゠-ヿ一-鿿]*)$/);
+      const base = m ? prev.slice(0, prev.length - m[0].length) : prev;
+      return `${base}#${tag} `.slice(0, MAX_CHARS);
+    });
+  };
 
   // 投稿は全プラン無制限
   const trimmed = text.trim();
@@ -256,6 +288,26 @@ export default function CreatePostScreen() {
           )}
         </ScrollView>
 
+        {tagSuggestions.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.suggestRow}
+            style={styles.suggestWrap}
+          >
+            {tagSuggestions.map((tg) => (
+              <Pressable
+                key={tg}
+                onPress={() => applyHashtag(tg)}
+                style={styles.suggestChip}
+              >
+                <Text style={styles.suggestChipText}>#{tg}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
+
         <View style={styles.toolbar}>
           <ToolButton
             icon="camera-outline"
@@ -451,6 +503,24 @@ function makeStyles(c: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    suggestWrap: {
+      maxHeight: 44,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    suggestRow: {
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+    },
+    suggestChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 999,
+      backgroundColor: c.surfaceAlt,
+    },
+    suggestChipText: { fontSize: 13, fontWeight: '600', color: c.accent },
     toolbar: {
       flexDirection: 'row',
       alignItems: 'center',

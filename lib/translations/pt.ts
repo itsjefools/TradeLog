@@ -353,6 +353,7 @@ export default {
     feed_title: 'Seu feed está vazio',
     feed_subtitle: 'Faça sua primeira publicação e conecte-se com traders.',
     feed_action: 'Publicar',
+    feed_discover: 'Encontrar traders no ranking',
     trades_title: 'Nenhum registro de operação',
     trades_subtitle: 'Registre sua primeira operação para acompanhar seu progresso.',
     trades_action: 'Registrar',

@@ -441,6 +441,7 @@ export default {
     feed_title: 'フィードはまだ空です',
     feed_subtitle: '最初の投稿をして、トレーダーとつながりましょう。',
     feed_action: '投稿する',
+    feed_discover: 'ランキングでトレーダーを探す',
     trades_title: '取引記録がありません',
     trades_subtitle: '最初のトレードを記録して、成長を追跡しましょう。',
     trades_action: '記録する',

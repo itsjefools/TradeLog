@@ -391,7 +391,7 @@ export default function FeedScreen() {
 
       {loading ? (
         <View style={styles.body}>
-          <FeedSkeletonList count={4} />
+          <FeedSkeletonList count={6} />
         </View>
       ) : (
         <FlatList
@@ -434,6 +434,8 @@ export default function FeedScreen() {
               subtitle={t('empty.feed_subtitle')}
               actionLabel={t('empty.feed_action')}
               onAction={() => router.push('/create-post')}
+              secondaryLabel={t('empty.feed_discover')}
+              onSecondary={() => router.push('/ranking')}
             />
           }
           windowSize={7}

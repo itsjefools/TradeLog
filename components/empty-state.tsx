@@ -13,12 +13,16 @@ export function EmptyState({
   subtitle,
   actionLabel,
   onAction,
+  secondaryLabel,
+  onSecondary,
 }: {
   icon: IoniconName;
   title: string;
   subtitle: string;
   actionLabel?: string;
   onAction?: () => void;
+  secondaryLabel?: string;
+  onSecondary?: () => void;
 }) {
   const c = useThemeColors();
   const styles = useMemo(() => makeStyles(c), [c]);
@@ -41,6 +45,15 @@ export function EmptyState({
           style={({ pressed }) => [styles.action, pressed && { opacity: 0.8 }]}
         >
           <Text style={styles.actionText}>{actionLabel}</Text>
+        </Pressable>
+      ) : null}
+      {secondaryLabel && onSecondary ? (
+        <Pressable
+          onPress={onSecondary}
+          hitSlop={8}
+          style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.6 }]}
+        >
+          <Text style={styles.secondaryText}>{secondaryLabel}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -90,6 +103,12 @@ function makeStyles(c: ThemeColors) {
       fontSize: 15,
       fontWeight: '600',
       color: c.textPrimary,
+    },
+    secondary: { marginTop: 14, paddingVertical: 6, paddingHorizontal: 12 },
+    secondaryText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.accent,
     },
   });
 }

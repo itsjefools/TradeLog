@@ -347,6 +347,7 @@ export default {
     feed_title: 'Your feed is empty',
     feed_subtitle: 'Make your first post and connect with traders.',
     feed_action: 'Create Post',
+    feed_discover: 'Find traders on the ranking',
     trades_title: 'No trade records yet',
     trades_subtitle: 'Record your first trade to start tracking your progress.',
     trades_action: 'Record Trade',

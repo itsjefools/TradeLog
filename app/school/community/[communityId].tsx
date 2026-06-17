@@ -220,7 +220,17 @@ export default function CommunityDetailScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {community.name}
         </Text>
-        <View style={styles.headerSpacer} />
+        {isOwner ? (
+          <Pressable
+            onPress={() => router.push('/school/community-earnings')}
+            hitSlop={12}
+            accessibilityLabel={t('community.earnings_title')}
+          >
+            <Ionicons name="stats-chart-outline" size={22} color={c.textPrimary} />
+          </Pressable>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
       </View>
 
       <KeyboardAvoidingView

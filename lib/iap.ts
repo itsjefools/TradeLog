@@ -38,12 +38,46 @@ export const PRODUCT_IDS = {
   }),
 } as const;
 
+// 有料コミュニティの価格ティアに対応する商品ID（自動更新サブスク）。
+// 同じ商品でも「どのコミュニティの課金か」は購入時に pendingCommunityId で保持する。
+export const COMMUNITY_PRODUCT_IDS: Record<string, string> = {
+  tier_480: Platform.select({
+    ios: 'com.kingjay.tradelog.community.480',
+    android: 'community_480',
+    default: 'community_480',
+  }),
+  tier_980: Platform.select({
+    ios: 'com.kingjay.tradelog.community.980',
+    android: 'community_980',
+    default: 'community_980',
+  }),
+  tier_1980: Platform.select({
+    ios: 'com.kingjay.tradelog.community.1980',
+    android: 'community_1980',
+    default: 'community_1980',
+  }),
+  tier_2980: Platform.select({
+    ios: 'com.kingjay.tradelog.community.2980',
+    android: 'community_2980',
+    default: 'community_2980',
+  }),
+};
+
 const SKU_LIST: string[] = [
   PRODUCT_IDS.PLUS_MONTHLY,
   PRODUCT_IDS.PLUS_YEARLY,
   PRODUCT_IDS.PRO_MONTHLY,
   PRODUCT_IDS.PRO_YEARLY,
+  ...Object.values(COMMUNITY_PRODUCT_IDS),
 ];
+
+/** コミュニティ課金の商品か */
+export function isCommunityProduct(productId: string | null | undefined): boolean {
+  return !!productId && productId.includes('community');
+}
+
+// 「今どのコミュニティを購入しようとしているか」を購入フロー中だけ保持する。
+let pendingCommunityId: string | null = null;
 
 /** 商品IDから購入ティアを判定する。'pro' を含めば pro、'plus' を含めば plus。 */
 export function tierForProduct(productId: string | null | undefined): Plan {
@@ -115,6 +149,29 @@ export async function purchaseSubscription(productId: string): Promise<void> {
   }
 }
 
+/**
+ * 有料コミュニティの購入をリクエストする。
+ * 購入結果は setupPurchaseListeners が拾い、community-subscribe-verify を呼んで
+ * 記帳＋参加権付与を行う。tierKey は community_price_tiers のキー。
+ */
+export async function purchaseCommunitySubscription(
+  communityId: string,
+  tierKey: string,
+): Promise<void> {
+  const productId = COMMUNITY_PRODUCT_IDS[tierKey];
+  if (!productId) return;
+  pendingCommunityId = communityId;
+  try {
+    await requestPurchase({
+      request: { ios: { sku: productId }, android: { skus: [productId] } },
+      type: 'subs',
+    });
+  } catch {
+    pendingCommunityId = null;
+    // エラーは purchaseErrorListener が拾う
+  }
+}
+
 function defaultExpiresAt(productId: string): string {
   const ms =
     productId.includes('yearly') || productId.includes('annual')
@@ -162,6 +219,31 @@ export function setupPurchaseListeners(
       const productId = (purchase as { productId?: string }).productId;
       if (!productId) {
         onError('invalid_purchase');
+        return;
+      }
+
+      // --- 有料コミュニティの購入: 検証Edge Functionで記帳＋参加権付与 ---
+      if (isCommunityProduct(productId)) {
+        const communityId = pendingCommunityId;
+        pendingCommunityId = null;
+        if (communityId) {
+          const token = purchaseToken(purchase);
+          await supabase.functions.invoke('community-subscribe-verify', {
+            body: {
+              communityId,
+              platform,
+              productId,
+              transactionId: token,
+              purchaseToken: token,
+            },
+          });
+        }
+        try {
+          await finishTransaction({ purchase, isConsumable: false });
+        } catch {
+          // ignore
+        }
+        onSuccess();
         return;
       }
 

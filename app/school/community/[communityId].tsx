@@ -332,6 +332,40 @@ export default function CommunityDetailScreen() {
                   </Text>
                 </View>
               )}
+
+              {!isMember && (
+                <View style={styles.lockedCard}>
+                  <View style={styles.lockedHead}>
+                    <Ionicons
+                      name={community.is_paid ? 'lock-closed' : 'chatbubbles-outline'}
+                      size={15}
+                      color={c.accent}
+                    />
+                    <Text style={styles.lockedTitle}>
+                      {t('community.locked_title')}
+                    </Text>
+                  </View>
+                  {['locked_benefit1', 'locked_benefit2', 'locked_benefit3'].map(
+                    (k) => (
+                      <View key={k} style={styles.lockedRow}>
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={15}
+                          color={c.accent}
+                        />
+                        <Text style={styles.lockedText}>
+                          {t(`community.${k}`)}
+                        </Text>
+                      </View>
+                    ),
+                  )}
+                  {community.is_paid && (
+                    <Text style={styles.lockedNote}>
+                      {t('community.locked_note')}
+                    </Text>
+                  )}
+                </View>
+              )}
             </View>
           }
           renderItem={({ item }) => <PostRow item={item} c={c} t={t} />}
@@ -540,6 +574,27 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: `${c.accent}1A`,
     },
     ownerBadgeText: { fontSize: 12, color: c.accent, fontWeight: '700' },
+    lockedCard: {
+      marginTop: 18,
+      alignSelf: 'stretch',
+      padding: 16,
+      borderRadius: 14,
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      gap: 9,
+    },
+    lockedHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2 },
+    lockedTitle: { fontSize: 14, fontWeight: '800', color: c.textPrimary },
+    lockedRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    lockedText: { flex: 1, fontSize: 13, color: c.textSecondary },
+    lockedNote: {
+      fontSize: 11,
+      color: c.textSecondary,
+      opacity: 0.8,
+      marginTop: 4,
+      lineHeight: 16,
+    },
     postRow: {
       flexDirection: 'row',
       paddingHorizontal: 16,

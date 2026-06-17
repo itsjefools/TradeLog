@@ -76,30 +76,38 @@ async function handleApple(admin: Admin, signedPayload: string): Promise<void> {
     data?: { signedTransactionInfo?: string };
   } | null;
   if (!notif) return;
-  // 更新系のみ記帳（初回 SUBSCRIBED は subscribe-verify が記帳済み）。
-  if (notif.notificationType !== 'DID_RENEW') return;
+  const type = notif.notificationType;
 
-  const signedTxn = notif.data?.signedTransactionInfo;
-  if (!signedTxn) return;
-  const peek = decodeJws(signedTxn) as { transactionId?: string } | null;
+  const peek = decodeJws(notif.data?.signedTransactionInfo) as
+    | { transactionId?: string; originalTransactionId?: string }
+    | null;
   const transactionId = peek?.transactionId;
-  if (!transactionId) return;
-
-  // App Store Server API で取引を再取得（信頼できる情報）。
-  const txn = await appleGetTransaction(transactionId);
-  if (!txn) return;
-  const originalTransactionId = txn.originalTransactionId ?? '';
+  const originalTransactionId = peek?.originalTransactionId;
   if (!originalTransactionId) return;
 
   const { data: sub } = await admin
     .from('community_subscriptions')
-    .select('community_id, creator_id, subscriber_id, price_tier_key')
+    .select('id, community_id, creator_id, subscriber_id, price_tier_key')
     .eq('store', 'apple')
     .eq('original_transaction_id', originalTransactionId)
     .maybeSingle();
   if (!sub) return;
 
-  await recordRenewal(admin, sub, 'apple', `apple:${transactionId}`);
+  if (type === 'DID_RENEW') {
+    // 更新（入金）は App Store Server API で再検証してから記帳。
+    if (!transactionId) return;
+    const txn = await appleGetTransaction(transactionId);
+    if (!txn) return;
+    await recordRenewal(admin, sub, 'apple', `apple:${transactionId}`);
+  } else if (type === 'REFUND') {
+    // 返金: 対象取引の記帳を取り消し、アクセスを剥奪。
+    if (transactionId) await reverseEarning(admin, `apple:${transactionId}`);
+    await revokeAccess(admin, sub, 'cancelled');
+  } else if (type === 'EXPIRED' || type === 'REVOKE') {
+    // 失効/取消: アクセスを剥奪（過去分の入金は取り消さない）。
+    await revokeAccess(admin, sub, 'expired');
+  }
+  // DID_CHANGE_RENEWAL_STATUS（自動更新オフ等）は期限まで継続するので無処理。
 }
 
 // App Store Server API: 取引情報を取得（本番→サンドボックス）。
@@ -170,21 +178,30 @@ async function handleGoogle(admin: Admin, dataB64: string): Promise<void> {
   };
   const n = msg.subscriptionNotification;
   if (!n?.purchaseToken || !n.subscriptionId) return;
-  // 1=RECOVERED, 2=RENEWED のみ記帳（4=PURCHASED は subscribe-verify が記帳済み）。
-  if (n.notificationType !== 2 && n.notificationType !== 1) return;
-
-  const verified = await googleGetSubscription(n.subscriptionId, n.purchaseToken);
-  if (!verified) return;
+  const type = n.notificationType;
 
   const { data: sub } = await admin
     .from('community_subscriptions')
-    .select('community_id, creator_id, subscriber_id, price_tier_key')
+    .select('id, community_id, creator_id, subscriber_id, price_tier_key')
     .eq('store', 'google')
     .eq('purchase_token', n.purchaseToken)
     .maybeSingle();
   if (!sub) return;
 
-  await recordRenewal(admin, sub, 'google', `google:${verified.orderId}`);
+  if (type === 2 || type === 1) {
+    // 2=RENEWED / 1=RECOVERED: 再検証して記帳（4=PURCHASED は subscribe-verify 済み）。
+    const verified = await googleGetSubscription(n.subscriptionId, n.purchaseToken);
+    if (!verified) return;
+    await recordRenewal(admin, sub, 'google', `google:${verified.orderId}`);
+  } else if (type === 12) {
+    // 12=REVOKED（返金/取消）: 直近の未払い記帳を取り消し、アクセス剥奪。
+    await reverseLatestForSub(admin, sub);
+    await revokeAccess(admin, sub, 'cancelled');
+  } else if (type === 13) {
+    // 13=EXPIRED: アクセス剥奪。
+    await revokeAccess(admin, sub, 'expired');
+  }
+  // 3=CANCELED（自動更新オフ）は期限まで継続するので無処理。
 }
 
 async function googleGetSubscription(
@@ -246,6 +263,58 @@ async function googleAccessToken(sa: {
   if (!res.ok) return null;
   const data = await res.json();
   return (data.access_token as string) ?? null;
+}
+
+// ===========================================================================
+// 返金/失効の処理
+// ===========================================================================
+
+// 指定 store_txn_id の記帳を取り消す（返金）。
+async function reverseEarning(admin: Admin, storeTxnId: string): Promise<void> {
+  await admin
+    .from('community_earnings')
+    .update({ status: 'reversed' })
+    .eq('store_txn_id', storeTxnId)
+    .neq('status', 'reversed');
+}
+
+// 取引IDが特定できない返金(Google)向け: 直近の未払い記帳1件を取り消す。
+async function reverseLatestForSub(
+  admin: Admin,
+  sub: { community_id: string; subscriber_id: string },
+): Promise<void> {
+  const { data } = await admin
+    .from('community_earnings')
+    .select('id')
+    .eq('community_id', sub.community_id)
+    .eq('subscriber_id', sub.subscriber_id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (data && data.length > 0) {
+    await admin
+      .from('community_earnings')
+      .update({ status: 'reversed' })
+      .eq('id', (data[0] as { id: string }).id);
+  }
+}
+
+// サブスクを失効/取消にし、購読者のメンバー権を剥奪（オーナーは対象外）。
+async function revokeAccess(
+  admin: Admin,
+  sub: { id: string; community_id: string; subscriber_id: string },
+  status: 'expired' | 'cancelled',
+): Promise<void> {
+  await admin
+    .from('community_subscriptions')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', sub.id);
+  await admin
+    .from('community_members')
+    .delete()
+    .eq('community_id', sub.community_id)
+    .eq('user_id', sub.subscriber_id)
+    .eq('role', 'member');
 }
 
 // ===========================================================================

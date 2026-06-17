@@ -12,6 +12,10 @@ Apple / Google のサブスク更新通知を受け取り、対象コミュニ�
   - **Google** Realtime Developer Notifications（Pub/Sub push）… `{ message: { data } }`
 - 記帳対象: Apple `DID_RENEW` / Google `RENEWED(2)`・`RECOVERED(1)`
   （初回購入は `community-subscribe-verify` が記帳済みなので除外）
+- 返金/失効も処理:
+  - Apple `REFUND` → 該当記帳を `reversed` 化＋メンバー権剥奪。`EXPIRED`/`REVOKE` → メンバー権剥奪。
+  - Google `REVOKED(12)` → 直近の未払い記帳を `reversed` 化＋剥奪。`EXPIRED(13)` → 剥奪。
+  - `CANCELED`/自動更新オフは期限まで継続するため無処理。
 
 ## セキュリティ
 
@@ -43,5 +47,5 @@ supabase secrets set APPLE_PRIVATE_KEY="$(cat AuthKey_XXXX.p8)"
 supabase functions deploy community-renewal-webhook
 ```
 
-⚠️ **未テスト。サンドボックス/実機テスト必須。** StoreKit2 で JWS しか取れない構成や、
-解約・返金(REFUND/REVOKE)時の `status` 更新・按分返金は後続フェーズ。
+⚠️ **未テスト。サンドボックス/実機テスト必須。** 既に作成者へ支払い済み(`paid`)の分の
+返金クラウバック（精算）と、StoreKit2 で JWS しか取れない構成は運用/後続で対応。

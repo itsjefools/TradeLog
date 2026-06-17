@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import { ThemeColors } from '@/constants/theme';
+import { GOLD, ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { usePremium } from '@/hooks/use-premium';
 import { useThemeColors } from '@/hooks/use-theme';
@@ -214,17 +214,22 @@ export function SchoolLessons() {
                           {lesson.duration_minutes}
                           {t('school.minutes')}
                         </Text>
-                        {lesson.is_free && (
+                        {lesson.is_free ? (
                           <View style={styles.freeBadge}>
                             <Text style={styles.freeText}>FREE</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.premiumBadge}>
+                            <Ionicons name="lock-closed" size={9} color={GOLD} />
+                            <Text style={styles.premiumText}>PREMIUM</Text>
                           </View>
                         )}
                       </View>
                     </View>
                     <Ionicons
-                      name={locked ? 'lock-closed' : 'chevron-forward'}
+                      name="chevron-forward"
                       size={16}
-                      color={locked ? catColor : c.textSecondary}
+                      color={locked ? GOLD : c.textSecondary}
                       style={locked ? undefined : styles.iconChevron}
                     />
                   </TouchableOpacity>
@@ -339,6 +344,22 @@ function makeStyles(c: ThemeColors) {
       fontSize: 9,
       fontWeight: '800',
       color: c.accent,
+      letterSpacing: 0.5,
+    },
+    premiumBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: `${GOLD}1F`,
+      marginLeft: 'auto',
+    },
+    premiumText: {
+      fontSize: 9,
+      fontWeight: '800',
+      color: GOLD,
       letterSpacing: 0.5,
     },
     iconChevron: { opacity: 0.4 },

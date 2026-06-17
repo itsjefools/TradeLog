@@ -38,6 +38,7 @@ export default function SettingsScreen() {
   const { locale, t } = useI18n();
 
   const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [ownsCommunity, setOwnsCommunity] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,6 +49,24 @@ export default function SettingsScreen() {
       cancelled = true;
     };
   }, []);
+
+  // コミュニティを1つ以上所有していれば「クリエイター収益」導線を出す。
+  useEffect(() => {
+    const uid = session?.user.id;
+    if (!uid) return;
+    let cancelled = false;
+    supabase
+      .from('communities')
+      .select('id')
+      .eq('owner_id', uid)
+      .limit(1)
+      .then(({ data }) => {
+        if (!cancelled) setOwnsCommunity(!!data && data.length > 0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user.id]);
 
   const handleToggleReminder = async (next: boolean) => {
     setReminderEnabled(next);
@@ -472,6 +491,13 @@ export default function SettingsScreen() {
           label={t('settings.premiumPlan')}
           onPress={() => router.push('/premium')}
         />
+        {ownsCommunity && (
+          <SettingRow
+            icon="wallet-outline"
+            label={t('settings.creatorEarnings')}
+            onPress={() => router.push('/school/community-earnings')}
+          />
+        )}
 
         <Divider />
 

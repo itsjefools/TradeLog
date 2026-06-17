@@ -103,6 +103,7 @@ export default {
     pipUnit: '値幅の表示',
     premium: 'Premium',
     premiumPlan: 'Premium プラン',
+    creatorEarnings: 'クリエイター収益',
     tools: 'ツール',
     monthlyGoal: '月間目標',
     riskCalculator: 'リスク計算機',

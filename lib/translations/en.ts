@@ -1067,6 +1067,7 @@ export default {
     pipUnit: 'Pip unit',
     premium: 'Premium',
     premiumPlan: 'Premium plan',
+    creatorEarnings: 'Creator earnings',
     tools: 'Tools',
     monthlyGoal: 'Monthly goal',
     riskCalculator: 'Risk calculator',

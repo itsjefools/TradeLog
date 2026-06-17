@@ -44,6 +44,7 @@ export default function FeedScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [feedTab, setFeedTab] = useState<'all' | 'following'>('all');
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -78,10 +79,39 @@ export default function FeedScreen() {
     })[];
   }, []);
 
-  const loadFeed = useCallback(async () => {
-    setError(null);
-    try {
-      const posts = await loadAllFeed();
+  // フォロー中ユーザーの投稿のみ。誰もフォローしていなければ空配列。
+  const loadFollowingFeed = useCallback(async () => {
+    if (!myId) return [];
+    const { data: follows } = await supabase
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', myId);
+    const ids = (follows ?? []).map((f: { following_id: string }) => f.following_id);
+    if (ids.length === 0) return [];
+    const { data, error: fetchError } = await supabase
+      .from('posts')
+      .select(
+        `*,
+        trade:trades!posts_trade_id_fkey (*),
+        profile:profiles!posts_user_id_fkey (${PROFILE_COLUMNS})`,
+      )
+      .in('post_type', ['trade_result', 'text', 'strategy'])
+      .in('user_id', ids)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (fetchError) throw new Error(fetchError.message);
+    return (data ?? []) as (Post & {
+      trade: Trade | null;
+      profile: Profile | null;
+    })[];
+  }, [myId]);
+
+  const loadFeed = useCallback(
+    async (mode: 'all' | 'following' = feedTab) => {
+      setError(null);
+      try {
+        const posts =
+          mode === 'following' ? await loadFollowingFeed() : await loadAllFeed();
 
       const postIds = posts.map((p) => p.id);
       let likedSet = new Set<string>();
@@ -129,7 +159,17 @@ export default function FeedScreen() {
       const msg = e instanceof Error ? e.message : String(e);
       setError(msg);
     }
-  }, [myId, loadAllFeed, isBlocked]);
+    },
+    [feedTab, myId, loadAllFeed, loadFollowingFeed, isBlocked],
+  );
+
+  const switchTab = (next: 'all' | 'following') => {
+    if (next === feedTab) return;
+    setFeedTab(next);
+    setItems([]);
+    setLoading(true);
+    loadFeed(next).finally(() => setLoading(false));
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -389,6 +429,28 @@ export default function FeedScreen() {
         </View>
       </View>
 
+      <View style={styles.feedTabs}>
+        {(['following', 'all'] as const).map((tab) => {
+          const active = feedTab === tab;
+          return (
+            <Pressable
+              key={tab}
+              onPress={() => switchTab(tab)}
+              style={styles.feedTab}
+            >
+              <Text
+                style={[styles.feedTabText, active && styles.feedTabTextActive]}
+              >
+                {tab === 'following'
+                  ? t('feed.tabFollowing')
+                  : t('feed.tabAll')}
+              </Text>
+              {active && <View style={styles.feedTabUnderline} />}
+            </Pressable>
+          );
+        })}
+      </View>
+
       {loading ? (
         <View style={styles.body}>
           <FeedSkeletonList count={6} />
@@ -428,15 +490,25 @@ export default function FeedScreen() {
             ) : null
           }
           ListEmptyComponent={
-            <EmptyState
-              icon="newspaper-outline"
-              title={t('empty.feed_title')}
-              subtitle={t('empty.feed_subtitle')}
-              actionLabel={t('empty.feed_action')}
-              onAction={() => router.push('/create-post')}
-              secondaryLabel={t('empty.feed_discover')}
-              onSecondary={() => router.push('/ranking')}
-            />
+            feedTab === 'following' ? (
+              <EmptyState
+                icon="people-outline"
+                title={t('empty.following_title')}
+                subtitle={t('empty.following_subtitle')}
+                actionLabel={t('empty.feed_discover')}
+                onAction={() => router.push('/ranking')}
+              />
+            ) : (
+              <EmptyState
+                icon="newspaper-outline"
+                title={t('empty.feed_title')}
+                subtitle={t('empty.feed_subtitle')}
+                actionLabel={t('empty.feed_action')}
+                onAction={() => router.push('/create-post')}
+                secondaryLabel={t('empty.feed_discover')}
+                onSecondary={() => router.push('/ranking')}
+              />
+            )
           }
           windowSize={7}
           initialNumToRender={6}
@@ -495,6 +567,34 @@ function makeStyles(c: ThemeColors) {
     },
     headerButtonPressed: {
       opacity: 0.7,
+    },
+    feedTabs: {
+      flexDirection: 'row',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    feedTab: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 12,
+      position: 'relative',
+    },
+    feedTabText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    feedTabTextActive: {
+      color: c.textPrimary,
+      fontWeight: '800',
+    },
+    feedTabUnderline: {
+      position: 'absolute',
+      bottom: -StyleSheet.hairlineWidth,
+      height: 2,
+      width: 44,
+      borderRadius: 1,
+      backgroundColor: c.accent,
     },
     title: {
       fontSize: 28,

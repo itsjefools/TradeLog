@@ -440,6 +440,8 @@ export default {
   empty: {
     feed_title: 'フィードはまだ空です',
     feed_subtitle: '最初の投稿をして、トレーダーとつながりましょう。',
+    following_title: 'フォロー中の投稿はまだありません',
+    following_subtitle: 'トレーダーをフォローすると、ここに投稿が表示されます。',
     feed_action: '投稿する',
     feed_discover: 'ランキングでトレーダーを探す',
     trades_title: '取引記録がありません',

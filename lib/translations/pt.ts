@@ -352,6 +352,8 @@ export default {
   empty: {
     feed_title: 'Seu feed está vazio',
     feed_subtitle: 'Faça sua primeira publicação e conecte-se com traders.',
+    following_title: 'Nenhuma publicação de quem você segue',
+    following_subtitle: 'Siga traders para ver as publicações aqui.',
     feed_action: 'Publicar',
     feed_discover: 'Encontrar traders no ranking',
     trades_title: 'Nenhum registro de operação',

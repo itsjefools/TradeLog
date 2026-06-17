@@ -168,6 +168,7 @@ export default {
     subtitle: 'Your trading performance',
     errorPrefix: 'Error: ',
     kpiMonthlyPnl: 'Monthly P&L',
+    vsPrevMonth: 'vs last month',
     winRate: 'Win rate',
     tradeCount: 'Trades',
     tradeCountUnit: '',
@@ -453,6 +454,7 @@ export default {
   dm: {
     sendFail: 'Send failed',
     placeholder: 'Type a message...',
+    empty: 'No messages yet.\nSend the first one.',
     send: 'Send',
   },
   bookmarks: {

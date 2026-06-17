@@ -268,6 +268,7 @@ export default {
     subtitle: 'あなたのトレード成績',
     errorPrefix: 'エラー: ',
     kpiMonthlyPnl: '月間 P&L',
+    vsPrevMonth: '前月比',
     winRate: '勝率',
     tradeCount: '取引回数',
     tradeCountUnit: '回',
@@ -548,6 +549,7 @@ export default {
   dm: {
     sendFail: '送信失敗',
     placeholder: 'メッセージを入力...',
+    empty: 'まだメッセージがありません。\n最初のメッセージを送りましょう。',
     send: '送信',
   },
   bookmarks: {

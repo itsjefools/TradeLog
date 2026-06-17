@@ -172,6 +172,7 @@ export default {
     subtitle: 'Seu desempenho no trading',
     errorPrefix: 'Erro: ',
     kpiMonthlyPnl: 'L&P mensal',
+    vsPrevMonth: 'vs. mês anterior',
     winRate: 'Taxa de acerto',
     tradeCount: 'Operações',
     tradeCountUnit: '',
@@ -459,6 +460,7 @@ export default {
   dm: {
     sendFail: 'Falha ao enviar',
     placeholder: 'Digite uma mensagem...',
+    empty: 'Ainda não há mensagens.\nEnvie a primeira.',
     send: 'Enviar',
   },
   bookmarks: {

@@ -7,13 +7,15 @@ https://developer.apple.com/app-store/product-page/
 
 ## 🌐 公開 URL (必須)
 
-GitHub Pages で配信中:
+GitHub Pages で配信中（⚠️ Pages のソースが root のため URL に **`/docs/`** が入る。要注意）:
 
-- **プライバシーポリシー**: `https://itsjefools.github.io/TradeLog/privacy.html`
-- **利用規約**: `https://itsjefools.github.io/TradeLog/terms.html`
+- **プライバシーポリシー**: `https://itsjefools.github.io/TradeLog/docs/privacy.html` （en/pt/es 版: `docs/privacy-en.html` 等）
+- **利用規約**: `https://itsjefools.github.io/TradeLog/docs/terms.html`
 - **サポート URL**: `https://itsjefools.github.io/TradeLog/`(または GitHub Issues URL)
 
-提出前に `https://itsjefools.github.io/TradeLog/` をブラウザで開いて表示確認すること。
+検証済み(2026-06-17): `/docs/privacy.html`・`/docs/terms.html` は 200 で表示OK。`/privacy.html`(/docs無し)は **404**。
+提出時は必ず **`/docs/` 付き**の URL を入力すること。
+（もし `/docs/` 無しの綺麗な URL にしたい場合は、GitHub の Settings → Pages でソースを **main / `/docs`** に変更する。）
 
 ---
 

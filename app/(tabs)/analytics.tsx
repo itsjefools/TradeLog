@@ -153,6 +153,22 @@ export default function AnalyticsScreen() {
     isFocused,
   );
 
+  // 前月比: 当月と前月の合計P&Lの差。
+  const monthDelta = useActiveMemo(
+    () => {
+      const sumIn = (range: { start: Date; end: Date }) =>
+        trades.reduce((s, t) => {
+          const d = new Date(t.traded_at);
+          return d >= range.start && d < range.end ? s + (t.pnl ?? 0) : s;
+        }, 0);
+      const cur = sumIn(monthInfo);
+      const prev = sumIn(getMonthRange(monthOffset - 1));
+      return { cur, prev, diff: cur - prev };
+    },
+    [trades, monthInfo, monthOffset],
+    isFocused,
+  );
+
   const dailyData = useActiveMemo(
     () => buildDailyPnl(monthlyTrades, monthInfo),
     [monthlyTrades, monthInfo],
@@ -295,6 +311,24 @@ export default function AnalyticsScreen() {
             <Text style={[styles.primaryKpiValue, stats.pnlStyle]}>
               {stats.pnlDisplay}
             </Text>
+            {(monthDelta.cur !== 0 || monthDelta.prev !== 0) && (
+              <View style={styles.deltaRow}>
+                <Ionicons
+                  name={monthDelta.diff >= 0 ? 'arrow-up' : 'arrow-down'}
+                  size={12}
+                  color={monthDelta.diff >= 0 ? c.win : c.loss}
+                />
+                <Text
+                  style={[
+                    styles.deltaText,
+                    { color: monthDelta.diff >= 0 ? c.win : c.loss },
+                  ]}
+                >
+                  {formatPnlWithCurrency(Math.abs(monthDelta.diff), profile?.currency)}
+                </Text>
+                <Text style={styles.deltaLabel}>{t('analytics.vsPrevMonth')}</Text>
+              </View>
+            )}
           </View>
 
           {/* サブKPI: テーブル形式 */}
@@ -1967,6 +2001,14 @@ function makeStyles(c: ThemeColors) {
       fontVariant: ['tabular-nums'],
       letterSpacing: -1.5,
     },
+    deltaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      marginTop: 6,
+    },
+    deltaText: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
+    deltaLabel: { fontSize: 12, color: c.textSecondary, marginLeft: 2 },
     secondaryKpiList: {
       paddingBottom: 8,
     },

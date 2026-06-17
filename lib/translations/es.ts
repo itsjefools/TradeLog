@@ -173,6 +173,7 @@ export default {
     subtitle: 'Tu rendimiento de trading',
     errorPrefix: 'Error: ',
     kpiMonthlyPnl: 'P&G mensual',
+    vsPrevMonth: 'vs. mes anterior',
     winRate: 'Tasa de ganancia',
     tradeCount: 'Operaciones',
     tradeCountUnit: '',
@@ -460,6 +461,7 @@ export default {
   dm: {
     sendFail: 'Error al enviar',
     placeholder: 'Escribe un mensaje...',
+    empty: 'Aún no hay mensajes.\nEnvía el primero.',
     send: 'Enviar',
   },
   bookmarks: {

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -115,13 +115,20 @@ export default function CommentsScreen() {
   // 親 -> 子のツリー構造を組み立て
   const tree = useMemo(() => buildTree(comments), [comments]);
 
-  const startReply = (cm: CommentItem) => {
+  // text を直接参照せず関数更新で重複挿入を防ぐ → 依存ゼロで安定し、CommentNode の memo が効く。
+  const startReply = useCallback((cm: CommentItem) => {
     setReplyTo(cm);
     const username = cm.profile?.username?.trim();
-    if (username && !text.includes(`@${username}`)) {
-      setText((prev) => (prev === '' ? `@${username} ` : `${prev} @${username} `));
+    if (username) {
+      setText((prev) =>
+        prev.includes(`@${username}`)
+          ? prev
+          : prev === ''
+            ? `@${username} `
+            : `${prev} @${username} `,
+      );
     }
-  };
+  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -235,7 +242,7 @@ function buildTree(comments: CommentItem[]): TreeNode[] {
   return roots;
 }
 
-function CommentNode({
+const CommentNode = memo(function CommentNode({
   node,
   depth,
   onReply,
@@ -313,7 +320,7 @@ function CommentNode({
       ))}
     </View>
   );
-}
+});
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');

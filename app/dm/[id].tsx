@@ -194,9 +194,7 @@ export default function DMThreadScreen() {
             }
           >
             {messages.length === 0 ? (
-              <Text style={styles.empty}>
-                まだメッセージがありません。{'\n'}最初のメッセージを送りましょう。
-              </Text>
+              <Text style={styles.empty}>{t('dm.empty')}</Text>
             ) : (
               messages.map((m) => (
                 <MessageBubble key={m.id} message={m} myId={myId} />

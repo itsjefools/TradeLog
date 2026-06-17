@@ -144,6 +144,10 @@ export default function OnboardingScreen() {
           })}
         </View>
 
+        <Text style={styles.stepText}>
+          {page + 1} / {SLIDES.length}
+        </Text>
+
         <TouchableOpacity
           onPress={handleNext}
           activeOpacity={0.85}
@@ -214,8 +218,16 @@ const styles = StyleSheet.create({
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: 14,
     gap: 8,
+  },
+  stepText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.4)',
+    textAlign: 'center',
+    marginBottom: 22,
+    fontVariant: ['tabular-nums'],
   },
   dot: {
     width: 8,

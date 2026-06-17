@@ -498,6 +498,11 @@ export default function SettingsScreen() {
             onPress={() => router.push('/school/community-earnings')}
           />
         )}
+        <SettingRow
+          icon="card-outline"
+          label={t('settings.subscriptions')}
+          onPress={() => router.push('/my-subscriptions')}
+        />
 
         <Divider />
 

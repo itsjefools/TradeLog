@@ -181,6 +181,31 @@ Deno.serve(async (req: Request) => {
     );
   if (mErr) return json({ error: 'membership_error', detail: mErr.message }, 500);
 
+  // ---- 自動更新の記帳に使うマッピングを保存（renewal webhook が引く） --------
+  const oid =
+    platform === 'apple' ? verified.txnId.replace(/^apple:/, '') : null;
+  const ptoken = platform === 'google' ? body.purchaseToken ?? null : null;
+  await admin.from('community_subscriptions').upsert(
+    {
+      community_id: community.id,
+      creator_id: community.owner_id,
+      subscriber_id: user.id,
+      price_tier_key: community.price_tier_key,
+      product_id: productId,
+      store: platform,
+      original_transaction_id: oid,
+      purchase_token: ptoken,
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict:
+        platform === 'apple'
+          ? 'store,original_transaction_id'
+          : 'store,purchase_token',
+    },
+  );
+
   return json({
     ok: true,
     creator_amount: creatorAmount,

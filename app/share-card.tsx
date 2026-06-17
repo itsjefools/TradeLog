@@ -34,8 +34,6 @@ const CARD_HEIGHT = CARD_WIDTH * 1.25;
 const ACCENT_GREEN = '#10B981';
 const ACCENT_INDIGO = '#6366F1';
 const CARD_BG = '#0B0B0F';
-const CARD_WIN = '#22C55E';
-const CARD_LOSS = '#EF4444';
 
 type Period = 'day' | 'week' | 'month';
 

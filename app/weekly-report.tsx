@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -95,7 +95,10 @@ export default function WeeklyReportScreen() {
   const currency = profile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
   const { trades } = useTrades();
-  const fmt = (n: number) => formatPnlWithCurrency(n, currency);
+  const fmt = useCallback(
+    (n: number) => formatPnlWithCurrency(n, currency),
+    [currency],
+  );
 
   const { week, prev } = useMemo(() => {
     const now = Date.now();

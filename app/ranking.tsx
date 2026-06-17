@@ -113,7 +113,7 @@ export default function RankingScreen() {
       case 'overall':
         return t('ranking.descOverall');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [category, t]);
 
   return (
@@ -224,7 +224,6 @@ function RankingRowItem({
   const fallbackName = t('profile.defaultName');
   const displayName =
     row.display_name?.trim() || row.username?.trim() || fallbackName;
-  const username = row.username?.trim() || fallbackName;
   const flag = row.nationality ? flagEmoji(row.nationality) : '';
   const league = leagueForRank(rank);
 

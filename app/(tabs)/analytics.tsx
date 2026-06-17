@@ -20,13 +20,6 @@ import {
   UIManager,
   View,
 } from 'react-native';
-
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 import { PieChart } from 'react-native-chart-kit';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-native-svg';
@@ -42,6 +35,13 @@ import { formatPnlWithCurrency } from '@/lib/format-currency';
 import { getPlan, planAtLeast } from '@/lib/premium';
 import { formatDate, pickerLocale } from '@/lib/format-date';
 import { Trade } from '@/lib/types';
+
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -629,15 +629,18 @@ function WeekdayPerf({ trades }: { trades: Trade[] }) {
   const { profile } = useProfile();
   const currency = profile?.currency;
   const styles = useMemo(() => makeStyles(c), [c]);
-  const labels = [
-    t('record.daySun'),
-    t('record.dayMon'),
-    t('record.dayTue'),
-    t('record.dayWed'),
-    t('record.dayThu'),
-    t('record.dayFri'),
-    t('record.daySat'),
-  ];
+  const labels = useMemo(
+    () => [
+      t('record.daySun'),
+      t('record.dayMon'),
+      t('record.dayTue'),
+      t('record.dayWed'),
+      t('record.dayThu'),
+      t('record.dayFri'),
+      t('record.daySat'),
+    ],
+    [t],
+  );
 
   const weekly = useMemo(() => {
     const arr = labels.map(() => ({ pnl: 0, count: 0, win: 0, loss: 0 }));
@@ -1204,25 +1207,6 @@ function formatCompactPnl(n: number): string {
   return n > 0 ? `+${str}` : str;
 }
 
-function KpiCard({
-  label,
-  value,
-  valueStyle,
-}: {
-  label: string;
-  value: string;
-  valueStyle?: TextStyle;
-}) {
-  const c = useThemeColors();
-  const styles = useMemo(() => makeStyles(c), [c]);
-  return (
-    <View style={styles.kpiCard}>
-      <Text style={styles.kpiLabel}>{label}</Text>
-      <Text style={[styles.kpiValue, valueStyle]}>{value}</Text>
-    </View>
-  );
-}
-
 function TradeRow({
   trade,
   onDelete,
@@ -1641,7 +1625,6 @@ function TradeHeatmap({
 }) {
   const c = useThemeColors();
   const { t, locale } = useI18n();
-  const styles = useMemo(() => makeStyles(c), [c]);
   const [sel, setSel] = useState<{ key: string; pnl: number; date: Date } | null>(
     null,
   );

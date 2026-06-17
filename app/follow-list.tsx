@@ -95,7 +95,7 @@ export default function FollowListScreen() {
     } finally {
       setLoading(false);
     }
-  }, [userId, tab, myId, isBlocked]);
+  }, [userId, tab, myId, isBlocked, t]);
 
   useFocusEffect(
     useCallback(() => {

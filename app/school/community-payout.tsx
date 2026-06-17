@@ -28,7 +28,6 @@ export default function CommunityPayoutScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
 
   const [displayName, setDisplayName] = useState('');
-  const [status, setStatus] = useState<string>('unverified');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -44,7 +43,6 @@ export default function CommunityPayoutScreen() {
       .maybeSingle();
     if (data) {
       setDisplayName((data.display_name as string | null) ?? '');
-      setStatus((data.status as string) ?? 'unverified');
     }
     setLoading(false);
   }, [myId]);
@@ -71,7 +69,6 @@ export default function CommunityPayoutScreen() {
       Alert.alert(t('common.error'), t('community.payout_failed'));
       return;
     }
-    setStatus('pending');
     Alert.alert(t('community.payout_saved'));
     router.back();
   };

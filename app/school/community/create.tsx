@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -19,8 +19,11 @@ import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
+import { COMMUNITY_PRODUCT_IDS } from '@/lib/iap';
 import { getPlan } from '@/lib/premium';
 import { supabase } from '@/lib/supabase';
+
+type PriceTier = { tier_key: string; amount: number };
 
 type CategoryKey = 'general' | 'strategy' | 'analysis' | 'beginner' | 'advanced';
 
@@ -33,9 +36,26 @@ export default function CreateCommunityScreen() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isPaid, setIsPaid] = useState(false);
-  const [price, setPrice] = useState('');
+  const [tiers, setTiers] = useState<PriceTier[]>([]);
+  const [tierKey, setTierKey] = useState<string | null>(null);
   const [category, setCategory] = useState<CategoryKey>('general');
   const [submitting, setSubmitting] = useState(false);
+
+  // 価格ティア（IAPの固定価格）を取得。
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('community_price_tiers')
+        .select('tier_key, amount')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+      if (!cancelled) setTiers((data ?? []) as PriceTier[]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const categories: { key: CategoryKey; label: string }[] = [
     { key: 'general', label: t('community.cat_general') },
@@ -77,7 +97,8 @@ export default function CreateCommunityScreen() {
 
     setSubmitting(true);
     try {
-      const monthlyPrice = isPaid ? parseInt(price, 10) || 0 : 0;
+      const selectedTier = tiers.find((tr) => tr.tier_key === tierKey) ?? null;
+      const monthlyPrice = isPaid ? selectedTier?.amount ?? 0 : 0;
       const { data: community, error } = await supabase
         .from('communities')
         .insert({
@@ -86,7 +107,10 @@ export default function CreateCommunityScreen() {
           description: description.trim() || null,
           category,
           is_paid: isPaid,
+          price_tier_key: isPaid ? tierKey : null,
           monthly_price: monthlyPrice,
+          iap_product_id:
+            isPaid && tierKey ? COMMUNITY_PRODUCT_IDS[tierKey] ?? null : null,
           owner_verified: profile?.is_verified ?? false,
           owner_is_premium:
             getPlan(profile?.plan_tier, profile?.bonus_premium_until) !== 'free',
@@ -113,7 +137,7 @@ export default function CreateCommunityScreen() {
     }
   };
 
-  const canSubmit = !!name.trim() && !submitting;
+  const canSubmit = !!name.trim() && !submitting && (!isPaid || !!tierKey);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -195,18 +219,39 @@ export default function CreateCommunityScreen() {
         {isPaid && (
           <View style={styles.priceBlock}>
             <Text style={styles.label}>{t('community.price_label')}</Text>
-            <View style={styles.priceRow}>
-              <Text style={styles.priceSymbol}>¥</Text>
-              <TextInput
-                value={price}
-                onChangeText={setPrice}
-                placeholder="500"
-                placeholderTextColor={c.textSecondary}
-                keyboardType="numeric"
-                maxLength={6}
-                style={[styles.input, styles.priceInput]}
-              />
-              <Text style={styles.priceSuffix}>/月</Text>
+            <View style={styles.tierRow}>
+              {tiers.map((tr) => {
+                const active = tierKey === tr.tier_key;
+                return (
+                  <TouchableOpacity
+                    key={tr.tier_key}
+                    onPress={() => setTierKey(tr.tier_key)}
+                    style={[
+                      styles.tierChip,
+                      active ? styles.tierChipActive : styles.tierChipInactive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.tierChipText,
+                        active
+                          ? styles.tierChipTextActive
+                          : styles.tierChipTextInactive,
+                      ]}
+                    >
+                      ¥{tr.amount.toLocaleString()}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.tierChipUnit,
+                        active && styles.tierChipTextActive,
+                      ]}
+                    >
+                      /月
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <View style={styles.requirementsCard}>
@@ -326,24 +371,31 @@ function makeStyles(c: ThemeColors) {
       marginTop: 2,
     },
     priceBlock: { marginBottom: 18 },
-    priceRow: {
+    tierRow: {
       flexDirection: 'row',
-      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
     },
-    priceSymbol: {
-      fontSize: 16,
-      color: c.textPrimary,
-      marginRight: 8,
+    tierChip: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 12,
+      borderWidth: 1.5,
     },
-    priceInput: {
-      flex: 1,
-      marginBottom: 0,
+    tierChipActive: {
+      borderColor: c.accent,
+      backgroundColor: `${c.accent}1A`,
     },
-    priceSuffix: {
-      fontSize: 14,
-      color: c.textSecondary,
-      marginLeft: 8,
+    tierChipInactive: {
+      borderColor: c.border,
+      backgroundColor: 'transparent',
     },
+    tierChipText: { fontSize: 16, fontWeight: '800' },
+    tierChipUnit: { fontSize: 11, marginLeft: 2, color: c.textSecondary },
+    tierChipTextActive: { color: c.accent },
+    tierChipTextInactive: { color: c.textSecondary },
     requirementsCard: {
       backgroundColor: 'rgba(245, 158, 11, 0.10)',
       borderRadius: 10,

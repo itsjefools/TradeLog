@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { formatRelativeTime } from '@/lib/format-time';
+import { purchaseCommunitySubscription, setupPurchaseListeners } from '@/lib/iap';
 import { supabase } from '@/lib/supabase';
 import { Profile } from '@/lib/types';
 
@@ -34,6 +35,7 @@ type Community = {
   cover_image_url: string | null;
   category: string;
   is_paid: boolean;
+  price_tier_key: string | null;
   monthly_price: number;
   member_count: number;
 };
@@ -104,14 +106,35 @@ export default function CommunityDetailScreen() {
     load();
   }, [load]);
 
+  // 有料コミュニティの購入結果を受け取るリスナー（成功でメンバー化）。
+  useEffect(() => {
+    if (!myId) return;
+    const cleanup = setupPurchaseListeners(
+      myId,
+      () => {
+        setIsMember(true);
+        load();
+      },
+      (code) => {
+        if (code !== 'E_USER_CANCELLED') {
+          Alert.alert(t('community.error'), t('community.join_failed'));
+        }
+      },
+    );
+    return cleanup;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myId, load]);
+
   const handleJoin = async () => {
     if (!community || !myId) return;
     if (community.is_paid) {
-      // 有料コミュニティは IAP 経由 (本タスクでは課金フローを完結させない)
-      Alert.alert(
-        t('community.paid_join_title'),
-        t('community.paid_join_body'),
-      );
+      // 有料コミュニティは IAP 経由。価格ティア未設定なら案内のみ。
+      if (!community.price_tier_key) {
+        Alert.alert(t('community.paid_join_title'), t('community.paid_join_body'));
+        return;
+      }
+      // ネイティブの購入シートが開く。結果は上のリスナーが処理する。
+      await purchaseCommunitySubscription(community.id, community.price_tier_key);
       return;
     }
     setJoining(true);

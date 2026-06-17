@@ -4,6 +4,7 @@ import { useIsFocused, useScrollToTop } from '@react-navigation/native';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { Freeze } from 'react-freeze';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { DependencyList } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -43,6 +44,28 @@ import { formatDate, pickerLocale } from '@/lib/format-date';
 import { Trade } from '@/lib/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+
+// フォーカス中のみ再計算する useMemo。非フォーカス時は前回値を保持し、
+// 背景での trades 更新による重い派生計算（集計・チャート用データ生成）を回避する。
+// 描画自体は <Freeze> が凍結するが、親側の派生計算は Freeze の対象外なので別途ガードする。
+function useActiveMemo<T>(
+  factory: () => T,
+  deps: DependencyList,
+  active: boolean,
+): T {
+  const ref = useRef<{ value: T } | null>(null);
+  return useMemo(
+    () => {
+      if (!active && ref.current) return ref.current.value;
+      const value = factory();
+      ref.current = { value };
+      return value;
+    },
+    // active と deps の変化で再評価。非フォーカス時は前回値を返すため factory は走らない。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [active, ...deps],
+  );
+}
 
 export default function AnalyticsScreen() {
   const c = useThemeColors();
@@ -113,37 +136,45 @@ export default function AnalyticsScreen() {
   };
 
   const monthInfo = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
-  const monthlyTrades = useMemo(
+  // 以下の派生計算はフォーカス時のみ実行（非フォーカス時は前回値を保持）。
+  const monthlyTrades = useActiveMemo(
     () =>
       trades.filter((t) => {
         const d = new Date(t.traded_at);
         return d >= monthInfo.start && d < monthInfo.end;
       }),
     [trades, monthInfo],
+    isFocused,
   );
 
-  const stats = useMemo(
+  const stats = useActiveMemo(
     () => computeStats(monthlyTrades, c, profile?.currency),
     [monthlyTrades, c, profile?.currency],
+    isFocused,
   );
 
-  const dailyData = useMemo(
+  const dailyData = useActiveMemo(
     () => buildDailyPnl(monthlyTrades, monthInfo),
     [monthlyTrades, monthInfo],
+    isFocused,
   );
 
 
-  const pairData = useMemo(() => buildPairPnl(monthlyTrades), [monthlyTrades]);
+  const pairData = useActiveMemo(
+    () => buildPairPnl(monthlyTrades),
+    [monthlyTrades],
+    isFocused,
+  );
 
-  const winLossData = useMemo(
+  const winLossData = useActiveMemo(
     () =>
       buildWinLossDistribution(monthlyTrades, c, {
         win: t('analytics.winLabel'),
         loss: t('analytics.lossLabel'),
         unset: t('analytics.unsetLabel'),
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [monthlyTrades, c, t],
+    isFocused,
   );
 
   const chartConfig = useMemo(

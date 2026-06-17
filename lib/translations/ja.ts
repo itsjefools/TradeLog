@@ -831,6 +831,7 @@ export default {
     content_coming_soon_desc: 'このレッスンは近日公開予定です',
     lessonNotFound: 'レッスンが見つかりません',
     videoNotFound: '動画が見つかりません',
+    videoUnavailable: '動画を再生できませんでした',
     mark_complete: 'レッスンを完了にする',
     completed: '完了しました',
     congratsTitle: 'よくできました！',

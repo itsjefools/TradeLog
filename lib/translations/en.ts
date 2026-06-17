@@ -745,6 +745,7 @@ export default {
     content_coming_soon_desc: 'This lesson will be available soon',
     lessonNotFound: 'Lesson not found',
     videoNotFound: 'Video not found',
+    videoUnavailable: 'Could not play this video',
     mark_complete: 'Mark as Complete',
     completed: 'Completed',
     congratsTitle: 'Well done!',

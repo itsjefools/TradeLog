@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -30,11 +31,22 @@ type Video = {
   description_en: string | null;
   description_pt: string | null;
   description_es: string | null;
-  youtube_video_id: string;
+  youtube_video_id: string | null;
+  video_source: 'youtube' | 'cloudflare';
+  stream_uid: string | null;
+  is_free: boolean;
   duration_seconds: number | null;
   category: string;
   difficulty: string;
 };
+
+// Premium動画(Cloudflare)の取得状態。
+type HostedState =
+  | 'idle'
+  | 'loading'
+  | 'ready'
+  | 'unconfigured' // 管理者がCloudflareを未設定（503）
+  | 'error';
 
 function pickLocalized(video: Video, field: 'title' | 'description', lang: Locale): string {
   const key = `${field}_${lang}` as keyof Video;
@@ -57,6 +69,13 @@ export default function VideoPlayerScreen() {
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(true);
+
+  // Cloudflare(Premium)再生用の署名付きURLと状態。
+  const [hostedUrl, setHostedUrl] = useState<string | null>(null);
+  const [hostedState, setHostedState] = useState<HostedState>('idle');
+  const player = useVideoPlayer(null, (p) => {
+    p.loop = false;
+  });
 
   const lang: Locale = (['ja', 'en', 'pt', 'es'] as const).includes(
     locale as Locale,
@@ -84,6 +103,49 @@ export default function VideoPlayerScreen() {
       cancelled = true;
     };
   }, [videoId]);
+
+  // Cloudflare動画なら、Edge Function で会員チェック＋署名付きURLを取得する。
+  useEffect(() => {
+    if (!video || video.video_source !== 'cloudflare') return;
+    let cancelled = false;
+    (async () => {
+      setHostedState('loading');
+      const { data, error } = await supabase.functions.invoke(
+        'school-video-token',
+        { body: { videoId: video.id } },
+      );
+      if (cancelled) return;
+      if (error) {
+        // 非会員(403)は購入導線へ。未設定(503)は「準備中」。それ以外はエラー。
+        const status =
+          (error as { context?: Response }).context?.status ?? 0;
+        if (status === 403) {
+          router.replace('/school/premium');
+          return;
+        }
+        setHostedState(status === 503 ? 'unconfigured' : 'error');
+        return;
+      }
+      const url = (data as { url?: string } | null)?.url ?? null;
+      if (!url) {
+        setHostedState('error');
+        return;
+      }
+      setHostedUrl(url);
+      setHostedState('ready');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [video, router]);
+
+  // 署名付きURLが取れたら再生開始。
+  useEffect(() => {
+    if (hostedState === 'ready' && hostedUrl) {
+      player.replace({ uri: hostedUrl });
+      player.play();
+    }
+  }, [hostedState, hostedUrl, player]);
 
   const onStateChange = useCallback((state: string) => {
     if (state === 'ended') setPlaying(false);
@@ -119,6 +181,7 @@ export default function VideoPlayerScreen() {
   const playerHeight = Math.round(width * (9 / 16));
   const title = pickLocalized(video, 'title', lang);
   const description = pickLocalized(video, 'description', lang);
+  const isHosted = video.video_source === 'cloudflare';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -132,15 +195,50 @@ export default function VideoPlayerScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.playerWrap}>
-        <YoutubePlayer
-          height={playerHeight}
-          width={width}
-          play={playing}
-          videoId={video.youtube_video_id}
-          onChangeState={onStateChange}
-          webViewProps={{ allowsFullscreenVideo: true }}
-        />
+      <View style={[styles.playerWrap, { height: playerHeight }]}>
+        {isHosted ? (
+          hostedState === 'ready' ? (
+            <VideoView
+              player={player}
+              style={{ width, height: playerHeight }}
+              contentFit="contain"
+              allowsFullscreen
+              nativeControls
+            />
+          ) : (
+            <View style={[styles.playerPlaceholder, { height: playerHeight }]}>
+              {hostedState === 'loading' || hostedState === 'idle' ? (
+                <ActivityIndicator size="large" color={c.accent} />
+              ) : (
+                <View style={styles.placeholderContent}>
+                  <Ionicons
+                    name={
+                      hostedState === 'unconfigured'
+                        ? 'time-outline'
+                        : 'alert-circle-outline'
+                    }
+                    size={30}
+                    color={c.textSecondary}
+                  />
+                  <Text style={styles.placeholderText}>
+                    {hostedState === 'unconfigured'
+                      ? t('school.content_coming_soon')
+                      : t('school.videoUnavailable')}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )
+        ) : (
+          <YoutubePlayer
+            height={playerHeight}
+            width={width}
+            play={playing}
+            videoId={video.youtube_video_id ?? ''}
+            onChangeState={onStateChange}
+            webViewProps={{ allowsFullscreenVideo: true }}
+          />
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
@@ -181,7 +279,19 @@ function makeStyles(c: ThemeColors) {
       marginHorizontal: 12,
     },
     headerSpacer: { width: 26 },
-    playerWrap: { backgroundColor: '#000' },
+    playerWrap: { backgroundColor: '#000', justifyContent: 'center' },
+    playerPlaceholder: {
+      width: '100%',
+      backgroundColor: '#000',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    placeholderContent: { alignItems: 'center', gap: 10, paddingHorizontal: 24 },
+    placeholderText: {
+      fontSize: 13,
+      color: c.textSecondary,
+      textAlign: 'center',
+    },
     body: { padding: 20, paddingBottom: 60 },
     title: {
       fontSize: 18,

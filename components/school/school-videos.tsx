@@ -32,7 +32,7 @@ type Video = {
   description_en: string | null;
   description_pt: string | null;
   description_es: string | null;
-  youtube_video_id: string;
+  youtube_video_id: string | null;
   thumbnail_url: string | null;
   category: 'basics' | 'technical' | 'strategy' | 'psychology' | 'news';
   difficulty: Difficulty;
@@ -63,10 +63,11 @@ function formatDuration(seconds: number | null): string {
 }
 
 function getThumbnail(video: Video): string {
-  return (
-    video.thumbnail_url ||
-    `https://img.youtube.com/vi/${video.youtube_video_id}/hqdefault.jpg`
-  );
+  if (video.thumbnail_url) return video.thumbnail_url;
+  if (video.youtube_video_id) {
+    return `https://img.youtube.com/vi/${video.youtube_video_id}/hqdefault.jpg`;
+  }
+  return ''; // Cloudflare動画でサムネ未設定: プレースホルダ背景のまま
 }
 
 export function SchoolVideos() {

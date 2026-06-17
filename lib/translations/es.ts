@@ -752,6 +752,7 @@ export default {
     content_coming_soon_desc: 'Esta lección estará disponible pronto',
     lessonNotFound: 'Lección no encontrada',
     videoNotFound: 'Video no encontrado',
+    videoUnavailable: 'No se pudo reproducir el video',
     mark_complete: 'Marcar como Completado',
     completed: 'Completado',
     congratsTitle: '¡Bien hecho!',

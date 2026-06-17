@@ -227,15 +227,16 @@ export function setupPurchaseListeners(
         const communityId = pendingCommunityId;
         pendingCommunityId = null;
         if (communityId) {
-          const token = purchaseToken(purchase);
+          const anyP = purchase as unknown as Record<string, unknown>;
+          // iOS: verifyReceipt 用の base64 アプリレシート / Android: purchaseToken
+          const receipt =
+            typeof anyP.transactionReceipt === 'string'
+              ? anyP.transactionReceipt
+              : null;
+          const gToken =
+            typeof anyP.purchaseToken === 'string' ? anyP.purchaseToken : null;
           await supabase.functions.invoke('community-subscribe-verify', {
-            body: {
-              communityId,
-              platform,
-              productId,
-              transactionId: token,
-              purchaseToken: token,
-            },
+            body: { communityId, platform, productId, receipt, purchaseToken: gToken },
           });
         }
         try {

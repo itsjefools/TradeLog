@@ -46,6 +46,9 @@ type Body = {
   purchaseToken?: string;
 };
 
+// Android アプリのパッケージ名（Google Play 検証で使用）
+const GOOGLE_PACKAGE_NAME = Deno.env.get('GOOGLE_PACKAGE_NAME') ?? 'com.kingjay.tradelog';
+
 // 現在の集計期間 'YYYY-MM'（タイムゾーンは UTC ベースで十分）
 function currentPeriod(): string {
   const d = new Date();
@@ -125,11 +128,15 @@ Deno.serve(async (req: Request) => {
   }
 
   // ---- ストアのレシート検証 --------------------------------------------
-  // verifyWithStore は (検証OK, ストアの一意トランザクションID) を返す想定。
-  const verified = await verifyWithStore(platform, body, {
-    appleSharedSecret: APPLE_SHARED_SECRET,
-    googleServiceAccountJson: GOOGLE_SERVICE_ACCOUNT_JSON,
-  });
+  const verified =
+    platform === 'apple'
+      ? await verifyApple(body.receipt ?? '', APPLE_SHARED_SECRET!, productId)
+      : await verifyGoogle(
+          GOOGLE_SERVICE_ACCOUNT_JSON!,
+          GOOGLE_PACKAGE_NAME,
+          productId,
+          body.purchaseToken ?? '',
+        );
   if (!verified.ok || !verified.txnId) {
     return json({ error: 'receipt_invalid', detail: verified.detail }, 402);
   }
@@ -181,22 +188,143 @@ Deno.serve(async (req: Request) => {
   });
 });
 
-// ストアのレシート/トークンを検証する。
-// ※ 本番では Apple App Store Server API / Google Play Developer API による
-//   厳密な検証を行う。資格情報が未設定の場合は呼び出し側で 503 にしているため、
-//   ここに来る時点で該当 Secret は存在する。
-async function verifyWithStore(
-  platform: Platform,
-  body: Body,
-  _creds: { appleSharedSecret?: string; googleServiceAccountJson?: string },
-): Promise<{ ok: boolean; txnId?: string; detail?: string }> {
-  // TODO(店舗検証・要サンドボックステスト):
-  //   - apple: /verifyReceipt もしくは App Store Server API でレシート検証し、
-  //            product_id・purchase_date・original_transaction_id を取得して照合。
-  //   - google: purchases.subscriptions.get で purchaseToken を検証。
-  // 現段階では一意トランザクションIDの取り回しのみ実装（記帳の冪等キーに使用）。
+type VerifyResult = { ok: boolean; txnId?: string; detail?: string };
+
+// ---- Apple: verifyReceipt（本番→サンドボックスの順で検証） ----------------
+async function verifyApple(
+  receipt: string,
+  sharedSecret: string,
+  productId: string,
+): Promise<VerifyResult> {
+  if (!receipt) return { ok: false, detail: 'no_receipt' };
+  const payload = JSON.stringify({
+    'receipt-data': receipt,
+    password: sharedSecret,
+    'exclude-old-transactions': true,
+  });
+  const post = (url: string) =>
+    fetch(url, { method: 'POST', body: payload }).then((r) => r.json());
+
+  let data = await post('https://buy.itunes.apple.com/verifyReceipt');
+  // 21007 = サンドボックスのレシートを本番に送った → サンドボックスで再検証
+  if (data.status === 21007) {
+    data = await post('https://sandbox.itunes.apple.com/verifyReceipt');
+  }
+  if (data.status !== 0) return { ok: false, detail: `apple_status_${data.status}` };
+
+  const infos: Record<string, unknown>[] =
+    (data.latest_receipt_info as Record<string, unknown>[]) ??
+    (data.receipt?.in_app as Record<string, unknown>[]) ??
+    [];
+  const matches = infos
+    .filter((i) => i.product_id === productId)
+    .sort(
+      (a, b) =>
+        Number(b.purchase_date_ms ?? 0) - Number(a.purchase_date_ms ?? 0),
+    );
+  const match = matches[0];
+  if (!match) return { ok: false, detail: 'apple_no_matching_product' };
+
   const txnId =
-    body.transactionId ?? body.purchaseToken ?? null;
-  if (!txnId) return { ok: false, detail: 'no_transaction_id' };
-  return { ok: true, txnId: `${platform}:${txnId}` };
+    (match.original_transaction_id as string) ?? (match.transaction_id as string);
+  if (!txnId) return { ok: false, detail: 'apple_no_txn_id' };
+  return { ok: true, txnId: `apple:${txnId}` };
+}
+
+// ---- Google Play: purchases.subscriptions.get ----------------------------
+async function verifyGoogle(
+  serviceAccountJson: string,
+  packageName: string,
+  productId: string,
+  purchaseToken: string,
+): Promise<VerifyResult> {
+  if (!purchaseToken) return { ok: false, detail: 'no_purchase_token' };
+  let sa: { client_email: string; private_key: string };
+  try {
+    sa = JSON.parse(serviceAccountJson);
+  } catch {
+    return { ok: false, detail: 'bad_service_account' };
+  }
+  const accessToken = await getGoogleAccessToken(sa);
+  if (!accessToken) return { ok: false, detail: 'google_auth_failed' };
+
+  const url =
+    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/` +
+    `${packageName}/purchases/subscriptions/${productId}/tokens/` +
+    encodeURIComponent(purchaseToken);
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) return { ok: false, detail: `google_${res.status}` };
+  const data = await res.json();
+
+  // paymentState: 0=保留, 1=受領, 2=無料トライアル, 3=保留中アップグレード/ダウングレード
+  if (data.paymentState !== undefined && data.paymentState === 0) {
+    return { ok: false, detail: 'google_payment_pending' };
+  }
+  const txnId = (data.orderId as string) ?? purchaseToken;
+  return { ok: true, txnId: `google:${txnId}` };
+}
+
+// サービスアカウントの JWT を署名して OAuth2 アクセストークンを取得する。
+async function getGoogleAccessToken(sa: {
+  client_email: string;
+  private_key: string;
+}): Promise<string | null> {
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const claim = b64url(
+    JSON.stringify({
+      iss: sa.client_email,
+      scope: 'https://www.googleapis.com/auth/androidpublisher',
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: now + 3600,
+    }),
+  );
+  const unsigned = `${header}.${claim}`;
+  const key = await importPkcs8(sa.private_key);
+  const sigBuf = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(unsigned),
+  );
+  const jwt = `${unsigned}.${b64urlBytes(new Uint8Array(sigBuf))}`;
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:
+      `grant_type=${encodeURIComponent(
+        'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      )}&assertion=${jwt}`,
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return (data.access_token as string) ?? null;
+}
+
+// PEM(PKCS8) の秘密鍵を crypto キーに取り込む。
+async function importPkcs8(pem: string): Promise<CryptoKey> {
+  const body = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s+/g, '');
+  const der = Uint8Array.from(atob(body), (ch) => ch.charCodeAt(0));
+  return crypto.subtle.importKey(
+    'pkcs8',
+    der,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+}
+
+function b64url(s: string): string {
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlBytes(bytes: Uint8Array): string {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }

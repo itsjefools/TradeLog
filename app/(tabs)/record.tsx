@@ -177,6 +177,21 @@ export default function RecordScreen() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  // P&L / pips 入力。結果(Win/Loss)が未選択なら、入力符号から自動判定する。
+  // （例: 「-500」→ 負け、「500」→ 勝ち。既に選択済みなら尊重して上書きしない）
+  const updatePnlField = (key: 'pnl' | 'pnlPips', text: string) => {
+    setForm((prev) => {
+      let result = prev.result;
+      if (result === null) {
+        const n = parseNumOrNull(text);
+        if (n !== null && n !== 0) {
+          result = text.trim().startsWith('-') ? 'loss' : 'win';
+        }
+      }
+      return { ...prev, [key]: text, result };
+    });
+  };
+
   const updatePriceField = (key: 'entryPrice' | 'exitPrice', value: string) => {
     setForm((prev) => recalcPipsField({ ...prev, [key]: value }));
   };
@@ -690,7 +705,7 @@ export default function RecordScreen() {
                 ref={pnlRef}
                 style={styles.input}
                 value={form.pnl}
-                onChangeText={(t) => setField('pnl', t)}
+                onChangeText={(t) => updatePnlField('pnl', t)}
                 placeholder={t('record.pnlExample')}
                 placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"
@@ -706,7 +721,7 @@ export default function RecordScreen() {
                 ref={pnlPipsRef}
                 style={styles.input}
                 value={form.pnlPips}
-                onChangeText={(t) => setField('pnlPips', t)}
+                onChangeText={(t) => updatePnlField('pnlPips', t)}
                 placeholder={t('record.pipsExample')}
                 placeholderTextColor={c.textSecondary}
                 keyboardType="decimal-pad"

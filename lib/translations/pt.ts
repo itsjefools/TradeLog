@@ -858,6 +858,22 @@ export default {
     payout_display_name_ph: 'ex.: Banco ABC, Agência Central',
     payout_save: 'Salvar',
     payout_saved: 'Dados de recebimento salvos',
+    payout_connect_cta: 'Configurar recebimento com Stripe',
+    payout_manage: 'Gerenciar conta de recebimento',
+    payout_connect_desc:
+      'A verificação e os dados bancários são tratados com segurança pela Stripe. O TradeLog não armazena seus dados bancários.',
+    payout_ready_note: 'Tudo pronto. Os ganhos são pagos nesta conta mensalmente.',
+    payout_setup_note:
+      'Configure uma conta de recebimento para receber os ganhos da comunidade.',
+    payout_not_configured:
+      'O recebimento ainda não está disponível (aguardando configuração do administrador).',
+    payout_open_failed: 'Não foi possível abrir a página de configuração',
+    payout_history: 'Histórico de pagamentos',
+    payout_history_empty: 'Ainda não há pagamentos',
+    payout_state_pending: 'Pendente',
+    payout_state_processing: 'Processando',
+    payout_state_paid: 'Pago',
+    payout_state_failed: 'Falhou',
     payout_note: 'Os dados reais da sua conta são mantidos com segurança pelo provedor de pagamento. Os pagamentos começam após a verificação.',
     payout_failed: 'Falha ao salvar',
   },

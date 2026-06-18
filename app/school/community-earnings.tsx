@@ -26,6 +26,14 @@ type Earning = {
 
 type PayoutStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
 
+type Payout = {
+  id: string;
+  period: string;
+  amount: number;
+  status: string;
+  paid_at: string | null;
+};
+
 function currentPeriod(): string {
   const d = new Date();
   return `${d.getUTCFullYear()}-${(d.getUTCMonth() + 1).toString().padStart(2, '0')}`;
@@ -46,6 +54,7 @@ export default function CommunityEarningsScreen() {
   const [earnings, setEarnings] = useState<Earning[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [payoutStatus, setPayoutStatus] = useState<PayoutStatus>('unverified');
+  const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -53,23 +62,35 @@ export default function CommunityEarningsScreen() {
       setLoading(false);
       return;
     }
-    const [{ data: earn }, { data: comms }, { data: acct }] = await Promise.all([
-      supabase
-        .from('community_earnings')
-        .select('community_id, period, creator_amount, status')
-        .eq('creator_id', myId),
-      supabase.from('communities').select('id, name').eq('owner_id', myId),
-      supabase
-        .from('creator_payout_accounts')
-        .select('status')
-        .eq('user_id', myId)
-        .maybeSingle(),
-    ]);
+    const [{ data: earn }, { data: comms }, { data: acct }, { data: po }] =
+      await Promise.all([
+        supabase
+          .from('community_earnings')
+          .select('community_id, period, creator_amount, status')
+          .eq('creator_id', myId),
+        supabase.from('communities').select('id, name').eq('owner_id', myId),
+        supabase
+          .from('creator_payout_accounts')
+          .select('status, payouts_enabled')
+          .eq('user_id', myId)
+          .maybeSingle(),
+        supabase
+          .from('creator_payouts')
+          .select('id, period, amount, status, paid_at')
+          .eq('creator_id', myId)
+          .order('created_at', { ascending: false })
+          .limit(24),
+      ]);
     setEarnings((earn ?? []) as Earning[]);
     const map: Record<string, string> = {};
     for (const r of comms ?? []) map[(r as { id: string }).id] = (r as { name: string }).name;
     setNames(map);
-    setPayoutStatus(((acct?.status as PayoutStatus) ?? 'unverified'));
+    setPayoutStatus(
+      acct?.payouts_enabled
+        ? 'verified'
+        : ((acct?.status as PayoutStatus) ?? 'unverified'),
+    );
+    setPayouts((po ?? []) as Payout[]);
     setLoading(false);
   }, [myId]);
 
@@ -178,6 +199,39 @@ export default function CommunityEarningsScreen() {
               </View>
             ))
           )}
+
+          {/* 出金履歴 */}
+          <Text style={[styles.sectionLabel, styles.sectionLabelMt]}>
+            {t('community.payout_history')}
+          </Text>
+          {payouts.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyText}>{t('community.payout_history_empty')}</Text>
+            </View>
+          ) : (
+            payouts.map((p) => {
+              const paid = p.status === 'paid';
+              return (
+                <View key={p.id} style={styles.commRow}>
+                  <View>
+                    <Text style={styles.commName}>{p.period}</Text>
+                    <Text
+                      style={[
+                        styles.payoutState,
+                        { color: paid ? c.accent : c.textSecondary },
+                      ]}
+                    >
+                      {t(`community.payout_state_${p.status}`)}
+                      {paid && p.paid_at
+                        ? ` · ${new Date(p.paid_at).toLocaleDateString()}`
+                        : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.commAmount}>{yen(p.amount)}</Text>
+                </View>
+              );
+            })
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -249,6 +303,8 @@ function makeStyles(c: ThemeColors) {
       color: c.textPrimary,
       marginBottom: 12,
     },
+    sectionLabelMt: { marginTop: 28 },
+    payoutState: { fontSize: 11, fontWeight: '700', marginTop: 3 },
     emptyBox: { paddingVertical: 32, alignItems: 'center' },
     emptyText: { fontSize: 13, color: c.textSecondary },
     commRow: {

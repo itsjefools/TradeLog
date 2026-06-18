@@ -859,6 +859,22 @@ export default {
     payout_display_name_ph: 'ej.: Banco ABC, Sucursal Central',
     payout_save: 'Guardar',
     payout_saved: 'Datos de pago guardados',
+    payout_connect_cta: 'Configurar pagos con Stripe',
+    payout_manage: 'Gestionar cuenta de pagos',
+    payout_connect_desc:
+      'La verificación y los datos bancarios los gestiona Stripe de forma segura. TradeLog no almacena tus datos bancarios.',
+    payout_ready_note: 'Todo listo. Las ganancias se pagan a esta cuenta cada mes.',
+    payout_setup_note:
+      'Configura una cuenta de pagos para recibir las ganancias de la comunidad.',
+    payout_not_configured:
+      'Los pagos aún no están disponibles (esperando la configuración del administrador).',
+    payout_open_failed: 'No se pudo abrir la página de configuración',
+    payout_history: 'Historial de pagos',
+    payout_history_empty: 'Aún no hay pagos',
+    payout_state_pending: 'Pendiente',
+    payout_state_processing: 'Procesando',
+    payout_state_paid: 'Pagado',
+    payout_state_failed: 'Fallido',
     payout_note: 'Los datos reales de tu cuenta los guarda de forma segura el proveedor de pagos. Los pagos comienzan tras la verificación.',
     payout_failed: 'Error al guardar',
   },

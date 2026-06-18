@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -8,16 +9,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemeColors } from '@/constants/theme';
+import { GOLD, ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
+
+type Status = 'unverified' | 'pending' | 'verified' | 'rejected';
 
 export default function CommunityPayoutScreen() {
   const c = useThemeColors();
@@ -27,9 +30,10 @@ export default function CommunityPayoutScreen() {
   const myId = session?.user.id ?? null;
   const styles = useMemo(() => makeStyles(c), [c]);
 
-  const [displayName, setDisplayName] = useState('');
+  const [status, setStatus] = useState<Status>('unverified');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [notConfigured, setNotConfigured] = useState(false);
 
   const load = useCallback(async () => {
     if (!myId) {
@@ -38,11 +42,13 @@ export default function CommunityPayoutScreen() {
     }
     const { data } = await supabase
       .from('creator_payout_accounts')
-      .select('display_name, status')
+      .select('status, payouts_enabled')
       .eq('user_id', myId)
       .maybeSingle();
     if (data) {
-      setDisplayName((data.display_name as string | null) ?? '');
+      setStatus(
+        data.payouts_enabled ? 'verified' : ((data.status as Status) ?? 'unverified'),
+      );
     }
     setLoading(false);
   }, [myId]);
@@ -51,27 +57,48 @@ export default function CommunityPayoutScreen() {
     load();
   }, [load]);
 
-  const save = async () => {
-    if (!myId || !displayName.trim()) return;
-    setSaving(true);
-    const { error } = await supabase.from('creator_payout_accounts').upsert(
-      {
-        user_id: myId,
-        method: 'bank',
-        display_name: displayName.trim(),
-        status: 'pending',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id' },
-    );
-    setSaving(false);
+  // Stripe から最新状態を取得して同期。
+  const refreshStatus = useCallback(async () => {
+    const { data, error } = await supabase.functions.invoke('creator-connect', {
+      body: { action: 'status' },
+    });
     if (error) {
-      Alert.alert(t('common.error'), t('community.payout_failed'));
+      const code = (error as { context?: Response }).context?.status ?? 0;
+      if (code === 503) setNotConfigured(true);
       return;
     }
-    Alert.alert(t('community.payout_saved'));
-    router.back();
+    if (data?.status) setStatus(data.status as Status);
+  }, []);
+
+  const startOnboarding = async () => {
+    setWorking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('creator-connect', {
+        body: { action: 'link' },
+      });
+      if (error) {
+        const code = (error as { context?: Response }).context?.status ?? 0;
+        if (code === 503) {
+          setNotConfigured(true);
+        } else {
+          Alert.alert(t('common.error'), t('community.payout_open_failed'));
+        }
+        return;
+      }
+      const url = (data as { url?: string } | null)?.url;
+      if (!url) {
+        Alert.alert(t('common.error'), t('community.payout_open_failed'));
+        return;
+      }
+      await WebBrowser.openBrowserAsync(url);
+      // 戻ってきたら最新状態を取得。
+      await refreshStatus();
+    } finally {
+      setWorking(false);
+    }
   };
+
+  const ready = status === 'verified';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -89,39 +116,63 @@ export default function CommunityPayoutScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.body}>
-          <Text style={styles.fieldLabel}>{t('community.payout_method')}</Text>
-          <View style={styles.methodPill}>
-            <Ionicons name="business-outline" size={16} color={c.textPrimary} />
-            <Text style={styles.methodText}>{t('community.payout_method_bank')}</Text>
+          {/* 状態カード */}
+          <View style={styles.statusCard}>
+            <View
+              style={[
+                styles.statusIcon,
+                { backgroundColor: ready ? `${c.accent}1F` : `${GOLD}1F` },
+              ]}
+            >
+              <Ionicons
+                name={ready ? 'checkmark-circle' : 'card-outline'}
+                size={26}
+                color={ready ? c.accent : GOLD}
+              />
+            </View>
+            <Text style={styles.statusTitle}>
+              {ready
+                ? t('community.payout_verified')
+                : status === 'pending'
+                  ? t('community.payout_pending')
+                  : t('community.payout_unverified')}
+            </Text>
+            <Text style={styles.statusDesc}>
+              {ready
+                ? t('community.payout_ready_note')
+                : t('community.payout_setup_note')}
+            </Text>
           </View>
 
-          <Text style={[styles.fieldLabel, { marginTop: 20 }]}>
-            {t('community.payout_display_name')}
-          </Text>
-          <TextInput
-            value={displayName}
-            onChangeText={setDisplayName}
-            placeholder={t('community.payout_display_name_ph')}
-            placeholderTextColor={c.textSecondary}
-            style={styles.input}
-          />
+          {notConfigured ? (
+            <Text style={styles.note}>{t('community.payout_not_configured')}</Text>
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={startOnboarding}
+                disabled={working}
+                activeOpacity={0.85}
+                style={[styles.cta, working && styles.ctaDisabled]}
+              >
+                {working ? (
+                  <ActivityIndicator color={c.onAccent} />
+                ) : (
+                  <Text style={styles.ctaText}>
+                    {ready
+                      ? t('community.payout_manage')
+                      : t('community.payout_connect_cta')}
+                  </Text>
+                )}
+              </TouchableOpacity>
 
-          <Text style={styles.note}>{t('community.payout_note')}</Text>
-
-          <Pressable
-            onPress={save}
-            disabled={saving || !displayName.trim()}
-            style={[
-              styles.saveButton,
-              (saving || !displayName.trim()) && styles.saveButtonDisabled,
-            ]}
-          >
-            {saving ? (
-              <ActivityIndicator color={c.onAccent} />
-            ) : (
-              <Text style={styles.saveButtonText}>{t('community.payout_save')}</Text>
-            )}
-          </Pressable>
+              <View style={styles.secureRow}>
+                <Ionicons name="lock-closed" size={13} color={c.textSecondary} />
+                <Text style={styles.secureText}>
+                  {t('community.payout_connect_desc')}
+                </Text>
+              </View>
+            </>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -144,48 +195,60 @@ function makeStyles(c: ThemeColors) {
     headerSpacer: { width: 26 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     body: { padding: 20 },
-    fieldLabel: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: c.textSecondary,
-      marginBottom: 8,
-    },
-    methodPill: {
-      flexDirection: 'row',
+    statusCard: {
       alignItems: 'center',
-      gap: 8,
-      alignSelf: 'flex-start',
-      backgroundColor: c.surfaceAlt,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      borderRadius: 12,
-    },
-    methodText: { fontSize: 14, color: c.textPrimary, fontWeight: '600' },
-    input: {
       backgroundColor: c.surface,
+      borderRadius: 16,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      fontSize: 15,
-      color: c.textPrimary,
+      paddingVertical: 28,
+      paddingHorizontal: 20,
+      marginBottom: 20,
     },
-    note: {
-      fontSize: 12,
+    statusIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 14,
+    },
+    statusTitle: { fontSize: 17, fontWeight: '800', color: c.textPrimary },
+    statusDesc: {
+      fontSize: 13,
       color: c.textSecondary,
-      lineHeight: 18,
-      marginTop: 16,
-      opacity: 0.85,
+      textAlign: 'center',
+      marginTop: 8,
+      lineHeight: 19,
     },
-    saveButton: {
+    cta: {
       backgroundColor: c.accent,
-      borderRadius: 14,
+      borderRadius: 12,
       paddingVertical: 16,
       alignItems: 'center',
-      marginTop: 28,
     },
-    saveButtonDisabled: { opacity: 0.5 },
-    saveButtonText: { fontSize: 16, fontWeight: '700', color: c.onAccent },
+    ctaDisabled: { opacity: 0.5 },
+    ctaText: { fontSize: 15, fontWeight: '800', color: c.onAccent },
+    secureRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 6,
+      marginTop: 14,
+      paddingHorizontal: 4,
+    },
+    secureText: {
+      flex: 1,
+      fontSize: 11,
+      color: c.textSecondary,
+      lineHeight: 16,
+      opacity: 0.85,
+    },
+    note: {
+      fontSize: 13,
+      color: c.textSecondary,
+      textAlign: 'center',
+      paddingHorizontal: 20,
+      lineHeight: 20,
+    },
   });
 }

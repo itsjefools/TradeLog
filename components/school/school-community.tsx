@@ -11,13 +11,13 @@ import {
   View,
 } from 'react-native';
 
+import { CommunityBannerBg } from '@/components/school/community-banner-bg';
 import { GoldGradient } from '@/components/gold-gradient';
 import { Scrim } from '@/components/scrim';
 import { GOLD, ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
-import { colorFromString } from '@/lib/cover-color';
 import { supabase } from '@/lib/supabase';
 
 type Community = {
@@ -178,12 +178,8 @@ export function SchoolCommunity() {
                     transition={200}
                   />
                 ) : (
-                  <View
-                    style={[
-                      StyleSheet.absoluteFill,
-                      { backgroundColor: colorFromString(item.name) },
-                    ]}
-                  >
+                  <View style={StyleSheet.absoluteFill}>
+                    <CommunityBannerBg name={item.name} />
                     <Ionicons
                       name="people"
                       size={64}

@@ -11,6 +11,10 @@ import {
   View,
 } from 'react-native';
 
+import {
+  DifficultyFilter,
+  DifficultyValue,
+} from '@/components/school/difficulty-filter';
 import { Scrim } from '@/components/scrim';
 import { GOLD, ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
@@ -42,7 +46,6 @@ type Video = {
 };
 
 type VideoCategory = 'all' | Video['category'];
-type DifficultyFilter = 'all' | Difficulty;
 
 function pickLocalized(video: Video, field: 'title' | 'description', lang: Locale): string {
   const key = `${field}_${lang}` as keyof Video;
@@ -80,7 +83,7 @@ export function SchoolVideos() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<VideoCategory>('all');
   const [selectedDifficulty, setSelectedDifficulty] =
-    useState<DifficultyFilter>('all');
+    useState<DifficultyValue>('all');
 
   const lang: Locale = (['ja', 'en', 'pt', 'es'] as const).includes(
     locale as Locale,
@@ -127,13 +130,6 @@ export function SchoolVideos() {
     { key: 'strategy', label: t('school.video_strategy') },
     { key: 'psychology', label: t('school.video_psychology') },
     { key: 'news', label: t('school.video_news') },
-  ];
-
-  const difficulties: { key: DifficultyFilter; label: string }[] = [
-    { key: 'all', label: t('school.video_all') },
-    { key: 'beginner', label: t('school.beginner') },
-    { key: 'intermediate', label: t('school.intermediate') },
-    { key: 'advanced', label: t('school.advanced') },
   ];
 
   const handleVideoPress = (video: Video) => {
@@ -273,44 +269,13 @@ export function SchoolVideos() {
             }}
           />
 
-          {/* 難易度フィルタ（副次・小ぶりのアウトラインピル） */}
-          <FlatList
-            data={difficulties}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.diffFilterList}
-            keyExtractor={(item) => item.key}
-            renderItem={({ item }) => {
-              const isActive = selectedDifficulty === item.key;
-              return (
-                <TouchableOpacity
-                  onPress={() => setSelectedDifficulty(item.key)}
-                  activeOpacity={0.8}
-                  style={[
-                    styles.diffChip,
-                    isActive && styles.diffChipActive,
-                  ]}
-                >
-                  {item.key !== 'all' && (
-                    <View
-                      style={[
-                        styles.diffChipDot,
-                        { backgroundColor: diffColor(item.key as Difficulty) },
-                      ]}
-                    />
-                  )}
-                  <Text
-                    style={[
-                      styles.diffChipText,
-                      isActive && styles.diffChipTextActive,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
+          {/* 難易度フィルタ（レッスンと共用の部品） */}
+          <View style={styles.diffFilterWrap}>
+            <DifficultyFilter
+              value={selectedDifficulty}
+              onChange={setSelectedDifficulty}
+            />
+          </View>
         </View>
       }
       renderItem={({ item }) => {
@@ -504,29 +469,7 @@ function makeStyles(c: ThemeColors) {
     categoryChipText: { fontSize: 13 },
     categoryChipTextActive: { color: c.onAccent, fontWeight: '800' },
     categoryChipTextInactive: { color: c.textSecondary, fontWeight: '600' },
-    diffFilterList: {
-      paddingHorizontal: 16,
-      paddingBottom: 14,
-      gap: 8,
-    },
-    diffChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 14,
-      marginHorizontal: 4,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.border,
-    },
-    diffChipActive: {
-      borderColor: c.textPrimary,
-      backgroundColor: c.surfaceAlt,
-    },
-    diffChipDot: { width: 6, height: 6, borderRadius: 3 },
-    diffChipText: { fontSize: 12, color: c.textSecondary, fontWeight: '600' },
-    diffChipTextActive: { color: c.textPrimary, fontWeight: '700' },
+    diffFilterWrap: { paddingBottom: 12 },
     row: {
       flexDirection: 'row',
       paddingHorizontal: 20,

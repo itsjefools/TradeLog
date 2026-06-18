@@ -10,6 +10,10 @@ import {
   View,
 } from 'react-native';
 
+import {
+  DifficultyFilter,
+  DifficultyValue,
+} from '@/components/school/difficulty-filter';
 import { GOLD, ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { usePremium } from '@/hooks/use-premium';
@@ -72,6 +76,18 @@ export function SchoolLessons() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const [categories, setCategories] = useState<CategoryWithLessons[]>([]);
   const [loading, setLoading] = useState(true);
+  const [difficulty, setDifficulty] = useState<DifficultyValue>('all');
+
+  // 難易度で絞り込み（該当レッスンの無いカテゴリは隠す）。
+  const filteredCategories = useMemo(() => {
+    if (difficulty === 'all') return categories;
+    return categories
+      .map((cat) => ({
+        ...cat,
+        lessons: cat.lessons.filter((l) => l.difficulty === difficulty),
+      }))
+      .filter((cat) => cat.lessons.length > 0);
+  }, [categories, difficulty]);
 
   const lang: Locale = (['ja', 'en', 'pt', 'es'] as const).includes(
     locale as Locale,
@@ -130,9 +146,19 @@ export function SchoolLessons() {
 
   return (
     <FlatList
-      data={categories}
+      data={filteredCategories}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
+      ListHeaderComponent={
+        <View style={styles.filterWrap}>
+          <DifficultyFilter value={difficulty} onChange={setDifficulty} />
+        </View>
+      }
+      ListEmptyComponent={
+        <View style={styles.filterEmpty}>
+          <Text style={styles.filterEmptyText}>{t('school.emptyVideos')}</Text>
+        </View>
+      }
       ListFooterComponent={
         <View style={styles.disclaimerWrap}>
           <Text style={styles.disclaimerText}>
@@ -252,6 +278,9 @@ function makeStyles(c: ThemeColors) {
       paddingHorizontal: 16,
       paddingBottom: 56,
     },
+    filterWrap: { marginHorizontal: -16, marginBottom: 8 },
+    filterEmpty: { paddingTop: 48, alignItems: 'center' },
+    filterEmptyText: { fontSize: 14, color: c.textSecondary },
     categoryBlock: {},
     categoryHead: {
       flexDirection: 'row',

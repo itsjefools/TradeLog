@@ -85,7 +85,8 @@
         }
       ],
       "expo-apple-authentication",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "./plugins/withModularHeaders"
     ],
     "experiments": {
       "typedRoutes": true,

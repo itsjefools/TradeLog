@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import PagerView from 'react-native-pager-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SchoolBooks } from '@/components/school/school-books';
@@ -16,7 +17,10 @@ export default function SchoolScreen() {
   const c = useThemeColors();
   const { t } = useI18n();
   const styles = useMemo(() => makeStyles(c), [c]);
-  const [activeTab, setActiveTab] = useState<SchoolTab>('lessons');
+  const pagerRef = useRef<PagerView>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  // 表示済みページだけ実体をマウント（初回に4つ同時フェッチしないため）。
+  const [visited, setVisited] = useState<Set<number>>(() => new Set([0]));
 
   const tabs: { key: SchoolTab; label: string }[] = [
     { key: 'lessons', label: t('school.tab_lessons') },
@@ -25,8 +29,15 @@ export default function SchoolScreen() {
     { key: 'community', label: t('school.tab_community') },
   ];
 
-  const renderContent = () => {
-    switch (activeTab) {
+  const goTo = (index: number) => {
+    pagerRef.current?.setPage(index);
+    // onPageSelected でも更新されるが、タップ時の即時反映用
+    setActiveIndex(index);
+    setVisited((prev) => (prev.has(index) ? prev : new Set(prev).add(index)));
+  };
+
+  const renderPage = (key: SchoolTab) => {
+    switch (key) {
       case 'lessons':
         return <SchoolLessons />;
       case 'videos':
@@ -50,12 +61,12 @@ export default function SchoolScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tabBarContent}
         >
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.key;
+          {tabs.map((tab, i) => {
+            const isActive = activeIndex === i;
             return (
               <TouchableOpacity
                 key={tab.key}
-                onPress={() => setActiveTab(tab.key)}
+                onPress={() => goTo(i)}
                 activeOpacity={0.7}
                 style={[styles.tabItem, isActive && styles.tabItemActive]}
               >
@@ -73,7 +84,28 @@ export default function SchoolScreen() {
         </ScrollView>
       </View>
 
-      <View style={styles.body}>{renderContent()}</View>
+      <PagerView
+        ref={pagerRef}
+        style={styles.pager}
+        initialPage={0}
+        onPageScroll={(e) => {
+          // ドラッグ中に向かう先のページを先読みマウント（空白防止）。
+          const { position, offset } = e.nativeEvent;
+          const target = offset > 0 ? position + 1 : position;
+          setVisited((prev) => (prev.has(target) ? prev : new Set(prev).add(target)));
+        }}
+        onPageSelected={(e) => {
+          const index = e.nativeEvent.position;
+          setActiveIndex(index);
+          setVisited((prev) => (prev.has(index) ? prev : new Set(prev).add(index)));
+        }}
+      >
+        {tabs.map((tab, i) => (
+          <View key={tab.key} style={styles.page} collapsable={false}>
+            {visited.has(i) ? renderPage(tab.key) : null}
+          </View>
+        ))}
+      </PagerView>
     </SafeAreaView>
   );
 }
@@ -122,6 +154,7 @@ function makeStyles(c: ThemeColors) {
       color: c.textSecondary,
       fontWeight: '400',
     },
-    body: { flex: 1 },
+    pager: { flex: 1 },
+    page: { flex: 1 },
   });
 }

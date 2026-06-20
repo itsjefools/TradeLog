@@ -179,7 +179,6 @@ function Row({
   danger?: boolean;
 }) {
   return (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     <Link href={href as any} asChild>
       <Pressable
         style={({ pressed }) => [

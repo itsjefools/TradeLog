@@ -1,16 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useScrollToTop } from '@react-navigation/native';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Tabs } from 'react-native-collapsible-tab-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmailVerifyBanner } from '@/components/email-verify-banner';
@@ -26,6 +18,11 @@ import { supabase } from '@/lib/supabase';
 import { Post, PROFILE_COLUMNS, Profile, Trade } from '@/lib/types';
 
 type FeedItem = FeedCardItem;
+type RawPost = Post & { trade: Trade | null; profile: Profile | null };
+
+// タブの並び順 = 表示順。全体を左、フォロー中を右にする。
+type FeedTab = 'all' | 'following';
+const TAB_ORDER: FeedTab[] = ['all', 'following'];
 
 export default function FeedScreen() {
   const c = useThemeColors();
@@ -34,18 +31,20 @@ export default function FeedScreen() {
   const styles = useMemo(() => makeStyles(c), [c]);
   const { session } = useAuth();
   const { isBlocked } = useBlocks();
-  const listRef = useRef<FlatList<FeedItem>>(null);
   // いいね処理中の post_id（連打での重複リクエスト/クラッシュ防止）
   const likeInFlight = useRef<Set<string>>(new Set());
-  useScrollToTop(listRef);
   const myId = session?.user.id ?? null;
 
-  const [items, setItems] = useState<FeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  // タブごとに別データを保持（全体/フォロー中）。
+  const [feeds, setFeeds] = useState<Record<FeedTab, FeedItem[]>>({
+    all: [],
+    following: [],
+  });
+  const loadedRef = useRef<Record<FeedTab, boolean>>({ all: false, following: false });
+  const [activeTab, setActiveTab] = useState<FeedTab>('all');
+  const [loadingTab, setLoadingTab] = useState<FeedTab | null>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [feedTab, setFeedTab] = useState<'all' | 'following'>('all');
-
   const [unreadCount, setUnreadCount] = useState(0);
 
   const loadUnread = useCallback(async () => {
@@ -61,7 +60,7 @@ export default function FeedScreen() {
     setUnreadCount(count ?? 0);
   }, [myId]);
 
-  const loadAllFeed = useCallback(async () => {
+  const loadAllFeed = useCallback(async (): Promise<RawPost[]> => {
     const { data, error: fetchError } = await supabase
       .from('posts')
       .select(
@@ -73,14 +72,11 @@ export default function FeedScreen() {
       .order('created_at', { ascending: false })
       .limit(50);
     if (fetchError) throw new Error(fetchError.message);
-    return (data ?? []) as (Post & {
-      trade: Trade | null;
-      profile: Profile | null;
-    })[];
+    return (data ?? []) as RawPost[];
   }, []);
 
   // フォロー中ユーザーの投稿のみ。誰もフォローしていなければ空配列。
-  const loadFollowingFeed = useCallback(async () => {
+  const loadFollowingFeed = useCallback(async (): Promise<RawPost[]> => {
     if (!myId) return [];
     const { data: follows } = await supabase
       .from('follows')
@@ -100,95 +96,94 @@ export default function FeedScreen() {
       .order('created_at', { ascending: false })
       .limit(50);
     if (fetchError) throw new Error(fetchError.message);
-    return (data ?? []) as (Post & {
-      trade: Trade | null;
-      profile: Profile | null;
-    })[];
+    return (data ?? []) as RawPost[];
   }, [myId]);
 
-  const loadFeed = useCallback(
-    async (mode: 'all' | 'following' = feedTab) => {
-      setError(null);
-      try {
-        const posts =
-          mode === 'following' ? await loadFollowingFeed() : await loadAllFeed();
-
-      const postIds = posts.map((p) => p.id);
+  // いいね/ブックマーク/リポストの状態を付与する。
+  const decorate = useCallback(
+    async (posts: RawPost[]): Promise<FeedItem[]> => {
       let likedSet = new Set<string>();
       let bookmarkedSet = new Set<string>();
       let repostedSet = new Set<string>();
+      const postIds = posts.map((p) => p.id);
       if (myId && postIds.length > 0) {
         const [likesRes, bmRes, rpRes] = await Promise.all([
-          supabase
-            .from('likes')
-            .select('post_id')
-            .eq('user_id', myId)
-            .in('post_id', postIds),
-          supabase
-            .from('bookmarks')
-            .select('post_id')
-            .eq('user_id', myId)
-            .in('post_id', postIds),
-          supabase
-            .from('reposts')
-            .select('post_id')
-            .eq('user_id', myId)
-            .in('post_id', postIds),
+          supabase.from('likes').select('post_id').eq('user_id', myId).in('post_id', postIds),
+          supabase.from('bookmarks').select('post_id').eq('user_id', myId).in('post_id', postIds),
+          supabase.from('reposts').select('post_id').eq('user_id', myId).in('post_id', postIds),
         ]);
-        likedSet = new Set(
-          (likesRes.data ?? []).map((l: { post_id: string }) => l.post_id),
-        );
-        bookmarkedSet = new Set(
-          (bmRes.data ?? []).map((l: { post_id: string }) => l.post_id),
-        );
-        repostedSet = new Set(
-          (rpRes.data ?? []).map((l: { post_id: string }) => l.post_id),
-        );
+        likedSet = new Set((likesRes.data ?? []).map((l: { post_id: string }) => l.post_id));
+        bookmarkedSet = new Set((bmRes.data ?? []).map((l: { post_id: string }) => l.post_id));
+        repostedSet = new Set((rpRes.data ?? []).map((l: { post_id: string }) => l.post_id));
       }
-
-      const merged = posts
+      return posts
         .filter((p) => !isBlocked(p.user_id))
         .map((p) => ({
           ...p,
           is_liked: likedSet.has(p.id),
           is_bookmarked: bookmarkedSet.has(p.id),
           is_reposted: repostedSet.has(p.id),
-        })) as FeedItem[];
-      setItems(merged);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
-    }
+        }));
     },
-    [feedTab, myId, loadAllFeed, loadFollowingFeed, isBlocked],
+    [myId, isBlocked],
   );
 
-  const switchTab = (next: 'all' | 'following') => {
-    if (next === feedTab) return;
-    setFeedTab(next);
-    setItems([]);
-    setLoading(true);
-    loadFeed(next).finally(() => setLoading(false));
-  };
+  const loadInto = useCallback(
+    async (mode: FeedTab, opts?: { silent?: boolean }) => {
+      setError(null);
+      if (!opts?.silent) setLoadingTab(mode);
+      try {
+        const posts = mode === 'following' ? await loadFollowingFeed() : await loadAllFeed();
+        const merged = await decorate(posts);
+        setFeeds((prev) => ({ ...prev, [mode]: merged }));
+        loadedRef.current[mode] = true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoadingTab((cur) => (cur === mode ? null : cur));
+      }
+    },
+    [loadAllFeed, loadFollowingFeed, decorate],
+  );
 
   useFocusEffect(
     useCallback(() => {
-      let active = true;
-      (async () => {
-        await Promise.all([loadFeed(), loadUnread()]);
-        if (active) setLoading(false);
-      })();
-      return () => {
-        active = false;
-      };
-    }, [loadFeed, loadUnread]),
+      loadUnread();
+      // フォーカス時にアクティブタブを更新（既読込みなら skeleton を出さず差し替え）
+      loadInto(activeTab, { silent: loadedRef.current[activeTab] });
+    }, [loadUnread, loadInto, activeTab]),
+  );
+
+  const onIndexChange = useCallback(
+    (index: number) => {
+      const tab = TAB_ORDER[index];
+      if (!tab) return;
+      setActiveTab(tab);
+      if (!loadedRef.current[tab]) loadInto(tab);
+    },
+    [loadInto],
   );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadFeed();
+    await Promise.all([loadInto(activeTab, { silent: true }), loadUnread()]);
     setRefreshing(false);
   };
+
+  // 全体/フォロー中の両リストに同じ更新を反映（投稿は両方に出うるため）。
+  const mutateItem = useCallback((id: string, fn: (p: FeedItem) => FeedItem) => {
+    setFeeds((prev) => ({
+      all: prev.all.map((p) => (p.id === id ? fn(p) : p)),
+      following: prev.following.map((p) => (p.id === id ? fn(p) : p)),
+    }));
+  }, []);
+
+  const removeItem = useCallback((id: string) => {
+    setFeeds((prev) => ({
+      all: prev.all.filter((p) => p.id !== id),
+      following: prev.following.filter((p) => p.id !== id),
+    }));
+  }, []);
 
   const toggleBookmark = async (item: FeedItem) => {
     if (!myId) {
@@ -196,11 +191,7 @@ export default function FeedScreen() {
       return;
     }
     const was = item.is_bookmarked;
-    setItems((prev) =>
-      prev.map((p) =>
-        p.id === item.id ? { ...p, is_bookmarked: !was } : p,
-      ),
-    );
+    mutateItem(item.id, (p) => ({ ...p, is_bookmarked: !was }));
     try {
       if (was) {
         const { error } = await supabase
@@ -216,15 +207,8 @@ export default function FeedScreen() {
         if (error) throw new Error(error.message);
       }
     } catch (e) {
-      setItems((prev) =>
-        prev.map((p) =>
-          p.id === item.id ? { ...p, is_bookmarked: was } : p,
-        ),
-      );
-      Alert.alert(
-        t('common.error'),
-        e instanceof Error ? e.message : String(e),
-      );
+      mutateItem(item.id, (p) => ({ ...p, is_bookmarked: was }));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -235,24 +219,15 @@ export default function FeedScreen() {
     }
     const was = item.is_reposted;
     if (!was) {
-      // confirm before reposting
       const ok = await new Promise<boolean>((resolve) => {
-        Alert.alert(
-          t('feed.confirmRepostTitle'),
-          t('feed.confirmRepostBody'),
-          [
-            { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
-            { text: t('feed.repost'), onPress: () => resolve(true) },
-          ],
-        );
+        Alert.alert(t('feed.confirmRepostTitle'), t('feed.confirmRepostBody'), [
+          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('feed.repost'), onPress: () => resolve(true) },
+        ]);
       });
       if (!ok) return;
     }
-    setItems((prev) =>
-      prev.map((p) =>
-        p.id === item.id ? { ...p, is_reposted: !was } : p,
-      ),
-    );
+    mutateItem(item.id, (p) => ({ ...p, is_reposted: !was }));
     try {
       if (was) {
         const { error } = await supabase
@@ -271,15 +246,8 @@ export default function FeedScreen() {
         if (error) throw new Error(error.message);
       }
     } catch (e) {
-      setItems((prev) =>
-        prev.map((p) =>
-          p.id === item.id ? { ...p, is_reposted: was } : p,
-        ),
-      );
-      Alert.alert(
-        t('common.error'),
-        e instanceof Error ? e.message : String(e),
-      );
+      mutateItem(item.id, (p) => ({ ...p, is_reposted: was }));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -292,17 +260,11 @@ export default function FeedScreen() {
     if (likeInFlight.current.has(item.id)) return;
     likeInFlight.current.add(item.id);
     const wasLiked = item.is_liked;
-    setItems((prev) =>
-      prev.map((p) =>
-        p.id === item.id
-          ? {
-              ...p,
-              is_liked: !wasLiked,
-              likes_count: Math.max(0, p.likes_count + (wasLiked ? -1 : 1)),
-            }
-          : p,
-      ),
-    );
+    mutateItem(item.id, (p) => ({
+      ...p,
+      is_liked: !wasLiked,
+      likes_count: Math.max(0, p.likes_count + (wasLiked ? -1 : 1)),
+    }));
 
     try {
       if (wasLiked) {
@@ -322,18 +284,11 @@ export default function FeedScreen() {
         if (insertError) throw new Error(insertError.message);
       }
     } catch (e) {
-      // revert
-      setItems((prev) =>
-        prev.map((p) =>
-          p.id === item.id
-            ? {
-                ...p,
-                is_liked: wasLiked,
-                likes_count: Math.max(0, p.likes_count + (wasLiked ? 1 : -1)),
-              }
-            : p,
-        ),
-      );
+      mutateItem(item.id, (p) => ({
+        ...p,
+        is_liked: wasLiked,
+        likes_count: Math.max(0, p.likes_count + (wasLiked ? 1 : -1)),
+      }));
       const msg = e instanceof Error ? e.message : String(e);
       Alert.alert(t('feed.likeFailed'), msg);
     } finally {
@@ -341,9 +296,22 @@ export default function FeedScreen() {
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <EmailVerifyBanner />
+  const renderItem = useCallback(
+    ({ item }: { item: FeedItem }) => (
+      <FeedCard
+        item={item}
+        onToggleLike={toggleLike}
+        onToggleBookmark={toggleBookmark}
+        onToggleRepost={toggleRepost}
+        onDeleted={removeItem}
+      />
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [removeItem],
+  );
+
+  const renderHeader = useCallback(
+    () => (
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
@@ -353,174 +321,149 @@ export default function FeedScreen() {
           </View>
           <View style={styles.headerActions}>
             <Link href="/search" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed && styles.headerButtonPressed,
-                ]}
-              >
+              <Pressable style={({ pressed }) => [styles.headerButton, pressed && styles.headerButtonPressed]}>
                 <Ionicons name="search-outline" size={20} color={c.textPrimary} />
               </Pressable>
             </Link>
             <Link href="/ranking" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed && styles.headerButtonPressed,
-                ]}
-              >
+              <Pressable style={({ pressed }) => [styles.headerButton, pressed && styles.headerButtonPressed]}>
                 <Ionicons name="trophy-outline" size={20} color={c.textPrimary} />
               </Pressable>
             </Link>
             <Link href="/predictions" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed && styles.headerButtonPressed,
-                ]}
-              >
+              <Pressable style={({ pressed }) => [styles.headerButton, pressed && styles.headerButtonPressed]}>
                 <Ionicons name="pulse-outline" size={20} color={c.textPrimary} />
               </Pressable>
             </Link>
             <Link href="/messages" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed && styles.headerButtonPressed,
-                ]}
-              >
-                <Ionicons
-                  name="paper-plane-outline"
-                  size={20}
-                  color={c.textPrimary}
-                />
+              <Pressable style={({ pressed }) => [styles.headerButton, pressed && styles.headerButtonPressed]}>
+                <Ionicons name="paper-plane-outline" size={20} color={c.textPrimary} />
               </Pressable>
             </Link>
             <Link href="/create-post" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed && styles.headerButtonPressed,
-                ]}
-              >
-                <Ionicons
-                  name="add-circle-outline"
-                  size={22}
-                  color={c.textPrimary}
-                />
+              <Pressable style={({ pressed }) => [styles.headerButton, pressed && styles.headerButtonPressed]}>
+                <Ionicons name="add-circle-outline" size={22} color={c.textPrimary} />
               </Pressable>
             </Link>
             <Link href="/notifications" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed && styles.headerButtonPressed,
-                ]}
-              >
-                <Ionicons
-                  name="notifications-outline"
-                  size={20}
-                  color={c.textPrimary}
-                />
+              <Pressable style={({ pressed }) => [styles.headerButton, pressed && styles.headerButtonPressed]}>
+                <Ionicons name="notifications-outline" size={20} color={c.textPrimary} />
                 {unreadCount > 0 && <View style={styles.unreadBadge} />}
               </Pressable>
             </Link>
           </View>
         </View>
       </View>
+    ),
+    [styles, c.textPrimary, unreadCount],
+  );
 
+  const renderTabBar = useCallback(
+    (props: { onTabPress: (name: string) => void }) => (
       <View style={styles.feedTabs}>
-        {(['following', 'all'] as const).map((tab) => {
-          const active = feedTab === tab;
+        {TAB_ORDER.map((tab) => {
+          const active = activeTab === tab;
           return (
-            <Pressable
-              key={tab}
-              onPress={() => switchTab(tab)}
-              style={styles.feedTab}
-            >
-              <Text
-                style={[styles.feedTabText, active && styles.feedTabTextActive]}
-              >
-                {tab === 'following'
-                  ? t('feed.tabFollowing')
-                  : t('feed.tabAll')}
+            <Pressable key={tab} onPress={() => props.onTabPress(tab)} style={styles.feedTab}>
+              <Text style={[styles.feedTabText, active && styles.feedTabTextActive]}>
+                {tab === 'following' ? t('feed.tabFollowing') : t('feed.tabAll')}
               </Text>
               {active && <View style={styles.feedTabUnderline} />}
             </Pressable>
           );
         })}
       </View>
+    ),
+    [styles, activeTab, t],
+  );
 
-      {loading ? (
-        <View style={styles.body}>
-          <FeedSkeletonList count={6} />
-        </View>
-      ) : (
-        <FlatList
-          ref={listRef}
-          data={items}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.body}
-          renderItem={({ item }) => (
-            <FeedCard
-              item={item}
-              onToggleLike={toggleLike}
-              onToggleBookmark={toggleBookmark}
-              onToggleRepost={toggleRepost}
-              onDeleted={(postId) =>
-                setItems((prev) => prev.filter((p) => p.id !== postId))
-              }
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={c.accent}
-            />
-          }
-          ListHeaderComponent={
-            error ? (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>
-                  {t('feed.errorPrefix')}
-                  {error}
-                </Text>
-              </View>
-            ) : null
-          }
-          ListEmptyComponent={
-            feedTab === 'following' ? (
-              <EmptyState
-                icon="people-outline"
-                title={t('empty.following_title')}
-                subtitle={t('empty.following_subtitle')}
-                actionLabel={t('empty.feed_discover')}
-                onAction={() => router.push('/ranking')}
-              />
-            ) : (
-              <EmptyState
-                icon="newspaper-outline"
-                title={t('empty.feed_title')}
-                subtitle={t('empty.feed_subtitle')}
-                actionLabel={t('empty.feed_action')}
-                onAction={() => router.push('/create-post')}
-                secondaryLabel={t('empty.feed_discover')}
-                onSecondary={() => router.push('/ranking')}
-              />
-            )
-          }
-          windowSize={7}
-          initialNumToRender={6}
-          maxToRenderPerBatch={6}
-          removeClippedSubviews
-        />
-      )}
+  const listEmpty = (tab: FeedTab) => {
+    if (loadingTab === tab) return <FeedSkeletonList count={6} />;
+    return tab === 'following' ? (
+      <EmptyState
+        icon="people-outline"
+        title={t('empty.following_title')}
+        subtitle={t('empty.following_subtitle')}
+        actionLabel={t('empty.feed_discover')}
+        onAction={() => router.push('/ranking')}
+      />
+    ) : (
+      <EmptyState
+        icon="newspaper-outline"
+        title={t('empty.feed_title')}
+        subtitle={t('empty.feed_subtitle')}
+        actionLabel={t('empty.feed_action')}
+        onAction={() => router.push('/create-post')}
+        secondaryLabel={t('empty.feed_discover')}
+        onSecondary={() => router.push('/ranking')}
+      />
+    );
+  };
 
+  const errorHeader = error ? (
+    <View style={styles.errorBox}>
+      <Text style={styles.errorText}>
+        {t('feed.errorPrefix')}
+        {error}
+      </Text>
+    </View>
+  ) : null;
+
+  const refreshControl = (
+    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />
+  );
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <EmailVerifyBanner />
+      <Tabs.Container
+        renderHeader={renderHeader}
+        renderTabBar={renderTabBar}
+        onIndexChange={onIndexChange}
+        lazy
+        containerStyle={{ backgroundColor: c.background }}
+        headerContainerStyle={{
+          backgroundColor: c.background,
+          shadowOpacity: 0,
+          elevation: 0,
+        }}
+      >
+        <Tabs.Tab name="all">
+          <Tabs.FlatList
+            data={feeds.all}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.body}
+            ListHeaderComponent={activeTab === 'all' ? errorHeader : null}
+            ListEmptyComponent={listEmpty('all')}
+            refreshControl={refreshControl}
+            showsVerticalScrollIndicator={false}
+            windowSize={7}
+            initialNumToRender={6}
+            maxToRenderPerBatch={6}
+            removeClippedSubviews
+          />
+        </Tabs.Tab>
+        <Tabs.Tab name="following">
+          <Tabs.FlatList
+            data={feeds.following}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.body}
+            ListHeaderComponent={activeTab === 'following' ? errorHeader : null}
+            ListEmptyComponent={listEmpty('following')}
+            refreshControl={refreshControl}
+            showsVerticalScrollIndicator={false}
+            windowSize={7}
+            initialNumToRender={6}
+            maxToRenderPerBatch={6}
+            removeClippedSubviews
+          />
+        </Tabs.Tab>
+      </Tabs.Container>
     </SafeAreaView>
   );
 }
-
 
 function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
@@ -532,8 +475,7 @@ function makeStyles(c: ThemeColors) {
       paddingHorizontal: 20,
       paddingTop: 8,
       paddingBottom: 10,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: c.border,
+      backgroundColor: c.background,
     },
     headerTop: {
       flexDirection: 'row',
@@ -572,6 +514,7 @@ function makeStyles(c: ThemeColors) {
       flexDirection: 'row',
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
+      backgroundColor: c.background,
     },
     feedTab: {
       flex: 1,
@@ -596,12 +539,6 @@ function makeStyles(c: ThemeColors) {
       borderRadius: 1,
       backgroundColor: c.accent,
     },
-    title: {
-      fontSize: 28,
-      fontWeight: '700',
-      color: c.textPrimary,
-      letterSpacing: -0.5,
-    },
     logo: {
       fontSize: 26,
       fontWeight: '800',
@@ -611,11 +548,6 @@ function makeStyles(c: ThemeColors) {
     logoAccent: {
       color: '#10B981',
       fontWeight: '800',
-    },
-    center: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
     },
     body: {
       paddingBottom: 40,
@@ -628,25 +560,6 @@ function makeStyles(c: ThemeColors) {
     errorText: {
       color: '#FECACA',
       fontSize: 13,
-    },
-    emptyBox: {
-      backgroundColor: c.surface,
-      borderRadius: 10,
-      padding: 32,
-      alignItems: 'center',
-      marginTop: 24,
-    },
-    emptyTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: c.textPrimary,
-      marginBottom: 8,
-    },
-    emptyText: {
-      fontSize: 13,
-      color: c.textSecondary,
-      textAlign: 'center',
-      lineHeight: 20,
     },
   });
 }

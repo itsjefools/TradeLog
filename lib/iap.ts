@@ -12,6 +12,7 @@ import {
 } from 'react-native-iap';
 
 import { supabase } from './supabase';
+import { COMMUNITIES_ENABLED } from './feature-flags';
 import { PLAN_RANK, type Plan } from './premium';
 
 // App Store / Google Play の商品ID (Plus / Pro × 月額 / 年額)
@@ -68,7 +69,7 @@ const SKU_LIST: string[] = [
   PRODUCT_IDS.PLUS_YEARLY,
   PRODUCT_IDS.PRO_MONTHLY,
   PRODUCT_IDS.PRO_YEARLY,
-  ...Object.values(COMMUNITY_PRODUCT_IDS),
+  ...(COMMUNITIES_ENABLED ? Object.values(COMMUNITY_PRODUCT_IDS) : []),
 ];
 
 /** コミュニティ課金の商品か */
@@ -158,6 +159,7 @@ export async function purchaseCommunitySubscription(
   communityId: string,
   tierKey: string,
 ): Promise<void> {
+  if (!COMMUNITIES_ENABLED) return;
   const productId = COMMUNITY_PRODUCT_IDS[tierKey];
   if (!productId) return;
   pendingCommunityId = communityId;

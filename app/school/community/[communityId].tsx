@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { CommunityFeatureGate } from '@/components/community-feature-gate';
 import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
@@ -51,6 +52,14 @@ type CommunityPost = {
 };
 
 export default function CommunityDetailScreen() {
+  return (
+    <CommunityFeatureGate>
+      <CommunityDetailContent />
+    </CommunityFeatureGate>
+  );
+}
+
+function CommunityDetailContent() {
   const { communityId } = useLocalSearchParams<{ communityId: string }>();
   const c = useThemeColors();
   const { t } = useI18n();

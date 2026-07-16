@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { CommunityFeatureGate } from '@/components/community-feature-gate';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
@@ -28,6 +29,14 @@ type PriceTier = { tier_key: string; amount: number };
 type CategoryKey = 'general' | 'strategy' | 'analysis' | 'beginner' | 'advanced';
 
 export default function CreateCommunityScreen() {
+  return (
+    <CommunityFeatureGate>
+      <CreateCommunityContent />
+    </CommunityFeatureGate>
+  );
+}
+
+function CreateCommunityContent() {
   const c = useThemeColors();
   const { t } = useI18n();
   const router = useRouter();

@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { SUPPORTED_LOCALES, useI18n } from '@/hooks/use-i18n';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme, useThemeColors } from '@/hooks/use-theme';
+import { COMMUNITIES_ENABLED } from '@/lib/feature-flags';
 import {
   disableDailyReminder,
   enableDailyReminder,
@@ -52,6 +53,10 @@ export default function SettingsScreen() {
 
   // コミュニティを1つ以上所有していれば「クリエイター収益」導線を出す。
   useEffect(() => {
+    if (!COMMUNITIES_ENABLED) {
+      setOwnsCommunity(false);
+      return;
+    }
     const uid = session?.user.id;
     if (!uid) return;
     let cancelled = false;
@@ -491,18 +496,20 @@ export default function SettingsScreen() {
           label={t('settings.premiumPlan')}
           onPress={() => router.push('/premium')}
         />
-        {ownsCommunity && (
+        {COMMUNITIES_ENABLED && ownsCommunity && (
           <SettingRow
             icon="wallet-outline"
             label={t('settings.creatorEarnings')}
             onPress={() => router.push('/school/community-earnings')}
           />
         )}
-        <SettingRow
-          icon="card-outline"
-          label={t('settings.subscriptions')}
-          onPress={() => router.push('/my-subscriptions')}
-        />
+        {COMMUNITIES_ENABLED && (
+          <SettingRow
+            icon="card-outline"
+            label={t('settings.subscriptions')}
+            onPress={() => router.push('/my-subscriptions')}
+          />
+        )}
 
         <Divider />
 

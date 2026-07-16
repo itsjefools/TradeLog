@@ -10,6 +10,7 @@ import { SchoolVideos } from '@/components/school/school-videos';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
+import { COMMUNITIES_ENABLED } from '@/lib/feature-flags';
 
 type SchoolTab = 'lessons' | 'videos' | 'books' | 'community';
 
@@ -26,8 +27,11 @@ export default function SchoolScreen() {
     { key: 'lessons', label: t('school.tab_lessons') },
     { key: 'videos', label: t('school.tab_videos') },
     { key: 'books', label: t('school.tab_books') },
-    { key: 'community', label: t('school.tab_community') },
   ];
+
+  if (COMMUNITIES_ENABLED) {
+    tabs.push({ key: 'community', label: t('school.tab_community') });
+  }
 
   const goTo = (index: number) => {
     pagerRef.current?.setPage(index);

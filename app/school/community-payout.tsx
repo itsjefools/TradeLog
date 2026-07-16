@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GOLD, ThemeColors } from '@/constants/theme';
+import { CommunityFeatureGate } from '@/components/community-feature-gate';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
@@ -23,6 +24,14 @@ import { supabase } from '@/lib/supabase';
 type Status = 'unverified' | 'pending' | 'verified' | 'rejected';
 
 export default function CommunityPayoutScreen() {
+  return (
+    <CommunityFeatureGate>
+      <CommunityPayoutContent />
+    </CommunityFeatureGate>
+  );
+}
+
+function CommunityPayoutContent() {
   const c = useThemeColors();
   const { t } = useI18n();
   const router = useRouter();

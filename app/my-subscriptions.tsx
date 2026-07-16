@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeColors } from '@/constants/theme';
+import { CommunityFeatureGate } from '@/components/community-feature-gate';
 import { useAuth } from '@/hooks/use-auth';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
@@ -40,6 +41,14 @@ const STORE_SUBSCRIPTIONS_URL =
     : 'https://play.google.com/store/account/subscriptions';
 
 export default function MySubscriptionsScreen() {
+  return (
+    <CommunityFeatureGate>
+      <MySubscriptionsContent />
+    </CommunityFeatureGate>
+  );
+}
+
+function MySubscriptionsContent() {
   const c = useThemeColors();
   const { t } = useI18n();
   const router = useRouter();

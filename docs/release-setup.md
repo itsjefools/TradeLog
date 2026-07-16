@@ -3,6 +3,9 @@
 TradeLog を本番稼働させるための外部設定・デプロイ手順を1枚にまとめたもの。
 コード側は実装済み。以下は主に **Jeff さん側の設定・デプロイ・テスト**作業。
 
+初回リリースでは `lib/feature-flags.ts` により、スクール動画とコミュニティを非公開にしている。
+Cloudflare動画・コミュニティ課金の設定は再公開時に行い、初回提出の必須作業には含めない。
+
 ---
 
 ## 0. 前提
@@ -23,17 +26,17 @@ Supabase SQL Editor で番号順に実行（[[feedback_supabase_sql_manual]]）�
 | 0072 | コミュニティ課金スキーマ（価格ティア/収益台帳/ペイアウト） |
 | 0073 | コミュニティ サブスク マッピング |
 
-## 2. Cloudflare Stream（Premium動画）
+## 2. Cloudflare Stream（Premium動画・再公開時）
 1. Cloudflare アカウント作成 → **Stream** 有効化
 2. Premium動画をアップロード → 各動画の **UID** を取得
 3. 各動画で **「Require signed URLs」を ON**（必須・忘れると無料で見られる）
 4. `school_videos` の該当行を更新: `stream_uid='<UID>'`（`video_source='cloudflare'`, `is_free=false`）
 5. 控える: **Account ID** / Stream用 **API Token** / 配信サブドメイン `customer-<code>` の `<code>`
 
-## 3. 無料動画（YouTube）
+## 3. 無料動画（YouTube・再公開時）
 - `school_videos` の `YT_REPLACE_1〜5` を実 YouTube 動画ID に UPDATE。
 
-## 4. Edge Functions デプロイ（3本）
+## 4. Edge Functions デプロイ（動画・コミュニティ再公開時）
 
 ### a) school-video-token（Premium動画の署名URL）
 ```sh
@@ -72,16 +75,16 @@ supabase functions deploy community-renewal-webhook
 
 登録後、`community_price_tiers` の `iap_product_id_ios` / `iap_product_id_android` を各行に設定。
 
-## 6. ストア Webhook（自動更新通知）
+## 6. ストア Webhook（コミュニティ再公開時）
 - **Apple**: App Store Connect → App → App Store Server Notifications の Production/Sandbox URL に
   `…/functions/v1/community-renewal-webhook` を登録。
 - **Google**: Play Console → 収益化 → リアルタイム デベロッパー通知 で Pub/Sub トピックを作成し、
   その push 先に同 URL を指定。
 
-## 7. テスト（必須）
-- IAP **サンドボックステスト**: Premium階層購入 / コミュニティ参加購入 / 自動更新（時間短縮）。
-- 署名動画の再生（会員/非会員/未設定）。
-- 収益台帳(community_earnings)に正しく 85/15 で記帳されるか。
+## 7. テスト
+- 初回リリース必須: IAP **サンドボックステスト**（Premium階層の購入・復元・自動更新）。
+- 再公開時: 署名動画の再生（会員/非会員/未設定）。
+- 再公開時: コミュニティ参加購入、自動更新、収益台帳の85/15記帳。
 
 ## 8. 法務・運用
 - ⚠️ **金商法**: 有料コミュニティでのFX売買助言は投資助言業登録の恐れ → 規約で個別シグナル
@@ -90,7 +93,8 @@ supabase functions deploy community-renewal-webhook
 
 ## 9. リリースチェックリスト（MVP）
 - [ ] IAP サンドボックステスト通過（Premium階層）
+- [ ] 購入復元テスト通過
 - [ ] プッシュ通知の実機確認
-- [ ] 無料動画の実ID投入
+- [x] 動画・コミュニティの非公開フラグ確認
 - [ ] App Store / Play 提出（メタデータ: docs/app-store-metadata.md）
 - [ ] （フル機能なら）Cloudflare + Premium動画、コミュニティ課金 のテスト完了

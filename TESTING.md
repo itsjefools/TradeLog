@@ -214,7 +214,7 @@
 
 ### Premium 画面
 - [ ] プラン表示、購入ボタン
-- [ ] RevenueCat 連携で sandbox 購入テスト
+- [ ] react-native-iap で sandbox 購入・復元テスト
 
 ---
 

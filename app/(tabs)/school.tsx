@@ -10,7 +10,10 @@ import { SchoolVideos } from '@/components/school/school-videos';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
-import { COMMUNITIES_ENABLED } from '@/lib/feature-flags';
+import {
+  COMMUNITIES_ENABLED,
+  SCHOOL_VIDEOS_ENABLED,
+} from '@/lib/feature-flags';
 
 type SchoolTab = 'lessons' | 'videos' | 'books' | 'community';
 
@@ -25,9 +28,12 @@ export default function SchoolScreen() {
 
   const tabs: { key: SchoolTab; label: string }[] = [
     { key: 'lessons', label: t('school.tab_lessons') },
-    { key: 'videos', label: t('school.tab_videos') },
     { key: 'books', label: t('school.tab_books') },
   ];
+
+  if (SCHOOL_VIDEOS_ENABLED) {
+    tabs.splice(1, 0, { key: 'videos', label: t('school.tab_videos') });
+  }
 
   if (COMMUNITIES_ENABLED) {
     tabs.push({ key: 'community', label: t('school.tab_community') });

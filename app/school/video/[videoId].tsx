@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import YoutubePlayer from 'react-native-youtube-iframe';
 
+import { SchoolVideosFeatureGate } from '@/components/school-videos-feature-gate';
 import { ThemeColors } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-i18n';
 import { useThemeColors } from '@/hooks/use-theme';
@@ -60,6 +61,14 @@ function pickLocalized(video: Video, field: 'title' | 'description', lang: Local
 }
 
 export default function VideoPlayerScreen() {
+  return (
+    <SchoolVideosFeatureGate>
+      <VideoPlayerContent />
+    </SchoolVideosFeatureGate>
+  );
+}
+
+function VideoPlayerContent() {
   const { videoId } = useLocalSearchParams<{ videoId: string }>();
   const c = useThemeColors();
   const { t, locale } = useI18n();

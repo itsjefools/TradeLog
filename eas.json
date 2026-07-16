@@ -14,10 +14,6 @@
       },
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_RC_API_KEY_IOS": "test_laywQSMueEtEPKqkfftUWGKHrad",
-        "EXPO_PUBLIC_RC_API_KEY_ANDROID": "test_laywQSMueEtEPKqkfftUWGKHrad"
       }
     },
     "preview": {
@@ -29,10 +25,6 @@
       },
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_RC_API_KEY_IOS": "test_laywQSMueEtEPKqkfftUWGKHrad",
-        "EXPO_PUBLIC_RC_API_KEY_ANDROID": "test_laywQSMueEtEPKqkfftUWGKHrad"
       }
     },
     "production": {
@@ -43,10 +35,6 @@
       },
       "android": {
         "buildType": "app-bundle"
-      },
-      "env": {
-        "EXPO_PUBLIC_RC_API_KEY_IOS": "REPLACE_WITH_PRODUCTION_appl_KEY",
-        "EXPO_PUBLIC_RC_API_KEY_ANDROID": "REPLACE_WITH_PRODUCTION_goog_KEY"
       }
     }
   },

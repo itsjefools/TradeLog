@@ -27,7 +27,7 @@ eas init
    - Platforms: iOS
    - Name: TradeLog
    - Primary Language: Japanese
-   - Bundle ID: `com.tradelog.app`（事前に Apple Developer の Identifiers で登録）
+   - Bundle ID: `com.kingjay.tradelog`（事前に Apple Developer の Identifiers で登録）
    - SKU: `tradelog-ios-001`（任意）
 3. 作成後、左メニュー「App Information」で `ascAppId`（数字 ID）を確認
 
@@ -37,12 +37,12 @@ eas init
 - `ascAppId`: 上記で確認した ID
 - `appleTeamId`: Apple Developer の Membership ページで確認
 
-### RevenueCat 本番キー
+### App Store サブスクリプション商品
 
 App Store Connect で iOS アプリ作成後:
-1. RevenueCat ダッシュボード → Project Settings → Apps → New app configuration → App Store
-2. Bundle ID `com.tradelog.app`、In-App Purchase Key (.p8) をアップロード
-3. 表示される `appl_xxx` キーを `eas.json` の `production.env.EXPO_PUBLIC_RC_API_KEY_IOS` に設定
+1. Plus / Pro の月額・年額商品を自動更新サブスクリプションとして登録
+2. 商品IDを `lib/iap.ts` の `PRODUCT_IDS` と一致させる
+3. 有料App契約・税務・銀行口座の設定を完了する
 
 ---
 
@@ -51,8 +51,8 @@ App Store Connect で iOS アプリ作成後:
 | プロファイル | 用途 | コマンド |
 |---|---|---|
 | **development** | 実機テスト用（Hermes デバッガ付き） | `eas build --profile development --platform ios` |
-| **preview** | TestFlight / 内部配布 | `eas build --profile preview --platform ios` |
-| **production** | App Store 提出用 | `eas build --profile production --platform ios` |
+| **preview** | 登録端末への内部配布 | `eas build --profile preview --platform ios` |
+| **production** | TestFlight / App Store 提出用 | `eas build --profile production --platform ios` |
 
 Android も同様に `--platform android` で。
 
@@ -97,11 +97,11 @@ Play Console に Service Account JSON を作成し `google-play-service-account.
 
 - [ ] `eas init` 実行済み（projectId 設定済み）
 - [ ] Apple Developer Program 承認済み
-- [ ] Bundle ID `com.tradelog.app` 登録済み
+- [ ] Bundle ID `com.kingjay.tradelog` 登録済み
 - [ ] App Store Connect でアプリ作成済み
 - [ ] In-App Purchase Key (.p8) 発行済み
-- [ ] RevenueCat 本番 API キー取得済み
-- [ ] eas.json の `appl_xxx` / `goog_xxx` キー差し替え済み
+- [ ] react-native-iap の4商品IDがストア登録内容と一致
+- [ ] 購入・購入復元のSandboxテスト完了
 - [ ] eas.json の `ascAppId` / `appleTeamId` 設定済み
 - [ ] スプラッシュ画像・アイコン最終確認
 - [ ] App Store Connect の商品（Subscription）登録済み

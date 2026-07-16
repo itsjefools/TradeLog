@@ -55,7 +55,9 @@ export function WallpaperTemplates() {
 
   const handleDownload = async (imageUrl: string) => {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const { status } = await MediaLibrary.requestPermissionsAsync(true, [
+        'photo',
+      ]);
       if (status !== 'granted') {
         Alert.alert('', t('wallpaper.permission_required'));
         return;

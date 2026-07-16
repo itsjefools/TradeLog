@@ -3,6 +3,7 @@ import {
   endConnection,
   fetchProducts,
   finishTransaction,
+  getAvailablePurchases,
   initConnection,
   purchaseErrorListener,
   purchaseUpdatedListener,
@@ -72,6 +73,13 @@ const SKU_LIST: string[] = [
   ...(COMMUNITIES_ENABLED ? Object.values(COMMUNITY_PRODUCT_IDS) : []),
 ];
 
+const PREMIUM_PRODUCT_IDS = new Set<string>([
+  PRODUCT_IDS.PLUS_MONTHLY,
+  PRODUCT_IDS.PLUS_YEARLY,
+  PRODUCT_IDS.PRO_MONTHLY,
+  PRODUCT_IDS.PRO_YEARLY,
+]);
+
 /** コミュニティ課金の商品か */
 export function isCommunityProduct(productId: string | null | undefined): boolean {
   return !!productId && productId.includes('community');
@@ -134,7 +142,7 @@ export async function getSubscriptionProducts(): Promise<Product[]> {
  * サブスクリプション購入をリクエスト。
  * 結果は purchaseUpdatedListener / purchaseErrorListener で受け取る (非同期イベント駆動)。
  */
-export async function purchaseSubscription(productId: string): Promise<void> {
+export async function purchaseSubscription(productId: string): Promise<boolean> {
   try {
     await requestPurchase({
       request: {
@@ -145,8 +153,9 @@ export async function purchaseSubscription(productId: string): Promise<void> {
       },
       type: 'subs',
     });
+    return true;
   } catch {
-    // エラーは purchaseErrorListener が拾うので、ここでは何もしない
+    return false;
   }
 }
 
@@ -182,6 +191,16 @@ function defaultExpiresAt(productId: string): string {
   return new Date(Date.now() + ms).toISOString();
 }
 
+function expiresAtForPurchase(purchase: Purchase, productId: string): string {
+  if ('expirationDateIOS' in purchase && purchase.expirationDateIOS) {
+    const raw = purchase.expirationDateIOS;
+    const milliseconds = raw < 10_000_000_000 ? raw * 1000 : raw;
+    const date = new Date(milliseconds);
+    if (!Number.isNaN(date.getTime())) return date.toISOString();
+  }
+  return defaultExpiresAt(productId);
+}
+
 function purchaseToken(purchase: Purchase): string | null {
   const anyP = purchase as unknown as Record<string, unknown>;
   const candidates = [
@@ -202,6 +221,68 @@ function platformOf(): 'ios' | 'android' | null {
   if (Platform.OS === 'ios') return 'ios';
   if (Platform.OS === 'android') return 'android';
   return null;
+}
+
+async function persistPremiumPurchase(
+  userId: string,
+  purchase: Purchase,
+): Promise<Plan> {
+  const platform = platformOf();
+  const productId = purchase.productId;
+  if (!platform || !PREMIUM_PRODUCT_IDS.has(productId)) return 'free';
+
+  const tier = tierForProduct(productId);
+  const { error } = await supabase.from('user_subscriptions').upsert(
+    {
+      user_id: userId,
+      product_id: productId,
+      purchase_token: purchaseToken(purchase),
+      platform,
+      status: 'active',
+      expires_at: expiresAtForPurchase(purchase, productId),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id,product_id' },
+  );
+  if (error) throw error;
+  return tier;
+}
+
+/** App Store / Google Play の有効なPremium購入をSupabaseへ復元する。 */
+export async function restorePremiumPurchases(userId: string): Promise<Plan> {
+  await initIAP();
+  const purchases = await getAvailablePurchases({
+    onlyIncludeActiveItemsIOS: true,
+    includeSuspendedAndroid: false,
+  });
+  const activePremium = purchases.filter(
+    (purchase) =>
+      PREMIUM_PRODUCT_IDS.has(purchase.productId) &&
+      purchase.purchaseState !== 'pending',
+  );
+  if (activePremium.length === 0) return 'free';
+
+  const now = new Date().toISOString();
+  const { error: expireError } = await supabase
+    .from('user_subscriptions')
+    .update({ status: 'expired', expires_at: now, updated_at: now })
+    .eq('user_id', userId)
+    .in('product_id', [...PREMIUM_PRODUCT_IDS]);
+  if (expireError) throw expireError;
+
+  let best: Plan = 'free';
+  for (const purchase of activePremium) {
+    const tier = await persistPremiumPurchase(userId, purchase);
+    if (PLAN_RANK[tier] > PLAN_RANK[best]) best = tier;
+  }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ plan_tier: best, is_premium: best !== 'free' })
+    .eq('id', userId);
+  if (profileError) throw profileError;
+
+  return best;
 }
 
 /**
@@ -250,23 +331,9 @@ export function setupPurchaseListeners(
         return;
       }
 
-      await supabase
-        .from('user_subscriptions')
-        .upsert(
-          {
-            user_id: userId,
-            product_id: productId,
-            purchase_token: purchaseToken(purchase),
-            platform,
-            status: 'active',
-            expires_at: defaultExpiresAt(productId),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id,product_id' },
-        );
+      const tier = await persistPremiumPurchase(userId, purchase);
 
       // plan_tier / is_premium を購入ティアで同期 (UI 即時反映用)
-      const tier = tierForProduct(productId);
       await supabase
         .from('profiles')
         .update({ plan_tier: tier, is_premium: tier !== 'free' })
@@ -286,7 +353,6 @@ export function setupPurchaseListeners(
 
   const errorSub = purchaseErrorListener((error) => {
     const code = (error as { code?: string }).code ?? 'purchase_failed';
-    if (code === 'E_USER_CANCELLED') return;
     onError(code);
   });
 

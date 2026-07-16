@@ -133,7 +133,9 @@ export function WallpaperEditor() {
     if (!viewShotRef.current) return;
     setSaving(true);
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const { status } = await MediaLibrary.requestPermissionsAsync(true, [
+        'photo',
+      ]);
       if (status !== 'granted') {
         Alert.alert('', t('wallpaper.permission_required'));
         setSaving(false);

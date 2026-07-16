@@ -338,7 +338,6 @@ TradeLog（以下「本サービス」）における、ユーザーの個人情
 本サービスは以下のサービスを利用しています。
 - Supabase: データベース・認証・ストレージ
 - Expo / EAS: プッシュ通知・ビルド
-- RevenueCat: サブスクリプション管理
 - Apple App Store / Google Play: アプリ配信・課金
 
 5. データの保管
@@ -398,7 +397,6 @@ We do not share collected information with third parties without User consent, e
 The Service uses:
 - Supabase: database, authentication, storage
 - Expo / EAS: push notifications, build
-- RevenueCat: subscription management
 - Apple App Store / Google Play: app distribution and billing
 
 5. Data Storage
@@ -458,7 +456,6 @@ Não compartilhamos informações sem consentimento, exceto:
 4. Fornecedores
 - Supabase: banco de dados, autenticação, armazenamento
 - Expo / EAS: notificações push, build
-- RevenueCat: gestão de assinaturas
 - Apple App Store / Google Play: distribuição e cobrança
 
 5. Armazenamento
@@ -517,7 +514,6 @@ const PRIVACY_ZH = `
 4. 委托方
 - Supabase：数据库、认证、存储
 - Expo / EAS：推送、构建
-- RevenueCat：订阅管理
 - Apple App Store / Google Play：分发和计费
 
 5. 数据保管
@@ -576,7 +572,6 @@ No compartimos información sin el consentimiento del Usuario, salvo:
 4. Proveedores
 - Supabase: base de datos, autenticación, almacenamiento
 - Expo / EAS: notificaciones push, builds
-- RevenueCat: gestión de suscripciones
 - Apple App Store / Google Play: distribución y cobros
 
 5. Almacenamiento

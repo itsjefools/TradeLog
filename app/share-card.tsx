@@ -320,7 +320,9 @@ export default function ShareCardScreen() {
     if (!viewShotRef.current || isEmpty) return;
     setBusy(true);
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const { status } = await MediaLibrary.requestPermissionsAsync(true, [
+        'photo',
+      ]);
       if (status !== 'granted') {
         Alert.alert(t('shareCard.title'), t('shareCard.permissionRequired'));
         setBusy(false);

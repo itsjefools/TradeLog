@@ -100,7 +100,9 @@ export function WallpaperGallery() {
 
   const handleDownload = async (imageUrl: string, wallpaperId: string) => {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const { status } = await MediaLibrary.requestPermissionsAsync(true, [
+        'photo',
+      ]);
       if (status !== 'granted') {
         Alert.alert('', t('wallpaper.permission_required'));
         return;

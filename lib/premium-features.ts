@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 
+import { COMMUNITIES_ENABLED } from './feature-flags';
+
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 // 各セルの値: true=利用可, false=不可, string=内容(件数など)
@@ -85,11 +87,15 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
     plus: false,
     pro: true,
   },
-  {
-    iconName: 'people-outline',
-    titleKey: 'premium.feat_community',
-    free: false,
-    plus: false,
-    pro: true,
-  },
+  ...(COMMUNITIES_ENABLED
+    ? [
+        {
+          iconName: 'people-outline' as const,
+          titleKey: 'premium.feat_community',
+          free: false,
+          plus: false,
+          pro: true,
+        },
+      ]
+    : []),
 ];

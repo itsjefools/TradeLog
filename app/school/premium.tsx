@@ -18,8 +18,10 @@ import { useTheme } from '@/hooks/use-theme';
 import { AnalyticsEvents } from '@/lib/analytics';
 import { PLAN_COLORS } from '@/lib/design';
 import {
+  getSubscriptionProducts,
   PRODUCT_IDS,
   purchaseSubscription,
+  restorePremiumPurchases,
   setupPurchaseListeners,
 } from '@/lib/iap';
 import { PLAN_FEATURES, type PlanCell } from '@/lib/premium-features';
@@ -49,11 +51,20 @@ export default function PlanScreen() {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('plus');
   const [purchasing, setPurchasing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [storePrices, setStorePrices] = useState<Record<string, string>>({});
 
   const c = PLAN_COLORS;
 
   useEffect(() => {
     AnalyticsEvents.paywallViewed('school');
+    getSubscriptionProducts().then((products) => {
+      const prices: Record<string, string> = {};
+      for (const product of products) {
+        if (product.displayPrice) prices[product.id] = product.displayPrice;
+      }
+      setStorePrices(prices);
+    });
   }, []);
 
   // IAP 購入リスナ（既存ロジック維持）
@@ -70,6 +81,7 @@ export default function PlanScreen() {
       },
       (code) => {
         setPurchasing(false);
+        if (code === 'E_USER_CANCELLED') return;
         Alert.alert(
           t('premium.error_title'),
           code === 'purchase_processing_failed'
@@ -85,7 +97,36 @@ export default function PlanScreen() {
     if (purchasing) return;
     AnalyticsEvents.subscriptionStarted(`${selectedPlan}_${billingPeriod}`);
     setPurchasing(true);
-    await purchaseSubscription(productIdFor(selectedPlan, billingPeriod));
+    const started = await purchaseSubscription(
+      productIdFor(selectedPlan, billingPeriod),
+    );
+    if (!started) {
+      setPurchasing(false);
+      Alert.alert(t('premium.error_title'), t('premium.error_message'));
+    }
+  };
+
+  const handleRestore = async () => {
+    const userId = session?.user.id;
+    if (!userId || restoring || purchasing) return;
+    setRestoring(true);
+    try {
+      const restoredPlan = await restorePremiumPurchases(userId);
+      if (restoredPlan === 'free') {
+        Alert.alert(
+          t('premium.noPurchasesTitle'),
+          t('premium.noPurchasesBody'),
+        );
+        return;
+      }
+      Alert.alert(t('premium.restoredTitle'), t('premium.restoredBody'), [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch {
+      Alert.alert(t('premium.restoreFail'), t('premium.error_message'));
+    } finally {
+      setRestoring(false);
+    }
   };
 
   const renderCellValue = (value: PlanCell, tint: string) => {
@@ -108,6 +149,8 @@ export default function PlanScreen() {
     // Plus=エメラルド / Pro=ゴールド の選択色（ティア identity）
     const selColor = isPro ? c.gold : c.plusBorder;
     const price = billingPeriod === 'monthly' ? PLANS[plan].monthly : PLANS[plan].yearly;
+    const productId = productIdFor(plan, billingPeriod);
+    const priceLabel = storePrices[productId] ?? `¥${price.toLocaleString()}`;
     return (
       <TouchableOpacity
         style={[
@@ -150,7 +193,7 @@ export default function PlanScreen() {
         )}
 
         <Text style={[styles.planPrice, { color: c.textPrimary[k] }]}>
-          ¥{price}
+          {priceLabel}
           <Text style={[styles.planPricePeriod, { color: c.textSecondary[k] }]}>
             /{billingPeriod === 'monthly' ? t('premium.perMonth').replace('/', '') : t('premium.perYear').replace('/', '')}
           </Text>
@@ -328,7 +371,24 @@ export default function PlanScreen() {
           ))}
         </View>
 
-        <View style={{ height: 120 }} />
+        <Text style={[styles.termsNotice, { color: c.textMuted[k] }]}>
+          {t('premium.terms_notice')}
+        </Text>
+        <View style={styles.legalLinks}>
+          <TouchableOpacity onPress={() => router.push('/terms')}>
+            <Text style={[styles.legalLinkText, { color: c.textSecondary[k] }]}>
+              {t('settings.terms')}
+            </Text>
+          </TouchableOpacity>
+          <Text style={{ color: c.textMuted[k] }}>·</Text>
+          <TouchableOpacity onPress={() => router.push('/privacy')}>
+            <Text style={[styles.legalLinkText, { color: c.textSecondary[k] }]}>
+              {t('settings.privacy')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ height: 168 }} />
       </ScrollView>
 
       {/* 固定購入ボタン */}
@@ -339,13 +399,26 @@ export default function PlanScreen() {
         ]}
       >
         <TouchableOpacity
-          style={[styles.purchaseButton, purchasing && { opacity: 0.6 }]}
+          style={[
+            styles.purchaseButton,
+            (purchasing || restoring) && { opacity: 0.6 },
+          ]}
           activeOpacity={0.8}
           onPress={handlePurchase}
-          disabled={purchasing}
+          disabled={purchasing || restoring}
         >
           <Text style={styles.purchaseButtonText}>
             {t('premium.subscribe_to', { plan: selectedPlan === 'plus' ? 'Plus' : 'Pro' })}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.restoreButton}
+          activeOpacity={0.7}
+          onPress={handleRestore}
+          disabled={restoring || purchasing}
+        >
+          <Text style={[styles.restoreButtonText, { color: c.textSecondary[k] }]}>
+            {t('premium.restore')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -453,6 +526,15 @@ const styles = StyleSheet.create({
   tableFeatureText: { fontSize: 13, fontWeight: '400', flex: 1 },
   tableValueCol: { width: 48, alignItems: 'center', justifyContent: 'center' },
   cellText: { fontSize: 13, fontWeight: '500' },
+  termsNotice: { fontSize: 11, lineHeight: 17, textAlign: 'center', marginTop: 20 },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 10,
+  },
+  legalLinkText: { fontSize: 12, textDecorationLine: 'underline' },
   purchaseFooter: {
     position: 'absolute',
     bottom: 0,
@@ -470,4 +552,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   purchaseButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  restoreButton: { alignItems: 'center', justifyContent: 'center', paddingTop: 12 },
+  restoreButtonText: { fontSize: 13, fontWeight: '600' },
 });
